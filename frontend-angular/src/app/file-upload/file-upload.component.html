@@ -1,0 +1,74 @@
+<!-- FILE: src/app/file-upload/file-upload.component.html -->
+
+<mat-card class="upload-card">
+  <mat-card-header>
+    <mat-card-title>Master List Uploader</mat-card-title>
+    <mat-card-subtitle>Select a CSV file to upload for the selected tenant.</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="file-input-container">
+      <button mat-stroked-button color="primary" (click)="fileInput.click()" [disabled]="isUploading">
+        <mat-icon>attach_file</mat-icon>
+        Choose File
+      </button>
+      <input hidden #fileInput type="file" (change)="onFileSelected($event)" accept=".csv">
+      
+      <!-- Enhanced file display with size and reset option -->
+      <div *ngIf="hasFileSelected" class="file-info">
+        <div class="file-details">
+          <span class="file-name">{{ fileName }}</span>
+          <span class="file-size">({{ fileSize }})</span>
+        </div>
+        <button mat-icon-button color="warn" (click)="resetUpload()" [disabled]="isUploading" 
+                matTooltip="Remove selected file">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress section -->
+    <div *ngIf="uploadProgress > 0 && uploadProgress < 100" class="progress-container">
+      <div class="progress-text">
+        <span>Uploading...</span>
+        <span>{{ uploadProgress }}%</span>
+      </div>
+      <mat-progress-bar [value]="uploadProgress" mode="determinate"></mat-progress-bar>
+    </div>
+
+    <!-- Completion indicator -->
+    <div *ngIf="uploadProgress === 100 && !isError" class="completion-container">
+      <mat-progress-bar [value]="100" mode="determinate"></mat-progress-bar>
+      <div class="completion-text">
+        <mat-icon color="primary">check_circle</mat-icon>
+        <span>Upload Complete!</span>
+      </div>
+    </div>
+
+    <!-- Message display -->
+    <div *ngIf="uploadMessage" 
+         [ngClass]="{'message-success': !isError, 'message-error': isError}"
+         class="message-container">
+      <mat-icon *ngIf="!isError" color="primary">check_circle</mat-icon>
+      <mat-icon *ngIf="isError" color="warn">error</mat-icon>
+      <span>{{ uploadMessage }}</span>
+    </div>
+  </mat-card-content>
+  
+  <mat-card-actions align="end">
+    <button mat-raised-button color="primary" 
+            [disabled]="!hasFileSelected || isUploading" 
+            (click)="uploadFile()">
+      <mat-icon *ngIf="!isUploading">cloud_upload</mat-icon>
+      <mat-icon *ngIf="isUploading" class="spinning">hourglass_empty</mat-icon>
+      {{ isUploading ? 'Uploading...' : 'Upload' }}
+    </button>
+    
+    <button *ngIf="uploadMessage && !isUploading" 
+            mat-stroked-button 
+            color="primary" 
+            (click)="resetUpload()">
+      <mat-icon>refresh</mat-icon>
+      Upload Another
+    </button>
+  </mat-card-actions>
+</mat-card>

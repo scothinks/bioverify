@@ -1,0 +1,107 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  
+  .logo-icon {
+    font-size: 32px;
+    color: #6366f1;
+  }
+  
+  .title-container {
+    flex: 1;
+    
+    mat-card-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 4px;
+    }
+    
+    mat-card-subtitle {
+      font-size: 14px;
+      color: #6b7280;
+    }
+  }
+}
+
+mat-card-header {
+  padding: 24px 24px 16px;
+  background: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+mat-card-content {
+  padding: 24px;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.remember-me {
+  margin-bottom: 20px;
+}
+
+.login-button {
+  height: 48px;
+  border-radius: 24px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  
+  .mat-spinner {
+    margin-right: 8px;
+  }
+}
+
+.block-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  color: #dc2626;
+  
+  mat-icon {
+    font-size: 20px;
+  }
+}
+
+
+// Global styles for snackbar
+::ng-deep {
+  .success-snackbar {
+    background: #10b981;
+    color: white;
+  }
+  
+  .error-snackbar {
+    background: #ef4444;
+    color: white;
+  }
+}
