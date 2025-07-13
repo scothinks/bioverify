@@ -1,13 +1,26 @@
-// This interface defines the structure of a Tenant object in our frontend.
-// It should match the structure of the Tenant entity in our Java backend.
-
 export interface Tenant {
-  id: string; // UUIDs are represented as strings in JSON
+  id: string;
   name: string;
   subdomain: string;
   stateCode: string;
-  optimaConfig: string;
-  active: boolean;
-  createdAt: string; // Timestamps are typically handled as strings or Date objects
-  updatedAt: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
+export interface CreateTenantRequest {
+  name: string;
+  subdomain: string;
+  stateCode: string;
+  description?: string;
+}
+
+export interface UpdateTenantRequest {
+  name?: string;
+  stateCode?: string;
+  description?: string;
+  isActive?: boolean;
 }

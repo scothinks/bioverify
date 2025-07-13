@@ -1,48 +1,79 @@
-// FILE: src/app/tenant-list/tenant-list.component.ts
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { TenantService } from '../services/tenant.service';
 import { Tenant } from '../models/tenant.model';
-import { CommonModule } from '@angular/common';
-
-// Import Angular Material modules for the table
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
 import { MatTableModule } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-
 
 @Component({
   selector: 'app-tenant-list',
   standalone: true,
   imports: [
-    CommonModule,
-    MatTableModule,
-    MatProgressSpinnerModule
+    CommonModule, MatTableModule, MatButtonModule, MatIconModule, MatCardModule,
+    MatSnackBarModule, MatDialogModule, MatProgressSpinnerModule
   ],
   templateUrl: './tenant-list.component.html',
-  styleUrl: './tenant-list.component.scss'
+  styleUrls: ['./tenant-list.component.scss']
 })
-export class TenantListComponent implements OnInit {
+export class TenantListComponent implements OnInit, OnDestroy {
+  tenants: Tenant[] = [];
+  isLoading = true;
+  displayedColumns: string[] = ['name', 'subdomain', 'stateCode', 'createdAt', 'actions'];
+  private destroy$ = new Subject<void>();
 
-  // A property to hold our list of tenants.
-  public tenants: Tenant[] = [];
-  // A flag to show a loading spinner while we fetch data.
-  public isLoading = true;
-  // Define the columns to be displayed in the table.
-  public displayedColumns: string[] = ['name', 'subdomain', 'stateCode', 'active'];
+  constructor(
+    private tenantService: TenantService,
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
+  ) {}
 
-  // Inject our TenantService.
-  constructor(private tenantService: TenantService) {}
-
-  // This method runs automatically when the component is first loaded.
   ngOnInit(): void {
+    this.tenantService.tenants$.pipe(takeUntil(this.destroy$)).subscribe(tenants => {
+      this.tenants = tenants;
+      this.isLoading = false;
+    });
     this.tenantService.getTenants().subscribe({
-      next: (data) => {
-        this.tenants = data; // Assign the fetched data to our property.
-        this.isLoading = false; // Hide the loading spinner.
-      },
       error: (err) => {
-        console.error('Failed to fetch tenants', err);
-        this.isLoading = false; // Hide the spinner even if there's an error.
+        this.isLoading = false;
+        this.snackBar.open(`Error loading tenants: ${err.message}`, 'Close', { duration: 5000 });
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  deleteTenant(tenant: Tenant): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Delete Tenant',
+        message: `Are you sure you want to delete "${tenant.name}"? This action cannot be undone.`,
+        confirmText: 'Delete',
+        cancelText: 'Cancel'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.tenantService.deleteTenant(tenant.id).subscribe({
+          next: () => {
+            this.snackBar.open(`Tenant "${tenant.name}" deleted successfully!`, 'Close', { duration: 3000 });
+          },
+          error: (err) => {
+            this.snackBar.open(`Error deleting tenant: ${err.message}`, 'Close', { duration: 5000 });
+          }
+        });
       }
     });
   }

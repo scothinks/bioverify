@@ -1,0 +1,88 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>{{ isEditMode ? 'edit' : 'add' }}</mat-icon>
+      {{ isEditMode ? 'Edit Tenant' : 'Create New Tenant' }}
+    </mat-card-title>
+  </mat-card-header>
+  
+  <mat-card-content>
+    <form [formGroup]="tenantForm" (ngSubmit)="onSubmit()">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Tenant Name</mat-label>
+        <input 
+          matInput 
+          formControlName="name" 
+          placeholder="e.g., Osun State Government"
+          [class.error]="tenantForm.get('name')?.invalid && tenantForm.get('name')?.touched">
+        <mat-error *ngIf="tenantForm.get('name')?.invalid && tenantForm.get('name')?.touched">
+          {{ getErrorMessage('name') }}
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Subdomain</mat-label>
+        <input 
+          matInput 
+          formControlName="subdomain" 
+          placeholder="e.g., osun"
+          [class.error]="tenantForm.get('subdomain')?.invalid && tenantForm.get('subdomain')?.touched">
+        <mat-hint *ngIf="!isEditMode">Lowercase letters, numbers, and hyphens only.</mat-hint>
+        <mat-hint *ngIf="isEditMode">Subdomain cannot be changed after creation.</mat-hint>
+        <mat-error *ngIf="tenantForm.get('subdomain')?.invalid && tenantForm.get('subdomain')?.touched">
+          {{ getErrorMessage('subdomain') }}
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>State Code</mat-label>
+        <input 
+          matInput 
+          formControlName="stateCode" 
+          placeholder="e.g., OS" 
+          maxlength="2"
+          style="text-transform: uppercase;"
+          [class.error]="tenantForm.get('stateCode')?.invalid && tenantForm.get('stateCode')?.touched">
+        <mat-hint>Two uppercase letters representing the state.</mat-hint>
+        <mat-error *ngIf="tenantForm.get('stateCode')?.invalid && tenantForm.get('stateCode')?.touched">
+          {{ getErrorMessage('stateCode') }}
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Description (Optional)</mat-label>
+        <textarea 
+          matInput 
+          formControlName="description" 
+          placeholder="Brief description of the tenant..."
+          rows="3"
+          [class.error]="tenantForm.get('description')?.invalid && tenantForm.get('description')?.touched">
+        </textarea>
+        <mat-error *ngIf="tenantForm.get('description')?.invalid && tenantForm.get('description')?.touched">
+          {{ getErrorMessage('description') }}
+        </mat-error>
+      </mat-form-field>
+
+      <div class="form-actions">
+        <button 
+          mat-raised-button 
+          color="primary" 
+          type="submit" 
+          [disabled]="tenantForm.invalid || isLoading">
+          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          <mat-icon *ngIf="!isLoading">{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+          {{ isEditMode ? 'Update Tenant' : 'Create Tenant' }}
+        </button>
+        
+        <button 
+          mat-button 
+          type="button" 
+          (click)="onCancel()" 
+          [disabled]="isLoading">
+          <mat-icon>cancel</mat-icon>
+          Cancel
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>

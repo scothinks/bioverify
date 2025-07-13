@@ -1,0 +1,29 @@
+.full-width {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+mat-card {
+  margin-bottom: 2rem;
+  max-width: 600px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.form-actions button {
+  min-width: 140px;
+}
+
+.error {
+  border-color: #f44336 !important;
+}
+
+mat-spinner {
+  display: inline-block;
+  margin-right: 8px;
+}

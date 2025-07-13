@@ -8,13 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
-/**
- * REST Controller for administrative actions related to Tenants.
- * This will be secured later to only allow Global Super Admins.
- */
 @RestController
-@RequestMapping("/api/admin/tenants") // All endpoints in this class will start with this path
+@RequestMapping("/api/admin/tenants")
 public class TenantAdminController {
 
     private final TenantService tenantService;
@@ -24,28 +22,52 @@ public class TenantAdminController {
         this.tenantService = tenantService;
     }
 
-    /**
-     * API endpoint to create a new tenant.
-     * Listens for HTTP POST requests to /api/admin/tenants.
-     * The request body should be a JSON object representing the new tenant.
-     *
-     * @param tenant The tenant object deserialized from the request body.
-     * @return A ResponseEntity containing the created tenant and an HTTP 201 (Created) status.
-     */
     @PostMapping
     public ResponseEntity<Tenant> createTenant(@RequestBody Tenant tenant) {
-        Tenant createdTenant = tenantService.createTenant(tenant);
-        return new ResponseEntity<>(createdTenant, HttpStatus.CREATED);
+        try {
+            Tenant createdTenant = tenantService.createTenant(tenant);
+            return new ResponseEntity<>(createdTenant, HttpStatus.CREATED);
+        } catch (IllegalStateException e) {
+            return new ResponseEntity(e.getMessage(), HttpStatus.CONFLICT);
+        }
     }
 
-    /**
-     * API endpoint to get a list of all tenants.
-     * Listens for HTTP GET requests to /api/admin/tenants.
-     *
-     * @return A list of all tenants in the system.
-     */
     @GetMapping
     public List<Tenant> getAllTenants() {
         return tenantService.getAllTenants();
+    }
+
+    // --- NEW ENDPOINTS ---
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Tenant> getTenantById(@PathVariable UUID id) {
+        return tenantService.getTenantById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/check-subdomain/{subdomain}")
+    public ResponseEntity<Boolean> checkSubdomainAvailability(@PathVariable String subdomain) {
+        return ResponseEntity.ok(tenantService.isSubdomainAvailable(subdomain));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Tenant> updateTenant(@PathVariable UUID id, @RequestBody Tenant tenantDetails) {
+        try {
+            Tenant updatedTenant = tenantService.updateTenant(id, tenantDetails);
+            return ResponseEntity.ok(updatedTenant);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTenant(@PathVariable UUID id) {
+        try {
+            tenantService.deleteTenant(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

@@ -1,11 +1,10 @@
-// FILE: src/app/app.component.ts (FINAL)
-
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TenantListComponent } from './tenant-list/tenant-list.component';
 import { FileUploadComponent } from './file-upload/file-upload.component';
 import { LoginComponent } from './login/login.component';
 import { AuthService } from './services/auth.service';
+import { TenantFormComponent } from './tenant-form/tenant-form.component'; // <-- IMPORT aDDED
 
 // Material imports for the header
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -20,6 +19,7 @@ import { MatIconModule } from '@angular/material/icon';
     TenantListComponent,
     FileUploadComponent,
     LoginComponent,
+    TenantFormComponent, // <-- ADDED TO IMPORTS ARRAY
     MatToolbarModule,
     MatButtonModule,
     MatIconModule
