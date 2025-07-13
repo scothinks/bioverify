@@ -1,0 +1,31 @@
+<!-- FILE: src/app/user-management/user-management.component.html -->
+
+<mat-card *ngIf="tenant">
+  <mat-card-header>
+    <mat-card-title>Manage Users for: {{ tenant.name }}</mat-card-title>
+    <span style="flex: 1 1 auto;"></span>
+    <button mat-icon-button (click)="close.emit()" aria-label="Close user management">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-card-header>
+  <mat-card-content>
+    <h3>Create New Tenant Admin</h3>
+    <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Full Name</mat-label>
+        <input matInput formControlName="fullName">
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Email</mat-label>
+        <input matInput formControlName="email" type="email">
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Password</mat-label>
+        <input matInput formControlName="password" type="password">
+      </mat-form-field>
+      <button mat-raised-button color="primary" type="submit" [disabled]="userForm.invalid">
+        Create Admin
+      </button>
+    </form>
+  </mat-card-content>
+</mat-card>

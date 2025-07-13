@@ -36,7 +36,7 @@ export class TenantFormComponent implements OnInit {
   @Output() tenantSaved = new EventEmitter<Tenant>();
   @Output() cancelled = new EventEmitter<void>();
 
-  tenantForm: FormGroup;
+  tenantForm!: FormGroup; // Use definite assignment assertion
   isLoading = false;
   isEditMode = false;
 
@@ -44,45 +44,59 @@ export class TenantFormComponent implements OnInit {
     private fb: FormBuilder,
     private tenantService: TenantService,
     private snackBar: MatSnackBar
-  ) {
-    this.tenantForm = this.createForm();
-  }
+  ) {}
 
   ngOnInit(): void {
-    if (this.tenant) {
-      this.isEditMode = true;
+    this.isEditMode = !!this.tenant;
+    this.createForm(); // Create the form
+    if (this.isEditMode) {
       this.populateForm();
     }
   }
 
-  private createForm(): FormGroup {
-    return this.fb.group({
+  private createForm(): void {
+    this.tenantForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       subdomain: [
-        '', 
+        '',
         [
-          Validators.required, 
-          Validators.minLength(2), 
+          Validators.required,
+          Validators.minLength(2),
           Validators.maxLength(50),
           TenantValidators.subdomainPattern()
         ],
         [TenantValidators.uniqueSubdomain(this.tenantService)]
       ],
       stateCode: ['', [Validators.required, TenantValidators.stateCodePattern()]],
-      description: ['', [Validators.maxLength(500)]]
+      description: ['', [Validators.maxLength(500)]],
+      // ADDED: New form control for the validation URL
+      validationUrl: ['', [Validators.required, Validators.pattern(/^https?:\/\/.+/)]]
     });
   }
 
   private populateForm(): void {
     if (this.tenant) {
+      // Safely parse the config to get the validation URL
+      let validationUrl = '';
+      if (this.tenant.identitySourceConfig) { // This field exists on the backend Tenant model
+          try {
+              // The backend stores a JSON string, so we parse it
+              const config = JSON.parse(this.tenant.identitySourceConfig);
+              validationUrl = config.validationUrl || '';
+          } catch (e) {
+              console.error("Could not parse tenant config", e);
+          }
+      }
+
       this.tenantForm.patchValue({
         name: this.tenant.name,
         subdomain: this.tenant.subdomain,
         stateCode: this.tenant.stateCode,
-        description: this.tenant.description || ''
+        description: this.tenant.description || '',
+        validationUrl: validationUrl // Populate the new field
       });
-      
-      // Disable subdomain field in edit mode to prevent conflicts
+
+      // Disable subdomain field in edit mode
       this.tenantForm.get('subdomain')?.disable();
     }
   }
@@ -96,6 +110,7 @@ export class TenantFormComponent implements OnInit {
     if (errors['required']) return `${this.getFieldLabel(fieldName)} is required`;
     if (errors['minlength']) return `${this.getFieldLabel(fieldName)} must be at least ${errors['minlength'].requiredLength} characters`;
     if (errors['maxlength']) return `${this.getFieldLabel(fieldName)} must not exceed ${errors['maxlength'].requiredLength} characters`;
+    if (errors['pattern']) return `Please enter a valid URL`;
     if (errors['subdomainPattern']) return errors['subdomainPattern'].message;
     if (errors['stateCodePattern']) return errors['stateCodePattern'].message;
     if (errors['subdomainTaken']) return errors['subdomainTaken'].message;
@@ -108,7 +123,8 @@ export class TenantFormComponent implements OnInit {
       name: 'Tenant Name',
       subdomain: 'Subdomain',
       stateCode: 'State Code',
-      description: 'Description'
+      description: 'Description',
+      validationUrl: 'Validation URL'
     };
     return labels[fieldName] || fieldName;
   }
@@ -120,11 +136,21 @@ export class TenantFormComponent implements OnInit {
     }
 
     this.isLoading = true;
-    const formValue = this.tenantForm.value;
+    // Use getRawValue() to include the disabled 'subdomain' field during edits
+    const formValue = this.tenantForm.getRawValue();
 
-    const operation = this.isEditMode 
-      ? this.tenantService.updateTenant(this.tenant!.id, formValue)
-      : this.tenantService.createTenant(formValue);
+    // CORRECTED: Construct the payload with the identitySourceConfig JSON string
+    const payload = {
+        name: formValue.name,
+        subdomain: formValue.subdomain,
+        stateCode: formValue.stateCode,
+        description: formValue.description,
+        identitySourceConfig: JSON.stringify({ validationUrl: formValue.validationUrl })
+    };
+
+    const operation = this.isEditMode
+      ? this.tenantService.updateTenant(this.tenant!.id, payload)
+      : this.tenantService.createTenant(payload);
 
     operation.subscribe({
       next: (tenant: Tenant) => {

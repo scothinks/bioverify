@@ -1,6 +1,4 @@
-<!-- If the user is logged in, show the appropriate dashboard -->
 <div *ngIf="isLoggedIn; else showLogin">
-  <!-- Main Header with Logout Button -->
   <mat-toolbar color="primary" class="app-toolbar">
     <mat-icon class="toolbar-icon">verified_user</mat-icon>
     <span class="app-title">ProximaForte BioVerify™</span>
@@ -12,26 +10,25 @@
   </mat-toolbar>
 
   <main class="main-content">
-    <!-- GLOBAL_SUPER_ADMIN View -->
     <div *ngIf="userRole === 'GLOBAL_SUPER_ADMIN'">
       <h2>Global Admin Dashboard</h2>
-      <!-- THIS LINE ADDS THE FORM TO THE VIEW -->
-      <app-tenant-form></app-tenant-form>
-      <hr class="divider">
       <app-tenant-list></app-tenant-list>
     </div>
 
-    <!-- TENANT_ADMIN View -->
     <div *ngIf="userRole === 'TENANT_ADMIN'">
        <h2>Tenant Admin Dashboard</h2>
        <p>Upload and manage records for your tenant.</p>
        <hr class="divider">
       <app-file-upload></app-file-upload>
     </div>
+
+    <div *ngIf="userRole === 'SELF_SERVICE_USER'">
+      <app-verification></app-verification>
+    </div>
+
   </main>
 </div>
 
-<!-- Otherwise, show the login page -->
 <ng-template #showLogin>
   <app-login></app-login>
 </ng-template>

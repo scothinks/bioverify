@@ -1,11 +1,13 @@
-
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TenantService } from '../services/tenant.service';
 import { Tenant } from '../models/tenant.model';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, takeUntil } from 'rxjs';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog/confirm-dialog.component';
+import { TenantFormComponent } from '../tenant-form/tenant-form.component';
+import { UserManagementComponent } from '../user-management/user-management.component'; // <-- IMPORT
+
+// Material imports
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,16 +21,24 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
   standalone: true,
   imports: [
     CommonModule, MatTableModule, MatButtonModule, MatIconModule, MatCardModule,
-    MatSnackBarModule, MatDialogModule, MatProgressSpinnerModule
+    MatSnackBarModule, MatDialogModule, MatProgressSpinnerModule,
+    TenantFormComponent,
+    UserManagementComponent // <-- ADD
   ],
   templateUrl: './tenant-list.component.html',
   styleUrls: ['./tenant-list.component.scss']
 })
 export class TenantListComponent implements OnInit, OnDestroy {
-  tenants: Tenant[] = [];
+  tenants: any[] = [];
   isLoading = true;
-  displayedColumns: string[] = ['name', 'subdomain', 'stateCode', 'createdAt', 'actions'];
+  displayedColumns: string[] = ['name', 'subdomain', 'stateCode', 'validationUrl', 'createdAt', 'actions'];
   private destroy$ = new Subject<void>();
+
+  // NEW: Properties to manage which view is shown
+  isManagingUsers = false;
+  tenantForUserManagement: Tenant | null = null;
+  showForm = false;
+  selectedTenant: Tenant | null = null;
 
   constructor(
     private tenantService: TenantService,
@@ -38,9 +48,29 @@ export class TenantListComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.tenantService.tenants$.pipe(takeUntil(this.destroy$)).subscribe(tenants => {
-      this.tenants = tenants;
+      this.tenants = tenants.map(tenant => {
+        try {
+          if (tenant.identitySourceConfig) {
+            const config = JSON.parse(tenant.identitySourceConfig);
+            return { ...tenant, validationUrl: config.validationUrl || 'Not Set' };
+          }
+          return { ...tenant, validationUrl: 'Not Set' };
+        } catch {
+          return { ...tenant, validationUrl: 'Invalid Config' };
+        }
+      });
       this.isLoading = false;
     });
+    this.loadTenants();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadTenants(): void {
+    this.isLoading = true;
     this.tenantService.getTenants().subscribe({
       error: (err) => {
         this.isLoading = false;
@@ -49,9 +79,36 @@ export class TenantListComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+  // --- Methods to control the create/edit form visibility ---
+  openCreateForm(): void {
+    this.selectedTenant = null;
+    this.showForm = true;
+  }
+
+  openEditForm(tenant: Tenant): void {
+    this.selectedTenant = tenant;
+    this.showForm = true;
+  }
+
+  onFormCancelled(): void {
+    this.showForm = false;
+    this.selectedTenant = null;
+  }
+
+  onTenantSaved(tenant: Tenant): void {
+    this.showForm = false;
+    this.selectedTenant = null;
+  }
+
+  // --- NEW: Methods to control the user management view ---
+  manageTenantUsers(tenant: Tenant): void {
+    this.tenantForUserManagement = tenant;
+    this.isManagingUsers = true;
+  }
+
+  onCloseUserManagement(): void {
+    this.isManagingUsers = false;
+    this.tenantForUserManagement = null;
   }
 
   deleteTenant(tenant: Tenant): void {

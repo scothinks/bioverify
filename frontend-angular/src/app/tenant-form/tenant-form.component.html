@@ -49,6 +49,20 @@
         </mat-error>
       </mat-form-field>
 
+      <!-- ADDED: New field for the Identity Source URL -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Identity Source Validation URL</mat-label>
+        <input 
+          matInput 
+          formControlName="validationUrl" 
+          placeholder="e.g., https://api.registry.gov/validate"
+          [class.error]="tenantForm.get('validationUrl')?.invalid && tenantForm.get('validationUrl')?.touched">
+        <mat-hint>The full API endpoint for this tenant's source of truth.</mat-hint>
+        <mat-error *ngIf="tenantForm.get('validationUrl')?.invalid && tenantForm.get('validationUrl')?.touched">
+          {{ getErrorMessage('validationUrl') }}
+        </mat-error>
+      </mat-form-field>
+
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Description (Optional)</mat-label>
         <textarea 

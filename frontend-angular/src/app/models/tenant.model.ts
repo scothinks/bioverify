@@ -9,6 +9,7 @@ export interface Tenant {
   updatedAt: Date;
   createdBy?: string;
   updatedBy?: string;
+  identitySourceConfig?: string;
 }
 
 export interface CreateTenantRequest {
@@ -16,6 +17,7 @@ export interface CreateTenantRequest {
   subdomain: string;
   stateCode: string;
   description?: string;
+  identitySourceConfig?: string;
 }
 
 export interface UpdateTenantRequest {
@@ -23,4 +25,5 @@ export interface UpdateTenantRequest {
   stateCode?: string;
   description?: string;
   isActive?: boolean;
+  identitySourceConfig?: string;
 }

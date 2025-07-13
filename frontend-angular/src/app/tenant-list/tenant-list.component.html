@@ -1,46 +1,84 @@
-<mat-card>
-  <mat-card-header>
-    <mat-card-title>Registered Tenants</mat-card-title>
-  </mat-card-header>
-  <mat-card-content>
-    <div *ngIf="isLoading" class="spinner-container">
-      <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
-    </div>
-    <div *ngIf="!isLoading && tenants.length === 0" class="empty-state">
-      <p>No tenants have been created yet.</p>
-    </div>
-    <table mat-table [dataSource]="tenants" *ngIf="!isLoading && tenants.length > 0" class="mat-elevation-z8">
-      <!-- Columns -->
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef> Name </th>
-        <td mat-cell *matCellDef="let tenant"> {{tenant.name}} </td>
-      </ng-container>
-      <ng-container matColumnDef="subdomain">
-        <th mat-header-cell *matHeaderCellDef> Subdomain </th>
-        <td mat-cell *matCellDef="let tenant"> {{tenant.subdomain}} </td>
-      </ng-container>
-      <ng-container matColumnDef="stateCode">
-        <th mat-header-cell *matHeaderCellDef> State Code </th>
-        <td mat-cell *matCellDef="let tenant"> {{tenant.stateCode}} </td>
-      </ng-container>
-       <ng-container matColumnDef="createdAt">
-        <th mat-header-cell *matHeaderCellDef> Created On </th>
-        <td mat-cell *matCellDef="let tenant"> {{tenant.createdAt | date:'medium'}} </td>
-      </ng-container>
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef> Actions </th>
-        <td mat-cell *matCellDef="let tenant">
-          <button mat-icon-button color="primary" aria-label="Edit tenant">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button color="warn" (click)="deleteTenant(tenant)" aria-label="Delete tenant">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
+<div *ngIf="isManagingUsers; else tenantCrudView">
+  <app-user-management 
+    [tenant]="tenantForUserManagement" 
+    (close)="onCloseUserManagement()">
+  </app-user-management>
+</div>
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    </table>
-  </mat-card-content>
-</mat-card>
+<ng-template #tenantCrudView>
+  <div *ngIf="showForm; else showList">
+    <app-tenant-form 
+      [tenant]="selectedTenant" 
+      (tenantSaved)="onTenantSaved($event)"
+      (cancelled)="onFormCancelled()">
+    </app-tenant-form>
+  </div>
+
+  <ng-template #showList>
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Registered Tenants</mat-card-title>
+        <span class="spacer" style="flex: 1 1 auto;"></span>
+        <button mat-raised-button color="primary" (click)="openCreateForm()">
+          <mat-icon>add</mat-icon>
+          Create New Tenant
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <div *ngIf="isLoading" class="spinner-container">
+          <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+        </div>
+        <div *ngIf="!isLoading && tenants.length === 0" class="empty-state">
+          <p>No tenants have been created yet. Click "Create New Tenant" to begin.</p>
+        </div>
+        <table mat-table [dataSource]="tenants" *ngIf="!isLoading && tenants.length > 0" class="mat-elevation-z8">
+          
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef> Name </th>
+            <td mat-cell *matCellDef="let tenant"> {{tenant.name}} </td>
+          </ng-container>
+          
+          <ng-container matColumnDef="subdomain">
+            <th mat-header-cell *matHeaderCellDef> Subdomain </th>
+            <td mat-cell *matCellDef="let tenant"> {{tenant.subdomain}} </td>
+          </ng-container>
+          
+          <ng-container matColumnDef="stateCode">
+            <th mat-header-cell *matHeaderCellDef> State Code </th>
+            <td mat-cell *matCellDef="let tenant"> {{tenant.stateCode}} </td>
+          </ng-container>
+
+          <ng-container matColumnDef="validationUrl">
+            <th mat-header-cell *matHeaderCellDef> Validation URL </th>
+            <td mat-cell *matCellDef="let tenant" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"> 
+              <a [href]="tenant.validationUrl" target="_blank" rel="noopener noreferrer">{{tenant.validationUrl}}</a>
+            </td>
+          </ng-container>
+          
+           <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef> Created On </th>
+            <td mat-cell *matCellDef="let tenant"> {{tenant.createdAt | date:'medium'}} </td>
+          </ng-container>
+          
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef> Actions </th>
+            <td mat-cell *matCellDef="let tenant">
+              <button mat-icon-button color="accent" (click)="manageTenantUsers(tenant)" aria-label="Manage tenant users" matTooltip="Manage Users">
+                <mat-icon>people</mat-icon>
+              </button>
+              <button mat-icon-button color="primary" (click)="openEditForm(tenant)" aria-label="Edit tenant" matTooltip="Edit Tenant">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteTenant(tenant)" aria-label="Delete tenant" matTooltip="Delete Tenant">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
+  </ng-template>
+</ng-template>

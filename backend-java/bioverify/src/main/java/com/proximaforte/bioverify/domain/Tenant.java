@@ -49,7 +49,7 @@ public class Tenant {
      * For a more advanced implementation, this could be mapped directly to a JSONB type.
      */
     @Column(columnDefinition = "TEXT")
-    private String optimaConfig;
+    private String identitySourceConfig;
 
     /**
      * A flag to indicate if the tenant is active or suspended.
@@ -106,12 +106,12 @@ public class Tenant {
         this.stateCode = stateCode;
     }
 
-    public String getOptimaConfig() {
-        return optimaConfig;
+    public String getidentitySourceConfig() {
+        return identitySourceConfig;
     }
 
-    public void setOptimaConfig(String optimaConfig) {
-        this.optimaConfig = optimaConfig;
+    public void setidentitySourceConfig(String identitySourceConfig) {
+        this.identitySourceConfig = identitySourceConfig;
     }
 
     public boolean isActive() {
