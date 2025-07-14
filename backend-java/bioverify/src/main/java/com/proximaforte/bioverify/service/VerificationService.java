@@ -1,9 +1,12 @@
+// FILE: src/main/java/com/proximaforte/bioverify/service/VerificationService.java
+
 package com.proximaforte.bioverify.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proximaforte.bioverify.domain.MasterListRecord;
+import com.proximaforte.bioverify.domain.RecordStatus; // <-- IMPORT ADDED
 import com.proximaforte.bioverify.domain.Tenant;
-import com.proximaforte.bioverify.dto.IdentitySourceConfigDto; // <-- UPDATED IMPORT
+import com.proximaforte.bioverify.dto.IdentitySourceConfigDto;
 import com.proximaforte.bioverify.dto.VerificationRequest;
 import com.proximaforte.bioverify.dto.VerificationResponse;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
@@ -30,7 +33,7 @@ public class VerificationService {
     private final MasterListRecordRepository recordRepository;
     private final TenantRepository tenantRepository;
     private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper; // For parsing JSON config
+    private final ObjectMapper objectMapper;
 
     @Autowired
     public VerificationService(MasterListRecordRepository recordRepository, TenantRepository tenantRepository) {
@@ -56,11 +59,11 @@ public class VerificationService {
 
         if (isRegistryMatch) {
             record.setNin(request.getNin());
-            record.setStatus("VERIFIED_PENDING_CONFIRMATION");
+            record.setStatus(RecordStatus.VERIFIED_PENDING_CONFIRMATION); // <-- STATUS UPDATED
             MasterListRecord savedRecord = recordRepository.save(record);
             return new VerificationResponse(true, "Verification successful. Please review your details.", savedRecord);
         } else {
-            record.setStatus("FLAGGED_SSID_NIN_MISMATCH");
+            record.setStatus(RecordStatus.FLAGGED_SSID_NIN_MISMATCH); // <-- STATUS UPDATED
             recordRepository.save(record);
             return new VerificationResponse(false, "SSID and NIN do not match the trusted registry.", null);
         }
@@ -78,7 +81,6 @@ public class VerificationService {
      */
     private boolean callTenantValidationApi(String ssid, String nin, Tenant tenant) {
         try {
-            // Parse the JSON config using the new generic DTO.
             IdentitySourceConfigDto config = objectMapper.readValue(tenant.getidentitySourceConfig(), IdentitySourceConfigDto.class);
             String apiUrl = config.getValidationUrl();
 

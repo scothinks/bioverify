@@ -1,59 +1,95 @@
 package com.proximaforte.bioverify.controller;
 
+import com.proximaforte.bioverify.domain.MasterListRecord;
+import com.proximaforte.bioverify.domain.Tenant;
+import com.proximaforte.bioverify.domain.User;
+import com.proximaforte.bioverify.dto.MasterListRecordDto;
+import com.proximaforte.bioverify.dto.NotificationRequestDto;
+import com.proximaforte.bioverify.dto.UploadSummaryDto;
+import com.proximaforte.bioverify.repository.MasterListRecordRepository;
+import com.proximaforte.bioverify.repository.UserRepository;
 import com.proximaforte.bioverify.service.MasterListUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
-/**
- * REST Controller for handling master list file uploads.
- */
 @RestController
-@RequestMapping("/api/v1") // Base path for version 1 of our API
+@RequestMapping("/api/v1")
 public class MasterListUploadController {
 
     private final MasterListUploadService uploadService;
+    private final UserRepository userRepository;
+    private final MasterListRecordRepository recordRepository;
 
     @Autowired
-    public MasterListUploadController(MasterListUploadService uploadService) {
+    public MasterListUploadController(
+            MasterListUploadService uploadService,
+            UserRepository userRepository,
+            MasterListRecordRepository recordRepository) {
         this.uploadService = uploadService;
+        this.userRepository = userRepository;
+        this.recordRepository = recordRepository;
     }
 
-    /**
-     * API endpoint to upload a master list CSV file for a specific tenant.
-     * Listens for HTTP POST requests to /api/v1/{tenantId}/records/upload.
-     * The request must be a multipart/form-data request.
-     *
-     * @param tenantId The ID of the tenant, extracted from the URL path.
-     * @param file The uploaded file, extracted from the request part named "file".
-     * @return A ResponseEntity with a success message and the count of records created.
-     */
-    @PostMapping("/{tenantId}/records/upload")
-    public ResponseEntity<?> uploadMasterList(
-            @PathVariable UUID tenantId,
-            @RequestParam("file") MultipartFile file) {
+    @GetMapping("/records")
+    public ResponseEntity<List<MasterListRecordDto>> getTenantRecords(Authentication authentication) {
+        String username = authentication.getName();
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found."));
+        
+        Tenant tenant = user.getTenant();
+        if (tenant == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(List.of());
+        }
 
-        // Basic validation to ensure a file was actually uploaded.
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Please select a file to upload."));
+        List<MasterListRecord> records = recordRepository.findAllByTenantId(tenant.getId());
+
+        List<MasterListRecordDto> recordDtos = records.stream()
+                .map(record -> new MasterListRecordDto(
+                        record.getId(),
+                        record.getFullName(),
+                        record.getBusinessUnit(),
+                        record.getGradeLevel(),
+                        record.getStatus(),
+                        record.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(recordDtos);
+    }
+    
+    @PostMapping("/records/upload")
+    public ResponseEntity<?> uploadMasterList(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+        
+        String username = authentication.getName();
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found in the database."));
+        
+        Tenant tenant = user.getTenant();
+        if (tenant == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Error: User is not associated with a tenant."));
         }
 
         try {
-            int recordsSaved = uploadService.processUpload(file, tenantId);
-            // Return a success response with the number of records processed.
-            return ResponseEntity.ok(Map.of(
-                "message", "File uploaded and processed successfully.",
-                "recordsCreated", recordsSaved
-            ));
+            UploadSummaryDto summary = uploadService.processUpload(file, tenant.getId());
+            return ResponseEntity.ok(summary);
         } catch (Exception e) {
-            // In case of any error during processing, return an internal server error status.
-            return ResponseEntity.internalServerError().body(Map.of(
-                "message", "Failed to process file: " + e.getMessage()
-            ));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Failed to process file: " + e.getMessage()));
         }
+    }
+
+    @PostMapping("/records/notify")
+    public ResponseEntity<?> notifyForReverification(@RequestBody NotificationRequestDto request) {
+        System.out.println("Received request to notify users for record IDs: " + request.getRecordIds());
+        return ResponseEntity.ok(Map.of("message", "Notification process initiated for " + request.getRecordIds().size() + " users."));
     }
 }

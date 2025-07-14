@@ -1,30 +1,31 @@
+// FILE: src/app/app.component.ts (UPDATED)
+
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+
+import { AuthService } from './services/auth.service';
+import { LoginComponent } from './login/login.component';
 import { TenantListComponent } from './tenant-list/tenant-list.component';
 import { FileUploadComponent } from './file-upload/file-upload.component';
-import { LoginComponent } from './login/login.component';
-import { AuthService } from './services/auth.service';
-import { TenantFormComponent } from './tenant-form/tenant-form.component';
-import { VerificationComponent } from './verification/verification.component'; // <-- IMPORT ADDED
-
-// Material imports for the header
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { VerificationComponent } from './verification/verification.component';
+import { MasterListComponent } from './master-list/master-list.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
+    MatToolbarModule,
+    MatIconModule,
+    MatButtonModule,
+    LoginComponent,
     TenantListComponent,
     FileUploadComponent,
-    LoginComponent,
-    TenantFormComponent,
-    VerificationComponent, // <-- ADDED TO IMPORTS ARRAY
-    MatToolbarModule,
-    MatButtonModule,
-    MatIconModule
+    VerificationComponent,
+    MasterListComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
@@ -36,10 +37,14 @@ export class AppComponent implements OnInit {
   constructor(private authService: AuthService) {}
 
   ngOnInit(): void {
-    this.isLoggedIn = this.authService.isLoggedIn();
-    if (this.isLoggedIn) {
-      this.userRole = this.authService.getUserRole();
-    }
+    this.authService.isLoggedIn$.subscribe((status: boolean) => {
+      this.isLoggedIn = status;
+      if (status) {
+        this.userRole = this.authService.getUserRole();
+      } else {
+        this.userRole = null;
+      }
+    });
   }
 
   logout(): void {

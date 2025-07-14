@@ -1,0 +1,38 @@
+<div class="list-container">
+  <h2>Master List Records</h2>
+  
+  <div class="table-wrapper" *ngIf="filteredRecords; else loading">
+    <table *ngIf="filteredRecords.length > 0; else noRecords">
+      <thead>
+        <tr>
+          <th>ID</th>  
+          <th>Full Name</th>
+          <th>Business Unit</th>
+          <th>Grade Level</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let record of filteredRecords">
+          <td>{{ record.id }}</td>  
+          <td>{{ record.fullName }}</td>
+          <td>{{ record.businessUnit }}</td>
+          <td>{{ record.gradeLevel }}</td>
+          <td>
+            <span *ngIf="record.status" class="status-badge" [ngClass]="'status-' + record.status.toLowerCase()">
+              {{ record.status }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <ng-template #noRecords>
+      <p class="empty-message">No records found. Upload a master list to get started.</p>
+    </ng-template>
+  </div>
+
+  <ng-template #loading>
+    <p>Loading records...</p>
+  </ng-template>
+</div>

@@ -100,7 +100,6 @@ export class TenantListComponent implements OnInit, OnDestroy {
     this.selectedTenant = null;
   }
 
-  // --- NEW: Methods to control the user management view ---
   manageTenantUsers(tenant: Tenant): void {
     this.tenantForUserManagement = tenant;
     this.isManagingUsers = true;

@@ -1,8 +1,6 @@
-// FILE: src/main/java/com/proximaforte/bioverify/domain/MasterListRecord.java (UPDATED)
-
 package com.proximaforte.bioverify.domain;
 
-import com.proximaforte.bioverify.crypto.StringCryptoConverter; // <-- IMPORT
+import com.proximaforte.bioverify.crypto.StringCryptoConverter;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -43,8 +41,9 @@ public class MasterListRecord {
     @Column
     private String gradeLevel;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status = "UPLOADED";
+    private RecordStatus status;
 
     private LocalDate lastProofOfLifeDate;
 
@@ -55,8 +54,7 @@ public class MasterListRecord {
     @UpdateTimestamp
     private Instant updatedAt;
 
-    // --- Getters and Setters (No changes needed here) ---
-    // ...
+    // --- Getters and Setters ---
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
     public Tenant getTenant() { return tenant; }
@@ -71,8 +69,8 @@ public class MasterListRecord {
     public void setBusinessUnit(String businessUnit) { this.businessUnit = businessUnit; }
     public String getGradeLevel() { return gradeLevel; }
     public void setGradeLevel(String gradeLevel) { this.gradeLevel = gradeLevel; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public RecordStatus getStatus() { return status; }
+    public void setStatus(RecordStatus status) { this.status = status; }
     public LocalDate getLastProofOfLifeDate() { return lastProofOfLifeDate; }
     public void setLastProofOfLifeDate(LocalDate lastProofOfLifeDate) { this.lastProofOfLifeDate = lastProofOfLifeDate; }
     public Instant getCreatedAt() { return createdAt; }

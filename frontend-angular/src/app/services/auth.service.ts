@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 
 // Keep your existing interfaces
@@ -31,6 +31,10 @@ export class AuthService {
   private apiUrl = 'http://localhost:8080/api/v1/auth';
   private readonly TOKEN_KEY = 'bioverify_auth_token';
 
+  // --- For Reactive State Management ---
+  private isLoggedInSubject = new BehaviorSubject<boolean>(this.isLoggedIn());
+  public isLoggedIn$ = this.isLoggedInSubject.asObservable();
+
   constructor(private http: HttpClient) { }
 
   login(credentials: AuthRequest): Observable<AuthResponse> {
@@ -49,12 +53,13 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
-    // Reload to reset the app state
+    this.isLoggedInSubject.next(false); // Broadcast the change
     window.location.reload();
   }
 
   private setToken(token: string): void {
     localStorage.setItem(this.TOKEN_KEY, token);
+    this.isLoggedInSubject.next(true); // Broadcast the change
   }
 
   getToken(): string | null {
@@ -69,31 +74,16 @@ export class AuthService {
     return !this.isTokenExpired(token);
   }
 
-  // --- NEW METHODS FOR JWT DECODING ---
-
-  /**
-   * Decodes the JWT and returns the user's role.
-   * @returns The user's role as a string, or null if not logged in.
-   */
   getUserRole(): string | null {
     const decoded = this.getDecodedToken();
     return decoded ? decoded.role : null;
   }
 
-  /**
-   * Decodes the JWT and returns the user's tenant ID.
-   * @returns The user's tenant ID, or null if not available.
-   */
   getTenantId(): string | null {
     const decoded = this.getDecodedToken();
-    // FIX: Check if tenantId exists, otherwise return null.
     return decoded && decoded.tenantId ? decoded.tenantId : null;
   }
 
-  /**
-   * Helper method to decode the JWT from local storage.
-   * @returns The decoded token payload, or null if token is invalid or not present.
-   */
   private getDecodedToken(): DecodedToken | null {
     const token = this.getToken();
     if (!token) {
@@ -107,11 +97,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Checks if a token is expired by looking at its 'exp' claim.
-   * @param token The JWT string.
-   * @returns True if the token is expired, false otherwise.
-   */
   private isTokenExpired(token: string): boolean {
     try {
       const decoded = JSON.parse(atob(token.split('.')[1]));
@@ -121,8 +106,6 @@ export class AuthService {
       return true;
     }
   }
-
-  // --- END OF NEW METHODS ---
 
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An error occurred';

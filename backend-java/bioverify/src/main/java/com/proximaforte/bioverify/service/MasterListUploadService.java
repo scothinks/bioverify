@@ -1,7 +1,9 @@
 package com.proximaforte.bioverify.service;
 
 import com.proximaforte.bioverify.domain.MasterListRecord;
+import com.proximaforte.bioverify.domain.RecordStatus;
 import com.proximaforte.bioverify.domain.Tenant;
+import com.proximaforte.bioverify.dto.UploadSummaryDto;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
 import com.proximaforte.bioverify.repository.TenantRepository;
 import org.apache.commons.csv.CSVFormat;
@@ -16,13 +18,10 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-/**
- * Service to handle the business logic of uploading and processing a master list file.
- */
 @Service
 public class MasterListUploadService {
 
@@ -35,52 +34,67 @@ public class MasterListUploadService {
         this.tenantRepository = tenantRepository;
     }
 
-    /**
-     * Processes a CSV file upload, parses it, and saves the records to the database.
-     * @param file The uploaded CSV file.
-     * @param tenantId The ID of the tenant to which the records belong.
-     * @return The number of records successfully saved.
-     * @throws Exception if the tenant is not found or if there's a file processing error.
-     */
     @Transactional
-    public int processUpload(MultipartFile file, UUID tenantId) throws Exception {
-        // First, find the tenant. If not found, we can't proceed.
+    public UploadSummaryDto processUpload(MultipartFile file, UUID tenantId) throws Exception {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalStateException("Tenant with ID " + tenantId + " not found."));
 
+        Map<String, MasterListRecord> existingRecordsMap = recordRepository.findAllByTenantId(tenantId)
+                .stream()
+                .filter(record -> record.getSsid() != null && !record.getSsid().isBlank())
+                .collect(Collectors.toMap(MasterListRecord::getSsid, Function.identity())); // <-- PARENTHESES ADDED
+
         List<MasterListRecord> recordsToSave = new ArrayList<>();
+        List<UUID> recordsRequiringReverificationIds = new ArrayList<>();
+        int newRecordsCount = 0;
+        int updatedRecordsCount = 0;
 
-        // Use a try-with-resources block to ensure the reader is closed automatically.
         try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            // Configure the CSV parser to expect a header row.
-            CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
-                    .setHeader("Full Name", "Grade Level", "Business Unit", "SSID")
-                    .setSkipHeaderRecord(true)
-                    .setIgnoreEmptyLines(true)
-                    .setTrim(true)
-                    .build();
-
+            CSVFormat csvFormat = CSVFormat.DEFAULT.withHeader().withTrim(true).withIgnoreEmptyLines(true);
             CSVParser csvParser = new CSVParser(reader, csvFormat);
 
             for (CSVRecord csvRecord : csvParser) {
-                MasterListRecord record = new MasterListRecord();
-                record.setTenant(tenant); // Associate with the correct tenant.
-                record.setFullName(csvRecord.get("Full Name"));
-                record.setGradeLevel(csvRecord.get("Grade Level"));
-                record.setBusinessUnit(csvRecord.get("Business Unit"));
-                
-                // SSID is optional, so we check if the column exists and has a value.
-                if (csvRecord.isMapped("SSID") && csvRecord.get("SSID") != null && !csvRecord.get("SSID").isEmpty()) {
-                    record.setSsid(csvRecord.get("SSID"));
+                String ssid = csvRecord.get("SSID");
+                if (ssid == null || ssid.isBlank()) continue;
+
+                MasterListRecord existingRecord = existingRecordsMap.get(ssid);
+                String newFullName = csvRecord.get("Full Name");
+                String newGradeLevel = csvRecord.get("Grade Level");
+                String newNin = csvRecord.get("NIN");
+
+                if (existingRecord != null) {
+                    updatedRecordsCount++;
+                    boolean isCriticalChange = !Objects.equals(existingRecord.getFullName(), newFullName) ||
+                                               !Objects.equals(existingRecord.getGradeLevel(), newGradeLevel);
+
+                    if (isCriticalChange) {
+                        existingRecord.setFullName(newFullName);
+                        existingRecord.setGradeLevel(newGradeLevel);
+                        existingRecord.setBusinessUnit(csvRecord.get("Business Unit"));
+                        existingRecord.setNin(newNin);
+                        existingRecord.setStatus(RecordStatus.AWAITING_REVERIFICATION);
+                        recordsRequiringReverificationIds.add(existingRecord.getId());
+                    } else {
+                        existingRecord.setBusinessUnit(csvRecord.get("Business Unit"));
+                        existingRecord.setNin(newNin);
+                    }
+                    recordsToSave.add(existingRecord);
+                } else {
+                    newRecordsCount++;
+                    MasterListRecord newRecord = new MasterListRecord();
+                    newRecord.setTenant(tenant);
+                    newRecord.setSsid(ssid);
+                    newRecord.setFullName(newFullName);
+                    newRecord.setBusinessUnit(csvRecord.get("Business Unit"));
+                    newRecord.setGradeLevel(newGradeLevel);
+                    newRecord.setNin(newNin);
+                    newRecord.setStatus(RecordStatus.PENDING);
+                    recordsToSave.add(newRecord);
                 }
-                
-                recordsToSave.add(record);
             }
         }
 
-        // Save all the parsed records to the database in a single transaction.
         recordRepository.saveAll(recordsToSave);
-
-        return recordsToSave.size();
+        return new UploadSummaryDto(newRecordsCount, updatedRecordsCount, recordsRequiringReverificationIds);
     }
 }

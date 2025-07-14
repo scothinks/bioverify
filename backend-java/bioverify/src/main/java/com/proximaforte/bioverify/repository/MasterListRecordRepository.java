@@ -1,3 +1,4 @@
+// FILE: src/main/java/com/proximaforte/bioverify/repository/MasterListRecordRepository.java
 package com.proximaforte.bioverify.repository;
 
 import com.proximaforte.bioverify.domain.MasterListRecord;
@@ -11,12 +12,7 @@ import java.util.UUID;
 @Repository
 public interface MasterListRecordRepository extends JpaRepository<MasterListRecord, UUID> {
 
-    /**
-     * Finds all records that belong to a specific tenant.
-     * This is used by the VerificationService to perform a secure, in-memory search
-     * against encrypted data.
-     * @param tenantId The ID of the tenant.
-     * @return A list of all records for that tenant.
-     */
     List<MasterListRecord> findAllByTenantId(UUID tenantId);
+
+    Optional<MasterListRecord> findBySsidAndTenantId(String ssid, UUID tenantId);
 }

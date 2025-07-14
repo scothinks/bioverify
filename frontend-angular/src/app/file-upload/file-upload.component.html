@@ -13,7 +13,6 @@
       </button>
       <input hidden #fileInput type="file" (change)="onFileSelected($event)" accept=".csv">
       
-      <!-- Enhanced file display with size and reset option -->
       <div *ngIf="hasFileSelected" class="file-info">
         <div class="file-details">
           <span class="file-name">{{ fileName }}</span>
@@ -26,7 +25,6 @@
       </div>
     </div>
 
-    <!-- Progress section -->
     <div *ngIf="uploadProgress > 0 && uploadProgress < 100" class="progress-container">
       <div class="progress-text">
         <span>Uploading...</span>
@@ -35,23 +33,39 @@
       <mat-progress-bar [value]="uploadProgress" mode="determinate"></mat-progress-bar>
     </div>
 
-    <!-- Completion indicator -->
-    <div *ngIf="uploadProgress === 100 && !isError" class="completion-container">
-      <mat-progress-bar [value]="100" mode="determinate"></mat-progress-bar>
-      <div class="completion-text">
-        <mat-icon color="primary">check_circle</mat-icon>
-        <span>Upload Complete!</span>
-      </div>
-    </div>
-
-    <!-- Message display -->
-    <div *ngIf="uploadMessage" 
+    <div *ngIf="uploadMessage && !uploadSummary" 
          [ngClass]="{'message-success': !isError, 'message-error': isError}"
          class="message-container">
       <mat-icon *ngIf="!isError" color="primary">check_circle</mat-icon>
       <mat-icon *ngIf="isError" color="warn">error</mat-icon>
       <span>{{ uploadMessage }}</span>
     </div>
+
+    <div *ngIf="uploadSummary" class="upload-summary">
+      <mat-icon color="primary">check_circle</mat-icon>
+      <h3>{{ uploadMessage }}</h3>
+      <ul>
+        <li>New Records Created: <strong>{{ uploadSummary.newRecordsCreated }}</strong></li>
+        <li>Existing Records Updated: <strong>{{ uploadSummary.existingRecordsUpdated }}</strong></li>
+      </ul>
+    
+      <div *ngIf="uploadSummary.recordsRequiringReverificationIds.length > 0" class="summary-actions">
+        <p class="reverification-text">
+          <strong>{{ uploadSummary.recordsRequiringReverificationIds.length }}</strong> records require re-verification.
+        </p>
+        <div class="action-buttons">
+          <button mat-flat-button color="primary" (click)="onViewRecordsToVerify()">
+            <mat-icon>visibility</mat-icon>
+            View These Records
+          </button>
+          <button mat-stroked-button color="accent" (click)="onNotifyRecords()">
+            <mat-icon>notifications_active</mat-icon>
+            Notify All {{ uploadSummary.recordsRequiringReverificationIds.length }}
+          </button>
+        </div>
+      </div>
+    </div>
+
   </mat-card-content>
   
   <mat-card-actions align="end">
@@ -63,7 +77,7 @@
       {{ isUploading ? 'Uploading...' : 'Upload' }}
     </button>
     
-    <button *ngIf="uploadMessage && !isUploading" 
+    <button *ngIf="uploadSummary && !isUploading" 
             mat-stroked-button 
             color="primary" 
             (click)="resetUpload()">

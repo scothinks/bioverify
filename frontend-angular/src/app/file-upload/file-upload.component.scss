@@ -150,3 +150,49 @@ mat-progress-bar {
     border-radius: 4px;
   }
 }
+
+.upload-summary {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  text-align: center;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0 0 12px 0;
+    font-weight: 500;
+  }
+
+  ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0 0 16px 0;
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+  }
+
+  .summary-actions {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed #ccc;
+  }
+
+  .reverification-text {
+    font-size: 1.1em;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+
+  .action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+}

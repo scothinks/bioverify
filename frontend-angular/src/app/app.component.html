@@ -19,7 +19,11 @@
        <h2>Tenant Admin Dashboard</h2>
        <p>Upload and manage records for your tenant.</p>
        <hr class="divider">
-      <app-file-upload></app-file-upload>
+       <app-file-upload></app-file-upload>
+       
+       <hr class="divider">
+       
+       <app-master-list></app-master-list>
     </div>
 
     <div *ngIf="userRole === 'SELF_SERVICE_USER'">

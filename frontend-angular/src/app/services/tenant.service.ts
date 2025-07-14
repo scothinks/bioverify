@@ -1,19 +1,36 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpEvent, HttpRequest } from '@angular/common/http';
-import { Observable, BehaviorSubject, throwError } from 'rxjs';
+import { Observable, BehaviorSubject, throwError, Subject } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { Tenant, UpdateTenantRequest } from '../models/tenant.model';
+import { MasterListRecord } from '../models/master-list-record.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TenantService {
   private adminApiUrl = 'http://localhost:8080/api/admin/tenants';
-  private v1ApiUrl = 'http://localhost:8080/api/v1'; // Base URL for v1 APIs
+  private v1ApiUrl = 'http://localhost:8080/api/v1';
   private tenantsSubject = new BehaviorSubject<Tenant[]>([]);
   public tenants$ = this.tenantsSubject.asObservable();
 
+  // --- NEW: For communication between components ---
+  private recordsFilterSubject = new BehaviorSubject<string[] | null>(null);
+  public recordsFilter$ = this.recordsFilterSubject.asObservable();
+
   constructor(private http: HttpClient) {}
+
+  // --- NEW METHOD: To apply a filter to the records list ---
+  applyRecordFilter(recordIds: string[] | null): void {
+    this.recordsFilterSubject.next(recordIds);
+  }
+  
+  // --- NEW METHOD: To call the backend notification endpoint ---
+  notifyForReverification(recordIds: string[]): Observable<any> {
+    return this.http.post(`${this.v1ApiUrl}/records/notify`, { recordIds }).pipe(
+      catchError(this.handleError)
+    );
+  }
 
   getTenants(): Observable<Tenant[]> {
     return this.http.get<Tenant[]>(this.adminApiUrl).pipe(
@@ -63,33 +80,29 @@ export class TenantService {
     );
   }
 
-  /**
-   * METHOD ADDED BACK: Uploads a master list file to the backend.
-   * @param file The file to be uploaded.
-   * @param tenantId The ID of the tenant this file belongs to.
-   * @returns An Observable of the HTTP event, allowing for progress tracking.
-   */
-  uploadMasterList(file: File, tenantId: string): Observable<HttpEvent<any>> {
+  getRecordsForTenant(): Observable<MasterListRecord[]> {
+    return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  uploadMasterList(file: File): Observable<HttpEvent<any>> {
     const formData: FormData = new FormData();
     formData.append('file', file);
-
-    const req = new HttpRequest('POST', `${this.v1ApiUrl}/${tenantId}/records/upload`, formData, {
+    const req = new HttpRequest('POST', `${this.v1ApiUrl}/records/upload`, formData, {
       reportProgress: true,
       responseType: 'json'
     });
-
     return this.http.request(req);
   }
 
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An error occurred';
-    
     if (error.error instanceof ErrorEvent) {
       errorMessage = `Error: ${error.error.message}`;
     } else {
       errorMessage = error.error?.message || `Error Code: ${error.status}`;
     }
-    
     return throwError(() => new Error(errorMessage));
   }
 }
