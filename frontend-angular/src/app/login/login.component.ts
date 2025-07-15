@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 // Import Angular Material modules
 import { MatCardModule } from '@angular/material/card';
@@ -27,7 +27,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    RouterLink
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
@@ -69,7 +70,6 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
   }
 
-  // --- GETTERS FOR THE TEMPLATE (THE FIX IS HERE) ---
   get blockMinutes(): number {
     return Math.floor(this.blockTimeRemaining / 60);
   }
@@ -77,7 +77,6 @@ export class LoginComponent implements OnInit, OnDestroy {
   get blockSeconds(): number {
     return this.blockTimeRemaining % 60;
   }
-  // --------------------------------------------------
 
   private checkBlockStatus(): void {
     const blockUntil = localStorage.getItem('loginBlockUntil');
@@ -182,9 +181,15 @@ export class LoginComponent implements OnInit, OnDestroy {
         
         this.showMessage('Login successful! Welcome back.');
         
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        // --- UPDATED: Smart Routing Logic ---
+        const role = this.authService.getUserRole();
+        const status = this.authService.getUserStatus();
+
+        if (role === 'SELF_SERVICE_USER' && (status === 'AWAITING_REVERIFICATION' || status === 'PENDING')) {
+          this.router.navigate(['/verification']);
+        } else {
+          this.router.navigate(['/']);
+        }
       },
       error: (error) => {
         this.isLoading = false;

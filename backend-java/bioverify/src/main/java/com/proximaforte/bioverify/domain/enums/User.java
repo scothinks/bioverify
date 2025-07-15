@@ -50,6 +50,15 @@ public class User implements UserDetails {
     @JoinColumn(name = "tenant_id")
     private Tenant tenant;
 
+    // --- NEW RELATIONSHIP to MasterListRecord ---
+    /**
+     * The master list record associated with this user.
+     * This establishes a direct link from a user login to their verified record.
+     */
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private MasterListRecord masterListRecord;
+
+
     @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
@@ -67,6 +76,8 @@ public class User implements UserDetails {
     public void setRole(Role role) { this.role = role; }
     public Tenant getTenant() { return tenant; }
     public void setTenant(Tenant tenant) { this.tenant = tenant; }
+    public MasterListRecord getMasterListRecord() { return masterListRecord; }
+    public void setMasterListRecord(MasterListRecord masterListRecord) { this.masterListRecord = masterListRecord; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
@@ -79,7 +90,6 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // We wrap our single role in a list for Spring Security.
         return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
@@ -90,11 +100,9 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        // We will use email as the username for authentication.
         return email;
     }
 
-    // For this MVP, we will assume accounts are always active.
     @Override
     public boolean isAccountNonExpired() { return true; }
     @Override

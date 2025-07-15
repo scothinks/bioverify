@@ -27,7 +27,9 @@ import { MatListModule } from '@angular/material/list';
 export class VerificationComponent {
   verificationForm: FormGroup;
   isLoading = false;
+  isConfirming = false; // To show a spinner on the confirm button
   errorMessage = '';
+  successMessage = '';
   verificationResult: VerificationResponse | null = null;
 
   constructor(
@@ -41,11 +43,11 @@ export class VerificationComponent {
   }
 
   onSubmit(): void {
-    if (this.verificationForm.invalid) {
-      return;
-    }
+    if (this.verificationForm.invalid) return;
+    
     this.isLoading = true;
     this.errorMessage = '';
+    this.successMessage = '';
     this.verificationResult = null;
 
     this.verificationService.verifyIdentity(this.verificationForm.value).subscribe({
@@ -61,17 +63,33 @@ export class VerificationComponent {
   }
 
   onConfirmDetails(): void {
-    // In a real app, this would call another service to finalize the record.
-    // For now, we just show a success message.
-    alert('Details confirmed! Your record is now fully verified.');
-    this.verificationResult = null; // Reset the view
-    this.verificationForm.reset();
+    if (!this.verificationResult?.record?.id) return;
+
+    this.isConfirming = true;
+    this.errorMessage = '';
+    
+    this.verificationService.confirmVerification(this.verificationResult.record.id).subscribe({
+      next: (response) => {
+        this.isConfirming = false;
+        this.successMessage = response.message || 'Details confirmed! Your record is now fully verified.';
+        this.verificationResult = null; // Hide the confirmation view
+      },
+      error: (err) => {
+        this.isConfirming = false;
+        this.errorMessage = err.error?.message || 'Could not confirm details.';
+      }
+    });
   }
 
   onRejectDetails(): void {
-    // Logic to handle when a user says the details are incorrect.
     alert('Thank you for your feedback. A support ticket has been raised to correct your details.');
-    this.verificationResult = null; // Reset the view
+    this.resetForm();
+  }
+
+  resetForm(): void {
+    this.verificationResult = null;
     this.verificationForm.reset();
+    this.errorMessage = '';
+    this.successMessage = '';
   }
 }

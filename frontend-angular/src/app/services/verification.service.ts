@@ -1,5 +1,3 @@
-// FILE: src/app/services/verification.service.ts
-
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -31,5 +29,14 @@ export class VerificationService {
    */
   verifyIdentity(data: VerificationRequest): Observable<VerificationResponse> {
     return this.http.post<VerificationResponse>(`${this.apiUrl}/verify`, data);
+  }
+
+  /**
+   * Sends the confirmation to the backend to finalize verification.
+   * @param recordId The ID of the record to confirm.
+   * @returns An Observable of the backend response.
+   */
+  confirmVerification(recordId: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/confirm`, { recordId });
   }
 }

@@ -22,19 +22,22 @@ public class MasterListRecord {
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
+    @ManyToOne(fetch = FetchType.LAZY) // Allow null until user is created
+    @JoinColumn(name = "user_id", unique = true) // A user can only be linked to one record
+    private User user;
+
     @Column
-    @Convert(converter = StringCryptoConverter.class) 
+    @Convert(converter = StringCryptoConverter.class)
     private String ssid;
 
     @Column
-    @Convert(converter = StringCryptoConverter.class) 
+    @Convert(converter = StringCryptoConverter.class)
     private String nin;
 
     @Column(nullable = false)
-    @Convert(converter = StringCryptoConverter.class) 
+    @Convert(converter = StringCryptoConverter.class)
     private String fullName;
 
-    // Non-sensitive fields are not converted
     @Column(nullable = false)
     private String businessUnit;
 
@@ -44,6 +47,13 @@ public class MasterListRecord {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RecordStatus status;
+    
+    // --- NEW HASH FIELDS FOR FAST LOOKUPS ---
+    @Column(unique = true)
+    private String ssidHash;
+
+    @Column(unique = true)
+    private String ninHash;
 
     private LocalDate lastProofOfLifeDate;
 
@@ -59,6 +69,8 @@ public class MasterListRecord {
     public void setId(UUID id) { this.id = id; }
     public Tenant getTenant() { return tenant; }
     public void setTenant(Tenant tenant) { this.tenant = tenant; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
     public String getSsid() { return ssid; }
     public void setSsid(String ssid) { this.ssid = ssid; }
     public String getNin() { return nin; }
@@ -71,6 +83,10 @@ public class MasterListRecord {
     public void setGradeLevel(String gradeLevel) { this.gradeLevel = gradeLevel; }
     public RecordStatus getStatus() { return status; }
     public void setStatus(RecordStatus status) { this.status = status; }
+    public String getSsidHash() { return ssidHash; }
+    public void setSsidHash(String ssidHash) { this.ssidHash = ssidHash; }
+    public String getNinHash() { return ninHash; }
+    public void setNinHash(String ninHash) { this.ninHash = ninHash; }
     public LocalDate getLastProofOfLifeDate() { return lastProofOfLifeDate; }
     public void setLastProofOfLifeDate(LocalDate lastProofOfLifeDate) { this.lastProofOfLifeDate = lastProofOfLifeDate; }
     public Instant getCreatedAt() { return createdAt; }

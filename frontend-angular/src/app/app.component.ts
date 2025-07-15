@@ -1,30 +1,28 @@
-// FILE: src/app/app.component.ts (UPDATED)
-
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterOutlet } from '@angular/router'; 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 
 import { AuthService } from './services/auth.service';
-import { LoginComponent } from './login/login.component';
 import { TenantListComponent } from './tenant-list/tenant-list.component';
 import { FileUploadComponent } from './file-upload/file-upload.component';
-import { VerificationComponent } from './verification/verification.component';
 import { MasterListComponent } from './master-list/master-list.component';
+import { UserDashboardComponent } from './user-dashboard/user-dashboard.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
+    RouterOutlet, 
     MatToolbarModule,
     MatIconModule,
     MatButtonModule,
-    LoginComponent,
     TenantListComponent,
     FileUploadComponent,
-    VerificationComponent,
+    UserDashboardComponent,
     MasterListComponent
   ],
   templateUrl: './app.component.html',

@@ -17,10 +17,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 public class MasterListUploadService {
@@ -39,11 +40,6 @@ public class MasterListUploadService {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalStateException("Tenant with ID " + tenantId + " not found."));
 
-        Map<String, MasterListRecord> existingRecordsMap = recordRepository.findAllByTenantId(tenantId)
-                .stream()
-                .filter(record -> record.getSsid() != null && !record.getSsid().isBlank())
-                .collect(Collectors.toMap(MasterListRecord::getSsid, Function.identity())); // <-- PARENTHESES ADDED
-
         List<MasterListRecord> recordsToSave = new ArrayList<>();
         List<UUID> recordsRequiringReverificationIds = new ArrayList<>();
         int newRecordsCount = 0;
@@ -55,15 +51,25 @@ public class MasterListUploadService {
 
             for (CSVRecord csvRecord : csvParser) {
                 String ssid = csvRecord.get("SSID");
-                if (ssid == null || ssid.isBlank()) continue;
+                String nin = csvRecord.get("NIN");
 
-                MasterListRecord existingRecord = existingRecordsMap.get(ssid);
+                if ((ssid == null || ssid.isBlank()) || (nin == null || nin.isBlank())) {
+                    continue; // Skip rows without both a valid SSID and NIN
+                }
+
+                // Hash the incoming plaintext identifiers for a fast, secure lookup
+                String ssidHash = toSha256(ssid);
+                String ninHash = toSha256(nin);
+
+                Optional<MasterListRecord> existingRecordOpt = recordRepository.findBySsidHashAndNinHash(ssidHash, ninHash);
                 String newFullName = csvRecord.get("Full Name");
                 String newGradeLevel = csvRecord.get("Grade Level");
-                String newNin = csvRecord.get("NIN");
 
-                if (existingRecord != null) {
+                if (existingRecordOpt.isPresent()) {
+                    // --- UPDATE LOGIC ---
                     updatedRecordsCount++;
+                    MasterListRecord existingRecord = existingRecordOpt.get();
+                    
                     boolean isCriticalChange = !Objects.equals(existingRecord.getFullName(), newFullName) ||
                                                !Objects.equals(existingRecord.getGradeLevel(), newGradeLevel);
 
@@ -71,23 +77,29 @@ public class MasterListUploadService {
                         existingRecord.setFullName(newFullName);
                         existingRecord.setGradeLevel(newGradeLevel);
                         existingRecord.setBusinessUnit(csvRecord.get("Business Unit"));
-                        existingRecord.setNin(newNin);
+                        existingRecord.setNin(nin);
+                        existingRecord.setSsid(ssid); // Also update the encrypted values
+                        existingRecord.setNinHash(ninHash);
+                        existingRecord.setSsidHash(ssidHash);
                         existingRecord.setStatus(RecordStatus.AWAITING_REVERIFICATION);
                         recordsRequiringReverificationIds.add(existingRecord.getId());
                     } else {
                         existingRecord.setBusinessUnit(csvRecord.get("Business Unit"));
-                        existingRecord.setNin(newNin);
                     }
                     recordsToSave.add(existingRecord);
+
                 } else {
+                    // --- CREATE LOGIC ---
                     newRecordsCount++;
                     MasterListRecord newRecord = new MasterListRecord();
                     newRecord.setTenant(tenant);
                     newRecord.setSsid(ssid);
+                    newRecord.setNin(nin);
+                    newRecord.setSsidHash(ssidHash); // Set the hash
+                    newRecord.setNinHash(ninHash); // Set the hash
                     newRecord.setFullName(newFullName);
                     newRecord.setBusinessUnit(csvRecord.get("Business Unit"));
                     newRecord.setGradeLevel(newGradeLevel);
-                    newRecord.setNin(newNin);
                     newRecord.setStatus(RecordStatus.PENDING);
                     recordsToSave.add(newRecord);
                 }
@@ -96,5 +108,25 @@ public class MasterListUploadService {
 
         recordRepository.saveAll(recordsToSave);
         return new UploadSummaryDto(newRecordsCount, updatedRecordsCount, recordsRequiringReverificationIds);
+    }
+
+    /**
+     * Hashing utility to convert a string to its SHA-256 hash.
+     * @param input The string to hash.
+     * @return The hex representation of the SHA-256 hash.
+     */
+    private String toSha256(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
+            BigInteger number = new BigInteger(1, hash);
+            StringBuilder hexString = new StringBuilder(number.toString(16));
+            while (hexString.length() < 64) {
+                hexString.insert(0, '0');
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Could not find SHA-256 algorithm", e);
+        }
     }
 }

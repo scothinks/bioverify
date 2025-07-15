@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
+import { MasterListRecord } from '../models/master-list-record.model';
 
-// Keep your existing interfaces
 export interface AuthResponse {
   token: string;
 }
@@ -13,53 +13,71 @@ export interface AuthRequest {
   password?: string;
   fullName?: string;
   role?: string;
+  ssid?: string;
+  nin?: string;
 }
 
-// NEW: Interface for the decoded JWT payload
 export interface DecodedToken {
-  sub: string; // Subject (email)
+  sub: string;
   role: string;
-  tenantId?: string; // tenantId is optional in the token
-  iat: number; // Issued at
-  exp: number; // Expiration time
+  tenantId?: string;
+  status?: string;
+  iat: number;
+  exp: number;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8080/api/v1/auth';
+  private authApiUrl = 'http://localhost:8080/api/v1/auth';
+  private v1ApiUrl = 'http://localhost:8080/api/v1'; // Base URL for general v1 APIs
   private readonly TOKEN_KEY = 'bioverify_auth_token';
 
-  // --- For Reactive State Management ---
   private isLoggedInSubject = new BehaviorSubject<boolean>(this.isLoggedIn());
   public isLoggedIn$ = this.isLoggedInSubject.asObservable();
 
   constructor(private http: HttpClient) { }
 
   login(credentials: AuthRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/authenticate`, credentials).pipe(
+    return this.http.post<AuthResponse>(`${this.authApiUrl}/authenticate`, credentials).pipe(
       tap(response => this.setToken(response.token)),
       catchError(this.handleError)
     );
   }
 
   register(userData: AuthRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, userData).pipe(
+    return this.http.post<AuthResponse>(`${this.authApiUrl}/register`, userData).pipe(
       tap(response => this.setToken(response.token)),
       catchError(this.handleError)
     );
   }
 
+  registerEmployee(userData: AuthRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.authApiUrl}/register-employee`, userData).pipe(
+      tap(response => this.setToken(response.token)),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * NEW: Fetches the full MasterListRecord for the currently logged-in user.
+   */
+  getCurrentUserRecord(): Observable<MasterListRecord> {
+    return this.http.get<MasterListRecord>(`${this.v1ApiUrl}/users/me/record`).pipe(
+        catchError(this.handleError)
+    );
+  }
+
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
-    this.isLoggedInSubject.next(false); // Broadcast the change
+    this.isLoggedInSubject.next(false);
     window.location.reload();
   }
 
   private setToken(token: string): void {
     localStorage.setItem(this.TOKEN_KEY, token);
-    this.isLoggedInSubject.next(true); // Broadcast the change
+    this.isLoggedInSubject.next(true);
   }
 
   getToken(): string | null {
@@ -77,6 +95,11 @@ export class AuthService {
   getUserRole(): string | null {
     const decoded = this.getDecodedToken();
     return decoded ? decoded.role : null;
+  }
+
+  getUserStatus(): string | null {
+    const decoded = this.getDecodedToken();
+    return decoded?.status || null;
   }
 
   getTenantId(): string | null {
@@ -109,7 +132,6 @@ export class AuthService {
 
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An error occurred';
-    
     if (error.error instanceof ErrorEvent) {
       errorMessage = error.error.message;
     } else {
@@ -130,7 +152,6 @@ export class AuthService {
           errorMessage = error.error?.message || `Error: ${error.status}`;
       }
     }
-    
     return throwError(() => new Error(errorMessage));
   }
 }

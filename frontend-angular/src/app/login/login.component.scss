@@ -1,3 +1,5 @@
+@use '@angular/material' as mat;
+
 .login-container {
   display: flex;
   justify-content: center;
@@ -92,7 +94,6 @@ mat-card-content {
   }
 }
 
-
 // Global styles for snackbar
 ::ng-deep {
   .success-snackbar {
@@ -103,5 +104,22 @@ mat-card-content {
   .error-snackbar {
     background: #ef4444;
     color: white;
+  }
+}
+
+.registration-link {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 0.9em;
+
+  a {
+    // UPDATED: Use a direct color value instead of theme function
+    color: #6366f1; 
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }

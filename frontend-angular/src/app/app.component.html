@@ -1,4 +1,4 @@
-<div *ngIf="isLoggedIn; else showLogin">
+<div *ngIf="isLoggedIn">
   <mat-toolbar color="primary" class="app-toolbar">
     <mat-icon class="toolbar-icon">verified_user</mat-icon>
     <span class="app-title">ProximaForte BioVerify™</span>
@@ -20,19 +20,16 @@
        <p>Upload and manage records for your tenant.</p>
        <hr class="divider">
        <app-file-upload></app-file-upload>
-       
        <hr class="divider">
-       
        <app-master-list></app-master-list>
     </div>
 
     <div *ngIf="userRole === 'SELF_SERVICE_USER'">
-      <app-verification></app-verification>
+      <app-user-dashboard></app-user-dashboard>
     </div>
-
   </main>
 </div>
 
-<ng-template #showLogin>
-  <app-login></app-login>
-</ng-template>
+<div *ngIf="!isLoggedIn">
+  <router-outlet></router-outlet>
+</div>

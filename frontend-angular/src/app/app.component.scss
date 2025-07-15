@@ -1,18 +1,137 @@
+// ============================================================================
+// APP.COMPONENT.SCSS - App-Specific Component Styles
+// ============================================================================
+
+// Enhanced Snackbar Styles with Modern Design
+.success-snackbar {
+  background: linear-gradient(135deg, var(--success-500), var(--success-600)) !important;
+  color: white !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), transparent);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+}
+
+.error-snackbar {
+  background: linear-gradient(135deg, var(--error-500), var(--error-600)) !important;
+  color: white !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), transparent);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+}
+
+.warning-snackbar {
+  background: linear-gradient(135deg, var(--warning-500), var(--warning-600)) !important;
+  color: white !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), transparent);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+}
+
+.info-snackbar {
+  background: linear-gradient(135deg, var(--info-500), var(--info-600)) !important;
+  color: white !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), transparent);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+}
+
+// Modern Toolbar with Glass Morphism Effect
 .app-toolbar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-normal);
+  
+  // Dark mode support
+  @media (prefers-color-scheme: dark) {
+    background: rgba(17, 24, 39, 0.95) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+  
+  &:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
   
   .toolbar-icon {
-    margin-right: 8px;
+    margin-right: var(--space-3);
+    transition: transform var(--transition-fast);
+    
+    &:hover {
+      transform: scale(1.05);
+    }
   }
   
   .app-title {
-    font-weight: 600;
-    font-size: 18px;
+    font-weight: 700;
+    font-size: 1.125rem;
+    letter-spacing: -0.025em;
+    font-family: var(--font-family-sans);
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    
+    @media (prefers-color-scheme: dark) {
+      background: linear-gradient(135deg, var(--primary-400), var(--primary-500));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
   }
   
   .spacer {
@@ -20,30 +139,287 @@
   }
 }
 
+// Enhanced Main Content with Modern Layout
 .main-content {
   margin-top: 64px;
-  padding: 2rem;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+  padding: var(--space-8);
+  font-family: var(--font-family-sans);
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
+  min-height: calc(100vh - 64px);
+  
+  // Subtle background pattern
+  background-image: 
+    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.03) 1px, transparent 0);
+  background-size: 20px 20px;
+  
+  @media (prefers-color-scheme: dark) {
+    background-image: 
+      radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+  }
 }
 
+// Modern Divider with Enhanced Visual Appeal
 .divider {
   border: none;
-  border-top: 1px solid #e0e0e0;
-  margin: 3rem 0;
-  opacity: 0.7;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--gray-200) 20%,
+    var(--gray-300) 50%,
+    var(--gray-200) 80%,
+    transparent
+  );
+  margin: var(--space-12) 0;
+  position: relative;
+  
+  @media (prefers-color-scheme: dark) {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--gray-600) 20%,
+      var(--gray-500) 50%,
+      var(--gray-600) 80%,
+      transparent
+    );
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    background: var(--primary-500);
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px var(--primary-50);
+    
+    @media (prefers-color-scheme: dark) {
+      box-shadow: 0 0 0 3px var(--gray-800);
+    }
+  }
+  
+  // Alternative divider styles
+  &.divider-dashed {
+    background: none;
+    border-top: 2px dashed var(--gray-300);
+    
+    @media (prefers-color-scheme: dark) {
+      border-top-color: var(--gray-600);
+    }
+    
+    &::before {
+      display: none;
+    }
+  }
+  
+  &.divider-thick {
+    height: 3px;
+    background: linear-gradient(
+      90deg,
+      var(--primary-500),
+      var(--primary-600),
+      var(--primary-500)
+    );
+    border-radius: var(--radius-lg);
+    margin: var(--space-16) 0;
+    
+    &::before {
+      display: none;
+    }
+  }
+  
+  &.divider-minimal {
+    height: 1px;
+    background: var(--gray-200);
+    margin: var(--space-8) 0;
+    
+    @media (prefers-color-scheme: dark) {
+      background: var(--gray-700);
+    }
+    
+    &::before {
+      display: none;
+    }
+  }
 }
 
-// Responsive design
+// ============================================================================
+// RESPONSIVE DESIGN ENHANCEMENTS
+// ============================================================================
+
+@media (max-width: 1024px) {
+  .main-content {
+    padding: var(--space-6);
+    max-width: 100%;
+  }
+}
+
 @media (max-width: 768px) {
   .main-content {
-    padding: 1rem;
+    padding: var(--space-4);
     margin-top: 64px;
   }
   
   .divider {
-    margin: 2rem 0;
+    margin: var(--space-8) 0;
+    
+    &.divider-thick {
+      margin: var(--space-12) 0;
+    }
+  }
+  
+  .app-toolbar {
+    .app-title {
+      font-size: 1rem;
+    }
+    
+    .toolbar-icon {
+      margin-right: var(--space-2);
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: var(--space-3);
+  }
+  
+  .app-toolbar {
+    .app-title {
+      font-size: 0.95rem;
+    }
+  }
+  
+  .divider {
+    margin: var(--space-6) 0;
+    
+    &.divider-thick {
+      margin: var(--space-8) 0;
+    }
+  }
+}
+
+// ============================================================================
+// APP-SPECIFIC COMPONENT ENHANCEMENTS
+// ============================================================================
+
+// Enhanced loading states
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-12);
+  
+  .loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid var(--gray-200);
+    border-top: 2px solid var(--primary-500);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    
+    @media (prefers-color-scheme: dark) {
+      border-color: var(--gray-700);
+      border-top-color: var(--primary-400);
+    }
+  }
+  
+  .loading-text {
+    margin-left: var(--space-3);
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    
+    @media (prefers-color-scheme: dark) {
+      color: var(--gray-400);
+    }
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Enhanced error states
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-12);
+  text-align: center;
+  
+  .error-icon {
+    width: 3rem;
+    height: 3rem;
+    color: var(--error-500);
+    margin-bottom: var(--space-4);
+  }
+  
+  .error-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: var(--space-2);
+    
+    @media (prefers-color-scheme: dark) {
+      color: var(--gray-100);
+    }
+  }
+  
+  .error-message {
+    color: var(--gray-600);
+    margin-bottom: var(--space-6);
+    
+    @media (prefers-color-scheme: dark) {
+      color: var(--gray-400);
+    }
+  }
+}
+
+// Enhanced empty states
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-16);
+  text-align: center;
+  
+  .empty-icon {
+    width: 4rem;
+    height: 4rem;
+    color: var(--gray-400);
+    margin-bottom: var(--space-6);
+    
+    @media (prefers-color-scheme: dark) {
+      color: var(--gray-600);
+    }
+  }
+  
+  .empty-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: var(--space-3);
+    
+    @media (prefers-color-scheme: dark) {
+      color: var(--gray-100);
+    }
+  }
+  
+  .empty-message {
+    color: var(--gray-600);
+    margin-bottom: var(--space-8);
+    max-width: 400px;
+    
+    @media (prefers-color-scheme: dark) {
+      color: var(--gray-400);
+    }
   }
 }

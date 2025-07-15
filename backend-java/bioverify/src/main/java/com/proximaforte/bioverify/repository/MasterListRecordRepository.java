@@ -1,4 +1,3 @@
-// FILE: src/main/java/com/proximaforte/bioverify/repository/MasterListRecordRepository.java
 package com.proximaforte.bioverify.repository;
 
 import com.proximaforte.bioverify.domain.MasterListRecord;
@@ -14,5 +13,5 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
 
     List<MasterListRecord> findAllByTenantId(UUID tenantId);
 
-    Optional<MasterListRecord> findBySsidAndTenantId(String ssid, UUID tenantId);
+    Optional<MasterListRecord> findBySsidHashAndNinHash(String ssidHash, String ninHash);
 }

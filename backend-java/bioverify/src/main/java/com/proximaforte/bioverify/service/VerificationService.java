@@ -1,10 +1,8 @@
-// FILE: src/main/java/com/proximaforte/bioverify/service/VerificationService.java
-
 package com.proximaforte.bioverify.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proximaforte.bioverify.domain.MasterListRecord;
-import com.proximaforte.bioverify.domain.RecordStatus; // <-- IMPORT ADDED
+import com.proximaforte.bioverify.domain.RecordStatus;
 import com.proximaforte.bioverify.domain.Tenant;
 import com.proximaforte.bioverify.dto.IdentitySourceConfigDto;
 import com.proximaforte.bioverify.dto.VerificationRequest;
@@ -59,14 +57,28 @@ public class VerificationService {
 
         if (isRegistryMatch) {
             record.setNin(request.getNin());
-            record.setStatus(RecordStatus.VERIFIED_PENDING_CONFIRMATION); // <-- STATUS UPDATED
+            record.setStatus(RecordStatus.VERIFIED_PENDING_CONFIRMATION);
             MasterListRecord savedRecord = recordRepository.save(record);
             return new VerificationResponse(true, "Verification successful. Please review your details.", savedRecord);
         } else {
-            record.setStatus(RecordStatus.FLAGGED_SSID_NIN_MISMATCH); // <-- STATUS UPDATED
+            record.setStatus(RecordStatus.FLAGGED_SSID_NIN_MISMATCH);
             recordRepository.save(record);
             return new VerificationResponse(false, "SSID and NIN do not match the trusted registry.", null);
         }
+    }
+
+    /**
+     * Finds a record by its ID, updates its status to VERIFIED, and saves it.
+     * @param recordId The ID of the record to confirm.
+     * @return The updated MasterListRecord.
+     */
+    @Transactional
+    public MasterListRecord confirmVerification(UUID recordId) {
+        MasterListRecord record = recordRepository.findById(recordId)
+                .orElseThrow(() -> new IllegalStateException("Record not found with ID: " + recordId));
+
+        record.setStatus(RecordStatus.VERIFIED);
+        return recordRepository.save(record);
     }
     
     private Optional<MasterListRecord> findRecordByPlainTextSsid(String plainTextSsid, UUID tenantId) {
@@ -79,7 +91,7 @@ public class VerificationService {
     /**
      * Calls the validation API specific to the tenant.
      */
-    private boolean callTenantValidationApi(String ssid, String nin, Tenant tenant) {
+    public boolean callTenantValidationApi(String ssid, String nin, Tenant tenant) { // <-- CHANGED TO PUBLIC
         try {
             IdentitySourceConfigDto config = objectMapper.readValue(tenant.getidentitySourceConfig(), IdentitySourceConfigDto.class);
             String apiUrl = config.getValidationUrl();
