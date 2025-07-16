@@ -1,0 +1,452 @@
+// FILE: src/app/user-management/user-management.component.scss
+
+// Variables
+$primary-color: #1976d2;
+$accent-color: #ff4081;
+$warn-color: #f44336;
+$background-color: #fafafa;
+$card-background: #ffffff;
+$text-primary: rgba(0, 0, 0, 0.87);
+$text-secondary: rgba(0, 0, 0, 0.54);
+$border-color: rgba(0, 0, 0, 0.12);
+$shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+$shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.15);
+$border-radius: 8px;
+$transition: all 0.3s ease;
+
+// Mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin card-style {
+  background: $card-background;
+  border-radius: $border-radius;
+  box-shadow: $shadow-light;
+  transition: $transition;
+}
+
+// Main Container
+.user-management-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  background: $background-color;
+  min-height: 100vh;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+}
+
+// Card Styles
+.user-management-card {
+  @include card-style;
+  overflow: hidden;
+  
+  &:hover {
+    box-shadow: $shadow-medium;
+  }
+}
+
+.card-header {
+  background: linear-gradient(135deg, $primary-color 0%, lighten($primary-color, 10%) 100%);
+  color: white;
+  padding: 24px;
+  margin: -24px -24px 24px -24px;
+  
+  .header-content {
+    flex: 1;
+    
+    .title {
+      @include flex-center;
+      justify-content: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-size: 1.5rem;
+      font-weight: 500;
+      
+      .tenant-icon {
+        font-size: 1.8rem;
+        width: 1.8rem;
+        height: 1.8rem;
+      }
+    }
+    
+    .subtitle {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.9rem;
+    }
+  }
+  
+  .close-button {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    transition: $transition;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+  }
+}
+
+.card-content {
+  padding: 0 24px 24px;
+  
+  @media (max-width: 768px) {
+    padding: 0 16px 16px;
+  }
+}
+
+// Section Styles
+.section {
+  margin-bottom: 32px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.section-header {
+  margin-bottom: 24px;
+  
+  .section-title {
+    @include flex-center;
+    justify-content: flex-start;
+    gap: 12px;
+    margin: 0 0 16px 0;
+    color: $text-primary;
+    font-size: 1.25rem;
+    font-weight: 500;
+    
+    .section-icon {
+      color: $primary-color;
+      font-size: 1.5rem;
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+  }
+}
+
+// Form Styles
+.user-form {
+  .form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 0;
+    }
+  }
+  
+  .form-field {
+    flex: 1;
+    
+    .mat-mdc-form-field {
+      width: 100%;
+    }
+    
+    .mat-mdc-input-element {
+      transition: $transition;
+      
+      &:focus {
+        background: rgba($primary-color, 0.02);
+      }
+    }
+    
+    .mat-icon {
+      color: $text-secondary;
+    }
+  }
+  
+  .form-actions {
+    @include flex-center;
+    justify-content: flex-start;
+    gap: 16px;
+    margin-top: 24px;
+    
+    @media (max-width: 480px) {
+      flex-direction: column;
+      width: 100%;
+      
+      button {
+        width: 100%;
+      }
+    }
+  }
+  
+  .create-button {
+    @include flex-center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-weight: 500;
+    transition: $transition;
+    
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: $shadow-medium;
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .loading-icon {
+      animation: spin 1s linear infinite;
+    }
+  }
+  
+  .reset-button {
+    @include flex-center;
+    gap: 8px;
+    transition: $transition;
+    
+    &:hover {
+      background: rgba($text-secondary, 0.1);
+    }
+  }
+}
+
+// Animation for loading icon
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Users List Styles
+.users-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.user-card {
+  @include card-style;
+  border: 1px solid $border-color;
+  transition: $transition;
+  
+  &:hover {
+    box-shadow: $shadow-medium;
+    transform: translateY(-2px);
+  }
+  
+  .user-card-content {
+    padding: 16px;
+  }
+  
+  .user-info {
+    @include flex-center;
+    justify-content: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+    
+    .user-avatar {
+      @include flex-center;
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, $primary-color, lighten($primary-color, 20%));
+      border-radius: 50%;
+      color: white;
+      
+      .mat-icon {
+        font-size: 2rem;
+        width: 2rem;
+        height: 2rem;
+      }
+    }
+    
+    .user-details {
+      flex: 1;
+      
+      .user-name {
+        margin: 0 0 4px 0;
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: $text-primary;
+      }
+      
+      .user-email {
+        margin: 0 0 8px 0;
+        color: $text-secondary;
+        font-size: 0.9rem;
+      }
+    }
+  }
+  
+  .user-actions {
+    @include flex-center;
+    justify-content: flex-end;
+    gap: 8px;
+    
+    button {
+      transition: $transition;
+      
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+  }
+}
+
+// Role chip colors
+.mat-mdc-chip {
+  &.mat-primary {
+    background: rgba($primary-color, 0.1);
+    color: $primary-color;
+  }
+  
+  &.mat-accent {
+    background: rgba($accent-color, 0.1);
+    color: $accent-color;
+  }
+  
+  &.mat-warn {
+    background: rgba($warn-color, 0.1);
+    color: $warn-color;
+  }
+}
+
+// Empty State
+.empty-state {
+  @include flex-center;
+  flex-direction: column;
+  padding: 48px 24px;
+  text-align: center;
+  color: $text-secondary;
+  
+  .empty-icon {
+    font-size: 4rem;
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+  
+  h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+  }
+  
+  p {
+    margin: 0;
+    font-size: 1rem;
+  }
+}
+
+// Loading State
+.loading-container {
+  @include flex-center;
+  flex-direction: column;
+  min-height: 400px;
+  gap: 16px;
+  
+  p {
+    color: $text-secondary;
+    font-size: 1rem;
+  }
+}
+
+// Responsive Design
+@media (max-width: 1024px) {
+  .user-management-container {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .card-header {
+    .header-content .title {
+      font-size: 1.3rem;
+      
+      .tenant-icon {
+        font-size: 1.5rem;
+        width: 1.5rem;
+        height: 1.5rem;
+      }
+    }
+  }
+  
+  .section-header .section-title {
+    font-size: 1.1rem;
+    
+    .section-icon {
+      font-size: 1.3rem;
+      width: 1.3rem;
+      height: 1.3rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .user-management-container {
+    padding: 12px;
+  }
+  
+  .card-content {
+    padding: 0 12px 12px;
+  }
+  
+  .card-header {
+    padding: 16px;
+    margin: -16px -16px 16px -16px;
+  }
+  
+  .user-info {
+    flex-direction: column;
+    text-align: center;
+    
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      
+      .mat-icon {
+        font-size: 1.5rem;
+        width: 1.5rem;
+        height: 1.5rem;
+      }
+    }
+  }
+}
+
+// Accessibility
+.mat-mdc-button:focus,
+.mat-mdc-icon-button:focus {
+  outline: 2px solid $primary-color;
+  outline-offset: 2px;
+}
+
+// Custom scrollbar for users list
+.users-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.users-list::-webkit-scrollbar-track {
+  background: $background-color;
+}
+
+.users-list::-webkit-scrollbar-thumb {
+  background: rgba($primary-color, 0.3);
+  border-radius: 3px;
+}
+
+.users-list::-webkit-scrollbar-thumb:hover {
+  background: rgba($primary-color, 0.5);
+}

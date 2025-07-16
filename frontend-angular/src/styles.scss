@@ -1,15 +1,17 @@
 // ============================================================================
-// GLOBAL STYLES.SCSS - Design System Foundation
+// GLOBAL STYLES.SCSS - Design System Foundation (Modified for App Compatibility)
 // ============================================================================
 
-// CSS Custom Properties - Design Token System
+// CSS Custom Properties - Design Token System (Aligned with app.component.scss)
 :root {
-  // Primary Brand Colors
-  --primary-50: #f0f9ff;
-  --primary-100: #e0f2fe;
-  --primary-500: #0ea5e9;
-  --primary-600: #0284c7;
-  --primary-700: #0369a1;
+  // Primary Brand Colors - Updated to match app preferences
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-200: #bfdbfe;
+  --primary-400: #60a5fa;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
   --primary-900: #0c4a6e;
   
   // Semantic Colors - Modern, Accessible Palette
@@ -78,12 +80,12 @@
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   
   // Typography
-  --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-family-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
   
-  // Transitions
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  // Transitions - Aligned with app.component.scss
+  --transition-fast: all 0.1s ease;
+  --transition-normal: all 0.2s ease;
   --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -191,15 +193,15 @@ body {
 }
 
 // ============================================================================
-// MODERN CARD COMPONENTS
+// MODERN CARD COMPONENTS - Aligned with app.component.scss
 // ============================================================================
 
-.card {
+.global-card {
   background: white;
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--gray-200);
-  transition: all var(--transition-normal);
+  transition: var(--transition-normal);
   overflow: hidden;
   
   @media (prefers-color-scheme: dark) {
@@ -212,7 +214,7 @@ body {
     transform: translateY(-2px);
   }
   
-  &.card-elevated {
+  &.global-card-elevated {
     box-shadow: var(--shadow-lg);
     
     &:hover {
@@ -221,7 +223,7 @@ body {
     }
   }
   
-  &.card-interactive {
+  &.global-card-interactive {
     cursor: pointer;
     
     &:hover {
@@ -237,7 +239,7 @@ body {
   }
 }
 
-.card-header {
+.global-card-header {
   padding: var(--space-6);
   border-bottom: 1px solid var(--gray-200);
   
@@ -246,11 +248,11 @@ body {
   }
 }
 
-.card-content {
+.global-card-content {
   padding: var(--space-6);
 }
 
-.card-footer {
+.global-card-footer {
   padding: var(--space-6);
   border-top: 1px solid var(--gray-200);
   background: var(--gray-50);
@@ -262,10 +264,10 @@ body {
 }
 
 // ============================================================================
-// MODERN BUTTON SYSTEM
+// BUTTON SYSTEM - Complementary to app.component.scss styles
 // ============================================================================
 
-.btn {
+.global-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -275,7 +277,7 @@ body {
   font-weight: 600;
   font-size: 0.875rem;
   letter-spacing: 0.025em;
-  transition: all var(--transition-fast);
+  transition: var(--transition-normal);
   cursor: pointer;
   border: 1px solid transparent;
   text-decoration: none;
@@ -291,7 +293,7 @@ body {
     transform: none !important;
   }
   
-  &.btn-primary {
+  &.global-btn-primary {
     background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
     color: white;
     
@@ -302,7 +304,7 @@ body {
     }
   }
   
-  &.btn-secondary {
+  &.global-btn-secondary {
     background: white;
     color: var(--gray-700);
     border-color: var(--gray-300);
@@ -325,7 +327,7 @@ body {
     }
   }
   
-  &.btn-ghost {
+  &.global-btn-ghost {
     background: transparent;
     color: var(--gray-700);
     
@@ -346,10 +348,51 @@ body {
 }
 
 // ============================================================================
-// ANIMATION UTILITIES
+// UTILITY CLASSES - Non-conflicting with app.component.scss
 // ============================================================================
 
-@keyframes fadeIn {
+.global-divider {
+  border: none;
+  height: 1px;
+  background: var(--gray-200);
+  margin: var(--space-6) 0;
+  
+  @media (prefers-color-scheme: dark) {
+    background: var(--gray-700);
+  }
+}
+
+.global-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  
+  .global-spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid var(--gray-200);
+    border-top: 2px solid var(--primary-500);
+    border-radius: 50%;
+    animation: globalSpin 1s linear infinite;
+    
+    @media (prefers-color-scheme: dark) {
+      border-color: var(--gray-700);
+      border-top-color: var(--primary-400);
+    }
+  }
+}
+
+@keyframes globalSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// ============================================================================
+// ANIMATION UTILITIES - Harmonized with app.component.scss
+// ============================================================================
+
+@keyframes globalFadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -360,7 +403,7 @@ body {
   }
 }
 
-@keyframes slideIn {
+@keyframes globalSlideIn {
   from {
     opacity: 0;
     transform: translateX(-20px);
@@ -371,7 +414,7 @@ body {
   }
 }
 
-@keyframes pulse {
+@keyframes globalPulse {
   0%, 100% {
     opacity: 1;
   }
@@ -380,16 +423,75 @@ body {
   }
 }
 
-.animate-fade-in {
-  animation: fadeIn var(--transition-normal) ease-out;
+.global-animate-fade-in {
+  animation: globalFadeIn var(--transition-normal) ease-out;
 }
 
-.animate-slide-in {
-  animation: slideIn var(--transition-normal) ease-out;
+.global-animate-slide-in {
+  animation: globalSlideIn var(--transition-normal) ease-out;
 }
 
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.global-animate-pulse {
+  animation: globalPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+// ============================================================================
+// FORM ELEMENTS - Complementary to app styles
+// ============================================================================
+
+.global-form-input {
+  display: block;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--gray-900);
+  background-color: white;
+  transition: var(--transition-normal);
+  
+  &:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--gray-50);
+  }
+  
+  &::placeholder {
+    color: var(--gray-500);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    background-color: var(--gray-800);
+    border-color: var(--gray-600);
+    color: var(--gray-100);
+    
+    &:focus {
+      border-color: var(--primary-400);
+    }
+    
+    &:disabled {
+      background-color: var(--gray-700);
+    }
+  }
+}
+
+.global-form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-700);
+  margin-bottom: var(--space-2);
+  
+  @media (prefers-color-scheme: dark) {
+    color: var(--gray-300);
+  }
 }
 
 // ============================================================================
@@ -407,14 +509,18 @@ body {
 }
 
 // Focus styles for better accessibility
-.focus-visible {
+.global-focus-visible {
   outline: 2px solid var(--primary-500);
   outline-offset: 2px;
 }
 
 // High contrast mode support
 @media (prefers-contrast: high) {
-  .card {
+  .global-card {
+    border-width: 2px;
+  }
+  
+  .global-btn {
     border-width: 2px;
   }
 }
@@ -424,28 +530,141 @@ body {
 // ============================================================================
 
 @media (max-width: 1024px) {
-  .card-header,
-  .card-content,
-  .card-footer {
+  .global-card-header,
+  .global-card-content,
+  .global-card-footer {
     padding: var(--space-5);
   }
 }
 
 @media (max-width: 768px) {
-  .card {
+  .global-card {
     border-radius: var(--radius-lg);
   }
   
-  .card-header,
-  .card-content,
-  .card-footer {
+  .global-card-header,
+  .global-card-content,
+  .global-card-footer {
     padding: var(--space-4);
   }
 }
 
 @media (max-width: 480px) {
-  .btn {
+  .global-btn {
     padding: var(--space-2) var(--space-4);
     font-size: 0.8rem;
   }
 }
+
+// ============================================================================
+// THEME UTILITIES
+// ============================================================================
+
+.theme-light {
+  --theme-bg: var(--gray-50);
+  --theme-fg: var(--gray-900);
+  --theme-muted: var(--gray-600);
+  --theme-border: var(--gray-200);
+  --theme-accent: var(--primary-500);
+}
+
+.theme-dark {
+  --theme-bg: var(--gray-900);
+  --theme-fg: var(--gray-100);
+  --theme-muted: var(--gray-400);
+  --theme-border: var(--gray-700);
+  --theme-accent: var(--primary-400);
+}
+
+// ============================================================================
+// LAYOUT UTILITIES
+// ============================================================================
+
+.global-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+  
+  @media (max-width: 768px) {
+    padding: 0 var(--space-3);
+  }
+}
+
+.global-grid {
+  display: grid;
+  gap: var(--space-6);
+  
+  &.global-grid-cols-1 {
+    grid-template-columns: 1fr;
+  }
+  
+  &.global-grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+    
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  &.global-grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+    
+    @media (max-width: 1024px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.global-flex {
+  display: flex;
+  
+  &.global-flex-center {
+    align-items: center;
+    justify-content: center;
+  }
+  
+  &.global-flex-between {
+    justify-content: space-between;
+  }
+  
+  &.global-flex-col {
+    flex-direction: column;
+  }
+  
+  &.global-flex-wrap {
+    flex-wrap: wrap;
+  }
+}
+
+// ============================================================================
+// SPACING UTILITIES
+// ============================================================================
+
+.global-mt-0 { margin-top: 0; }
+.global-mt-1 { margin-top: var(--space-1); }
+.global-mt-2 { margin-top: var(--space-2); }
+.global-mt-3 { margin-top: var(--space-3); }
+.global-mt-4 { margin-top: var(--space-4); }
+.global-mt-6 { margin-top: var(--space-6); }
+.global-mt-8 { margin-top: var(--space-8); }
+
+.global-mb-0 { margin-bottom: 0; }
+.global-mb-1 { margin-bottom: var(--space-1); }
+.global-mb-2 { margin-bottom: var(--space-2); }
+.global-mb-3 { margin-bottom: var(--space-3); }
+.global-mb-4 { margin-bottom: var(--space-4); }
+.global-mb-6 { margin-bottom: var(--space-6); }
+.global-mb-8 { margin-bottom: var(--space-8); }
+
+.global-p-0 { padding: 0; }
+.global-p-1 { padding: var(--space-1); }
+.global-p-2 { padding: var(--space-2); }
+.global-p-3 { padding: var(--space-3); }
+.global-p-4 { padding: var(--space-4); }
+.global-p-6 { padding: var(--space-6); }
+.global-p-8 { padding: var(--space-8); }

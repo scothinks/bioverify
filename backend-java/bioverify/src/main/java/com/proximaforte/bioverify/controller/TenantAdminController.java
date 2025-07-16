@@ -1,73 +1,54 @@
 package com.proximaforte.bioverify.controller;
 
-import com.proximaforte.bioverify.domain.Tenant;
-import com.proximaforte.bioverify.service.TenantService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import com.proximaforte.bioverify.domain.User;
+import com.proximaforte.bioverify.dto.AdminCreateUserRequest;
+import com.proximaforte.bioverify.dto.UserDto;
+import com.proximaforte.bioverify.service.AuthenticationService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/admin/tenants")
+@RequestMapping("/api/v1/tenant-admin")
 public class TenantAdminController {
 
-    private final TenantService tenantService;
+    private final AuthenticationService authenticationService;
 
-    @Autowired
-    public TenantAdminController(TenantService tenantService) {
-        this.tenantService = tenantService;
+    public TenantAdminController(AuthenticationService authenticationService) {
+        this.authenticationService = authenticationService;
     }
 
-    @PostMapping
-    public ResponseEntity<Tenant> createTenant(@RequestBody Tenant tenant) {
-        try {
-            Tenant createdTenant = tenantService.createTenant(tenant);
-            return new ResponseEntity<>(createdTenant, HttpStatus.CREATED);
-        } catch (IllegalStateException e) {
-            return new ResponseEntity(e.getMessage(), HttpStatus.CONFLICT);
+    /**
+     * Endpoint for a Tenant Admin to create a new user (e.g., an Enumerator).
+     */
+    @PostMapping("/users")
+    public ResponseEntity<UserDto> createUser(@RequestBody AdminCreateUserRequest request, Authentication authentication) {
+        User admin = (User) authentication.getPrincipal();
+        User newUser = authenticationService.createUserByAdmin(request, admin);
+        UserDto userDto = new UserDto(newUser);
+        return ResponseEntity.ok(userDto);
+    }
+
+    /**
+     * NEW: Endpoint for a Tenant Admin to get all users in their tenant.
+     */
+    @GetMapping("/users")
+    public ResponseEntity<List<UserDto>> getTenantUsers(Authentication authentication) {
+        User admin = (User) authentication.getPrincipal();
+        if (admin.getTenant() == null) {
+            return ResponseEntity.badRequest().build();
         }
-    }
-
-    @GetMapping
-    public List<Tenant> getAllTenants() {
-        return tenantService.getAllTenants();
-    }
-
-    // --- NEW ENDPOINTS ---
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Tenant> getTenantById(@PathVariable UUID id) {
-        return tenantService.getTenantById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/check-subdomain/{subdomain}")
-    public ResponseEntity<Boolean> checkSubdomainAvailability(@PathVariable String subdomain) {
-        return ResponseEntity.ok(tenantService.isSubdomainAvailable(subdomain));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Tenant> updateTenant(@PathVariable UUID id, @RequestBody Tenant tenantDetails) {
-        try {
-            Tenant updatedTenant = tenantService.updateTenant(id, tenantDetails);
-            return ResponseEntity.ok(updatedTenant);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTenant(@PathVariable UUID id) {
-        try {
-            tenantService.deleteTenant(id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalStateException e) {
-            return ResponseEntity.notFound().build();
-        }
+        
+        List<User> users = authenticationService.getUsersForTenant(admin.getTenant().getId());
+        
+        // Convert the list of User entities to a list of safe DTOs
+        List<UserDto> userDtos = users.stream()
+                .map(UserDto::new)
+                .collect(Collectors.toList());
+                
+        return ResponseEntity.ok(userDtos);
     }
 }

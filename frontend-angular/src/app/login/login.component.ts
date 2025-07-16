@@ -185,9 +185,13 @@ export class LoginComponent implements OnInit, OnDestroy {
         const role = this.authService.getUserRole();
         const status = this.authService.getUserStatus();
 
-        if (role === 'SELF_SERVICE_USER' && (status === 'AWAITING_REVERIFICATION' || status === 'PENDING')) {
+        if (role === 'ENUMERATOR') {
+          this.router.navigate(['/agent-dashboard']);
+        } else if (role === 'SELF_SERVICE_USER' && (status === 'AWAITING_REVERIFICATION' || status === 'PENDING')) {
           this.router.navigate(['/verification']);
         } else {
+          // All other roles (GLOBAL_SUPER_ADMIN, TENANT_ADMIN) and verified self-service users
+          // will be handled by the logic in app.component.html based on their role.
           this.router.navigate(['/']);
         }
       },

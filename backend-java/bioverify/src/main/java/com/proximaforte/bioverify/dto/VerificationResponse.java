@@ -1,6 +1,6 @@
 package com.proximaforte.bioverify.dto;
 
-import com.proximaforte.bioverify.domain.MasterListRecord;
+// No MasterListRecord import needed here anymore
 
 /**
  * Data Transfer Object for a verification response.
@@ -9,19 +9,21 @@ import com.proximaforte.bioverify.domain.MasterListRecord;
 public class VerificationResponse {
     private boolean success;
     private String message;
-    private MasterListRecord record; // The user's record, if verification is successful
+    private MasterListRecordDto record; // <-- UPDATED: Changed from entity to DTO
 
-    public VerificationResponse(boolean success, String message, MasterListRecord record) {
+    public VerificationResponse(boolean success, String message, MasterListRecordDto record) { 
         this.success = success;
         this.message = message;
         this.record = record;
     }
 
-    // Getters and Setters
+    // Getters
     public boolean isSuccess() { return success; }
-    public void setSuccess(boolean success) { this.success = success; }
     public String getMessage() { return message; }
+    public MasterListRecordDto getRecord() { return record; }
+
+    // Setters are typically not needed for response DTOs but are kept for consistency
+    public void setSuccess(boolean success) { this.success = success; }
     public void setMessage(String message) { this.message = message; }
-    public MasterListRecord getRecord() { return record; }
-    public void setRecord(MasterListRecord record) { this.record = record; }
+    public void setRecord(MasterListRecordDto record) { this.record = record; } 
 }

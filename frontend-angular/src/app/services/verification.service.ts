@@ -8,6 +8,12 @@ export interface VerificationRequest {
   nin: string;
 }
 
+export interface OnboardRequest {
+  ssid: string;
+  nin: string;
+  email: string;
+}
+
 export interface VerificationResponse {
   success: boolean;
   message: string;
@@ -18,25 +24,34 @@ export interface VerificationResponse {
   providedIn: 'root'
 })
 export class VerificationService {
-  private apiUrl = 'http://localhost:8080/api/v1/verification';
+  private verificationApiUrl = 'http://localhost:8080/api/v1/verification';
+  private agentApiUrl = 'http://localhost:8080/api/v1/agent';
 
   constructor(private http: HttpClient) { }
 
-  /**
-   * Sends the user's SSID and NIN to the backend for verification.
-   * @param data The verification request data.
-   * @returns An Observable of the verification response.
-   */
+  // --- Methods for Self-Service Users ---
+
   verifyIdentity(data: VerificationRequest): Observable<VerificationResponse> {
-    return this.http.post<VerificationResponse>(`${this.apiUrl}/verify`, data);
+    return this.http.post<VerificationResponse>(`${this.verificationApiUrl}/verify`, data);
+  }
+
+  confirmVerification(recordId: string): Observable<any> {
+    return this.http.post<any>(`${this.verificationApiUrl}/confirm`, { recordId });
+  }
+
+  // --- Methods for Enumerators ---
+
+  /**
+   * Submits the full onboarding and verification package for an employee.
+   */
+  onboardUserByAgent(onboardRequest: OnboardRequest): Observable<any> {
+    return this.http.post<any>(`${this.agentApiUrl}/onboard-user`, onboardRequest);
   }
 
   /**
-   * Sends the confirmation to the backend to finalize verification.
-   * @param recordId The ID of the record to confirm.
-   * @returns An Observable of the backend response.
+   * Submits a liveness check for a given record.
    */
-  confirmVerification(recordId: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/confirm`, { recordId });
+  performLivenessCheck(recordId: string): Observable<any> {
+    return this.http.post<any>(`${this.agentApiUrl}/liveness-check`, { recordId });
   }
 }

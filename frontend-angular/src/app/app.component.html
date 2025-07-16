@@ -1,31 +1,131 @@
-<div *ngIf="isLoggedIn">
-  <mat-toolbar color="primary" class="app-toolbar">
+<div *ngIf="isLoggedIn" class="logged-in-view">
+  <!-- Enhanced Toolbar with your glassmorphism styles -->
+  <mat-toolbar class="app-toolbar">
     <mat-icon class="toolbar-icon">verified_user</mat-icon>
     <span class="app-title">ProximaForte BioVerify™</span>
     <span class="spacer"></span>
-    <button mat-button (click)="logout()">
+    <button mat-button class="logout-btn" (click)="logout()">
       <mat-icon>logout</mat-icon>
       <span>Sign Out</span>
     </button>
   </mat-toolbar>
 
+  <!-- Main Content with your enhanced styling -->
   <main class="main-content">
-    <div *ngIf="userRole === 'GLOBAL_SUPER_ADMIN'">
-      <h2>Global Admin Dashboard</h2>
-      <app-tenant-list></app-tenant-list>
+    <!-- Global Super Admin -->
+    <div *ngIf="userRole === 'GLOBAL_SUPER_ADMIN'" class="dashboard-container">
+      <div class="dashboard-header">
+        <h2 class="dashboard-title">Global Admin Dashboard</h2>
+        <p class="dashboard-subtitle">Manage all tenants and system-wide settings</p>
+        <div class="role-badge">{{userRole | titlecase}}</div>
+      </div>
+      
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <mat-icon>business</mat-icon>
+            Tenant Management
+          </h3>
+        </div>
+        <div class="card-content">
+          <app-tenant-list></app-tenant-list>
+        </div>
+      </div>
     </div>
 
-    <div *ngIf="userRole === 'TENANT_ADMIN'">
-       <h2>Tenant Admin Dashboard</h2>
-       <p>Upload and manage records for your tenant.</p>
-       <hr class="divider">
-       <app-file-upload></app-file-upload>
-       <hr class="divider">
-       <app-master-list></app-master-list>
+    <!-- Tenant Admin -->
+    <div *ngIf="userRole === 'TENANT_ADMIN'" class="dashboard-container">
+      <div class="dashboard-header">
+        <h2 class="dashboard-title">Tenant Admin Dashboard</h2>
+        <p class="dashboard-subtitle">Upload and manage records for your tenant</p>
+        <div class="role-badge">{{userRole | titlecase}}</div>
+      </div>
+      
+      <div class="dashboard-grid">
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <mat-icon>group</mat-icon>
+              User Management
+            </h3>
+          </div>
+          <div class="card-content">
+            <app-user-list></app-user-list>
+            <div class="card-actions">
+              <button mat-raised-button class="primary-button" (click)="openCreateUserDialog()">
+                <mat-icon>person_add</mat-icon>
+                <span>Create New User</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <mat-icon>upload_file</mat-icon>
+              File Upload
+            </h3>
+          </div>
+          <div class="card-content">
+            <app-file-upload></app-file-upload>
+          </div>
+        </div>
+        
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <mat-icon>list_alt</mat-icon>
+              Master Records
+            </h3>
+          </div>
+          <div class="card-content">
+            <app-master-list></app-master-list>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div *ngIf="userRole === 'SELF_SERVICE_USER'">
-      <app-user-dashboard></app-user-dashboard>
+    <!-- Enumerator -->
+    <div *ngIf="userRole === 'ENUMERATOR'" class="dashboard-container">
+      <div class="dashboard-header">
+        <h2 class="dashboard-title">Agent Dashboard</h2>
+        <p class="dashboard-subtitle">Data collection and field operations</p>
+        <div class="role-badge">{{userRole | titlecase}}</div>
+      </div>
+      
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <mat-icon>analytics</mat-icon>
+            Agent Dashboard
+          </h3>
+        </div>
+        <div class="card-content">
+          <app-agent-dashboard></app-agent-dashboard>
+        </div>
+      </div>
+    </div>
+
+    <!-- Self Service User -->
+    <div *ngIf="userRole === 'SELF_SERVICE_USER'" class="dashboard-container">
+      <div class="dashboard-header">
+        <h2 class="dashboard-title">User Dashboard</h2>
+        <p class="dashboard-subtitle">Personal account and verification management</p>
+        <div class="role-badge">{{userRole | titlecase}}</div>
+      </div>
+      
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <mat-icon>account_circle</mat-icon>
+            User Portal
+          </h3>
+        </div>
+        <div class="card-content">
+          <app-user-dashboard></app-user-dashboard>
+        </div>
+      </div>
     </div>
   </main>
 </div>

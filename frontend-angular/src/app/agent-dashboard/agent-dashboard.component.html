@@ -1,0 +1,67 @@
+<div class="agent-dashboard-container">
+  <mat-card class="tool-card">
+    <mat-card-header>
+      <mat-card-title>Agent Assisted Onboarding</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      
+      <form *ngIf="!verificationResult" [formGroup]="onboardForm" (ngSubmit)="onOnboardSubmit()">
+        <p>Enter employee details to find, validate, and create their account.</p>
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Employee SSID</mat-label>
+          <input matInput formControlName="ssid" placeholder="Enter employee's SSID">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Employee NIN</mat-label>
+          <input matInput formControlName="nin" placeholder="Enter employee's NIN">
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Employee Email</mat-label>
+          <input matInput formControlName="email" type="email" placeholder="Enter employee's email address">
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="submit" [disabled]="onboardForm.invalid || isLoading" class="full-width">
+          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          <span *ngIf="!isLoading">Create Account & Verify</span>
+        </button>
+      </form>
+
+      <div *ngIf="verificationResult && verificationResult.success">
+        <h3>Please Review Details with the User</h3>
+        <p>Confirm the official information and perform a liveness check if required.</p>
+        
+        <mat-list role="list">
+          <mat-list-item role="listitem"><strong>Full Name:</strong> {{ verificationResult.record.fullName }}</mat-list-item>
+          <mat-list-item role="listitem"><strong>Business Unit:</strong> {{ verificationResult.record.businessUnit }}</mat-list-item>
+          <mat-list-item role="listitem"><strong>Grade Level:</strong> {{ verificationResult.record.gradeLevel }}</mat-list-item>
+          <mat-list-item role="listitem"><strong>Last Proof of Life:</strong> {{ verificationResult.record.lastProofOfLifeDate || 'N/A' }}</mat-list-item>
+        </mat-list>
+        
+        <div class="confirmation-actions">
+          <button mat-stroked-button color="accent" (click)="onLivenessCheck()" [disabled]="isConfirming">
+            <mat-icon>camera_front</mat-icon>
+            Perform Liveness Check
+          </button>
+          <button mat-raised-button color="primary" (click)="onConfirmDetails()" [disabled]="isConfirming">
+             <mat-spinner *ngIf="isConfirming" diameter="20"></mat-spinner>
+             <span *ngIf="!isConfirming">Confirm & Finalize</span>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="errorMessage" class="message-container error">
+        {{ errorMessage }}
+      </div>
+       <div *ngIf="successMessage" class="message-container success">
+        {{ successMessage }}
+      </div>
+       <div *ngIf="isLoading && !verificationResult" class="spinner-container">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+
+    </mat-card-content>
+  </mat-card>
+</div>
