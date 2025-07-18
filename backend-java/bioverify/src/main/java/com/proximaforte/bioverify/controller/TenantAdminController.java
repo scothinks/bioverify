@@ -1,54 +1,38 @@
 package com.proximaforte.bioverify.controller;
 
 import com.proximaforte.bioverify.domain.User;
-import com.proximaforte.bioverify.dto.AdminCreateUserRequest;
+import com.proximaforte.bioverify.dto.RegisterRequest;
 import com.proximaforte.bioverify.dto.UserDto;
 import com.proximaforte.bioverify.service.AuthenticationService;
+import com.proximaforte.bioverify.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1/tenant-admin")
+@RequestMapping("/api/v1/admin/users")
+@RequiredArgsConstructor
+@PreAuthorize("hasRole('TENANT_ADMIN')")
 public class TenantAdminController {
 
     private final AuthenticationService authenticationService;
+    private final UserService userService;
 
-    public TenantAdminController(AuthenticationService authenticationService) {
-        this.authenticationService = authenticationService;
+    @PostMapping
+    public ResponseEntity<UserDto> createUser(@RequestBody RegisterRequest request, @AuthenticationPrincipal User admin) {
+        request.setTenantId(admin.getTenant().getId());
+        User newUser = authenticationService.register(request);
+        return ResponseEntity.ok(new UserDto(newUser));
     }
 
-    /**
-     * Endpoint for a Tenant Admin to create a new user (e.g., an Enumerator).
-     */
-    @PostMapping("/users")
-    public ResponseEntity<UserDto> createUser(@RequestBody AdminCreateUserRequest request, Authentication authentication) {
-        User admin = (User) authentication.getPrincipal();
-        User newUser = authenticationService.createUserByAdmin(request, admin);
-        UserDto userDto = new UserDto(newUser);
-        return ResponseEntity.ok(userDto);
-    }
-
-    /**
-     * NEW: Endpoint for a Tenant Admin to get all users in their tenant.
-     */
-    @GetMapping("/users")
-    public ResponseEntity<List<UserDto>> getTenantUsers(Authentication authentication) {
-        User admin = (User) authentication.getPrincipal();
-        if (admin.getTenant() == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        
-        List<User> users = authenticationService.getUsersForTenant(admin.getTenant().getId());
-        
-        // Convert the list of User entities to a list of safe DTOs
-        List<UserDto> userDtos = users.stream()
-                .map(UserDto::new)
-                .collect(Collectors.toList());
-                
+    @GetMapping
+    public ResponseEntity<List<UserDto>> getTenantUsers(@AuthenticationPrincipal User admin) {
+        List<User> users = userService.getUsersForTenant(admin.getTenant().getId());
+        List<UserDto> userDtos = users.stream().map(UserDto::new).collect(Collectors.toList());
         return ResponseEntity.ok(userDtos);
     }
 }

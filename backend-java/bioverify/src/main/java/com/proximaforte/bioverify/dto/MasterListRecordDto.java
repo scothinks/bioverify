@@ -1,12 +1,13 @@
-// FILE: src/main/java/com/proximaforte/bioverify/dto/MasterListRecordDto.java
 package com.proximaforte.bioverify.dto;
 
-import com.proximaforte.bioverify.domain.RecordStatus;
+import com.proximaforte.bioverify.domain.MasterListRecord;
+import com.proximaforte.bioverify.domain.enums.RecordStatus;
+import lombok.Getter;
 import java.time.Instant;
 import java.util.UUID;
 
+@Getter
 public class MasterListRecordDto {
-
     private UUID id;
     private String fullName;
     private String businessUnit;
@@ -14,21 +15,13 @@ public class MasterListRecordDto {
     private RecordStatus status;
     private Instant createdAt;
 
-    // Constructor to map from the entity to the DTO
-    public MasterListRecordDto(UUID id, String fullName, String businessUnit, String gradeLevel, RecordStatus status, Instant createdAt) {
-        this.id = id;
-        this.fullName = fullName;
-        this.businessUnit = businessUnit;
-        this.gradeLevel = gradeLevel;
-        this.status = status;
-        this.createdAt = createdAt;
+    // Convenience constructor that maps an entity to this DTO
+    public MasterListRecordDto(MasterListRecord record) {
+        this.id = record.getId();
+        this.fullName = record.getFullName();
+        this.businessUnit = record.getBusinessUnit();
+        this.gradeLevel = record.getGradeLevel();
+        this.status = record.getStatus();
+        this.createdAt = record.getCreatedAt();
     }
-
-    // Standard Getters
-    public UUID getId() { return id; }
-    public String getFullName() { return fullName; }
-    public String getBusinessUnit() { return businessUnit; }
-    public String getGradeLevel() { return gradeLevel; }
-    public RecordStatus getStatus() { return status; }
-    public Instant getCreatedAt() { return createdAt; }
 }

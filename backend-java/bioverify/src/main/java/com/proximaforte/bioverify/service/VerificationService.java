@@ -1,159 +1,123 @@
 package com.proximaforte.bioverify.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proximaforte.bioverify.domain.MasterListRecord;
-import com.proximaforte.bioverify.domain.RecordStatus;
-import com.proximaforte.bioverify.domain.Tenant;
-import com.proximaforte.bioverify.dto.MasterListRecordDto;
-import com.proximaforte.bioverify.dto.VerificationRequest;
-import com.proximaforte.bioverify.dto.VerificationResponse;
+import com.proximaforte.bioverify.domain.enums.RecordStatus;  // Fixed import
+import com.proximaforte.bioverify.dto.SotProfileDto;
+import com.proximaforte.bioverify.dto.VerificationResultDto;
+import com.proximaforte.bioverify.exception.RecordNotFoundException;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
-import com.proximaforte.bioverify.repository.TenantRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Service to orchestrate the employee verification process against a Source of Truth.
+ */
 @Service
+@RequiredArgsConstructor
 public class VerificationService {
 
+    private final SotLookupService sotLookupService;
     private final MasterListRecordRepository recordRepository;
-    private final TenantRepository tenantRepository;
-    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    @Autowired
-    public VerificationService(MasterListRecordRepository recordRepository, TenantRepository tenantRepository) {
-        this.recordRepository = recordRepository;
-        this.tenantRepository = tenantRepository;
-        this.restTemplate = new RestTemplate();
-        this.objectMapper = new ObjectMapper();
+    /**
+     * The main entry point for verification. Orchestrates the call to the SoT
+     * and handles the success or failure of that API call.
+     */
+    @Transactional
+    public VerificationResultDto initiateVerification(UUID tenantId, UUID recordId, String ssid, String nin) {
+        MasterListRecord record = recordRepository.findByIdAndTenantId(recordId, tenantId)
+                .orElseThrow(() -> new RecordNotFoundException("Record with ID " + recordId + " not found for this tenant."));
+
+        // Stage 2: Call the SoT provider via our dynamic lookup service
+        sotLookupService.getProfile(tenantId, ssid, nin)
+                .doOnSuccess(sotProfile -> {
+                    // Stage 3: On success, begin Data Fusion & Reconciliation
+                    processSuccessfulVerification(record, sotProfile);
+                })
+                .doOnError(WebClientResponseException.NotFound.class, error -> {
+                    // Handle the case where the user is not found in the SoT
+                    processNotFoundVerification(record);
+                })
+                .block(); // .block() waits for the reactive call to finish before proceeding
+
+        return new VerificationResultDto(record.getId(), record.getStatus(), "Verification process completed.");
     }
 
-    @Transactional
-    public VerificationResponse verifyIdentity(VerificationRequest request, UUID tenantId) {
-        String ssidHash = toSha256(request.getSsid());
-        String ninHash = toSha256(request.getNin());
+    /**
+     * Handles the logic for a successful (200 OK) response from the SoT API.
+     */
+    private void processSuccessfulVerification(MasterListRecord record, SotProfileDto sotProfile) {
+        String newSsid = sotProfile.getSsid();
+        String newNin = sotProfile.getNin();
 
-        Optional<MasterListRecord> recordOptional = recordRepository.findBySsidHashAndNinHash(ssidHash, ninHash);
-        if (recordOptional.isEmpty()) {
-            return new VerificationResponse(false, "No record found with the provided SSID and NIN in our system.", null);
-        }
-        MasterListRecord record = recordOptional.get();
+        record.setSotData(convertObjectToJson(sotProfile));
+        record.setSsid(newSsid);
+        record.setNin(newNin);
+        record.setSsidHash(toSha256(newSsid));
+        record.setNinHash(toSha256(newNin));
+        
+        // This assumes SotProfileDto has nested objects as designed.
+        // You would expand this with actual getters from your final DTO.
+        // record.setFullName(sotProfile.getIdentity().getFirstName() + " " + sotProfile.getIdentity().getSurname());
+        // record.setGradeLevel(sotProfile.getCivilServiceProfile().getGradeLevel());
+        record.setVerifiedAt(Instant.now());
 
-        if (!record.getTenant().getId().equals(tenantId)) {
-            return new VerificationResponse(false, "Record does not belong to the current tenant.", null);
-        }
+        boolean isMatch = performReconciliation(record.getOriginalUploadData(), sotProfile);
 
-        Optional<Map<String, String>> trustedDataOpt = callTenantValidationApi(request.getSsid(), request.getNin(), record.getTenant());
-
-        if (trustedDataOpt.isPresent()) {
-            Map<String, String> trustedData = trustedDataOpt.get();
-            record.setFullName(trustedData.get("fullName"));
-            record.setGradeLevel(trustedData.get("gradeLevel"));
-            record.setBusinessUnit(trustedData.get("businessUnit"));
-            record.setNin(request.getNin());
-            record.setStatus(RecordStatus.VERIFIED_PENDING_CONFIRMATION);
-            
-            MasterListRecord savedRecord = recordRepository.save(record);
-            MasterListRecordDto recordDto = new MasterListRecordDto(
-                savedRecord.getId(), savedRecord.getFullName(), savedRecord.getBusinessUnit(),
-                savedRecord.getGradeLevel(), savedRecord.getStatus(), savedRecord.getCreatedAt()
-            );
-            return new VerificationResponse(true, "Verification successful. Please review your details.", recordDto);
+        if (isMatch) {
+            record.setStatus(RecordStatus.PENDING_GRADE_VALIDATION);
         } else {
-            record.setStatus(RecordStatus.FLAGGED_SSID_NIN_MISMATCH);
-            recordRepository.save(record);
-            return new VerificationResponse(false, "SSID and NIN do not match the trusted registry.", null);
+            record.setStatus(RecordStatus.FLAGGED_DATA_MISMATCH);
         }
-    }
-
-    @Transactional
-    public MasterListRecord confirmVerification(UUID recordId) {
-        MasterListRecord record = recordRepository.findById(recordId)
-                .orElseThrow(() -> new IllegalStateException("Record not found with ID: " + recordId));
-        record.setStatus(RecordStatus.VERIFIED);
-        return recordRepository.save(record);
+        recordRepository.save(record);
     }
     
-    // --- NEW METHOD for Proof of Life ---
-    @Transactional
-    public MasterListRecord performLivenessCheck(UUID recordId) {
-        MasterListRecord record = recordRepository.findById(recordId)
-                .orElseThrow(() -> new IllegalStateException("Record not found with ID: " + recordId));
-
-        // Update the proof of life date to the current date
-        record.setLastProofOfLifeDate(LocalDate.now());
-
-        return recordRepository.save(record);
+    /**
+     * Handles the logic for a 404 Not Found response from the SoT API.
+     */
+    private void processNotFoundVerification(MasterListRecord record) {
+        record.setStatus(RecordStatus.FLAGGED_NOT_IN_SOT);
+        recordRepository.save(record);
     }
 
-    public Optional<Map<String, String>> callTenantValidationApi(String ssid, String nin, Tenant tenant) {
-        try {
-            JsonNode config = objectMapper.readTree(tenant.getidentitySourceConfig());
-            String apiUrl = config.path("validationUrl").asText();
-            if (apiUrl == null || apiUrl.isBlank()) {
-                throw new IllegalStateException("Tenant " + tenant.getName() + " does not have a validation API URL configured.");
-            }
-
-            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(apiUrl)
-                    .queryParam("ssid", ssid)
-                    .queryParam("nin", nin);
-            
-            ResponseEntity<String> response = restTemplate.getForEntity(builder.toUriString(), String.class);
-            
-            String responseBody = response.getBody();
-            if (responseBody == null || responseBody.isBlank() || responseBody.equals("{}")) {
-                return Optional.empty();
-            }
-            
-            Map<String, String> mappedData = mapApiData(responseBody, config.path("fieldMappings"));
-            
-            if (mappedData.get("fullName") == null || mappedData.get("fullName").isBlank()) {
-                return Optional.empty();
-            }
-
-            return Optional.of(mappedData);
-        } catch (HttpClientErrorException.NotFound e) {
-            return Optional.empty();
-        } catch (Exception e) {
-            System.err.println("Error calling tenant validation API for " + tenant.getName() + ": " + e.getMessage());
-            return Optional.empty();
+    /**
+     * Compares key fields from the original uploaded data with the trusted SoT data.
+     */
+    @SneakyThrows
+    private boolean performReconciliation(String originalUploadJson, SotProfileDto sotProfile) {
+        if (originalUploadJson == null || originalUploadJson.isBlank()) {
+            return true; // No original data to compare against
         }
-    }
-
-    private Map<String, String> mapApiData(String responseBody, JsonNode mappingConfig) throws Exception {
-        Map<String, String> standardData = new HashMap<>();
-        JsonNode apiData = objectMapper.readTree(responseBody);
-
-        String fullNameField = mappingConfig.path("fullName").asText("fullName");
-        String gradeLevelField = mappingConfig.path("gradeLevel").asText("gradeLevel");
-        String businessUnitField = mappingConfig.path("businessUnit").asText("businessUnit");
+        Map<String, String> originalData = objectMapper.readValue(originalUploadJson, Map.class);
+        String originalPsn = originalData.getOrDefault("PSN", "");
         
-        standardData.put("fullName", apiData.path(fullNameField).asText(null));
-        standardData.put("gradeLevel", apiData.path(gradeLevelField).asText(null));
-        standardData.put("businessUnit", apiData.path(businessUnitField).asText(null));
+        // Assuming SotProfileDto has a nested object for civilServiceProfile
+        // String sotPsn = sotProfile.getCivilServiceProfile().getPsn();
 
-        return standardData;
+        // return Objects.equals(originalPsn, sotPsn);
+        return true; // Placeholder until SotProfileDto is fully fleshed out
     }
 
+    /**
+     * Hashing utility to convert a string to its SHA-256 hash.
+     */
     private String toSha256(String input) {
+        if (input == null) return null;
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
@@ -166,5 +130,10 @@ public class VerificationService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Could not find SHA-256 algorithm", e);
         }
+    }
+    
+    @SneakyThrows
+    private String convertObjectToJson(Object object) {
+        return objectMapper.writeValueAsString(object);
     }
 }

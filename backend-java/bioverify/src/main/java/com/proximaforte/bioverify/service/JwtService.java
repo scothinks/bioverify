@@ -9,7 +9,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
 
     @Value("${application.security.jwt.secret-key}")
@@ -31,13 +32,7 @@ public class JwtService {
     private long jwtExpiration;
     
     private final UserRepository userRepository;
-    private final MasterListRecordRepository recordRepository; // <-- DEPENDENCY ADDED
-
-    @Autowired
-    public JwtService(UserRepository userRepository, MasterListRecordRepository recordRepository) { // <-- CONSTRUCTOR UPDATED
-        this.userRepository = userRepository;
-        this.recordRepository = recordRepository;
-    }
+    private final MasterListRecordRepository recordRepository;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -61,8 +56,7 @@ public class JwtService {
             extraClaims.put("tenantId", user.getTenant().getId());
         }
 
-        // --- UPDATED LOGIC TO ADD STATUS CLAIM ---
-        // Find the master record directly via the repository to avoid lazy loading issues
+        // Find the master record to add the verification status to the token
         Optional<MasterListRecord> recordOpt = recordRepository.findByUserId(user.getId());
         if (recordOpt.isPresent()) {
             MasterListRecord record = recordOpt.get();
@@ -70,7 +64,6 @@ public class JwtService {
                 extraClaims.put("status", record.getStatus().name());
             }
         }
-        // --- END OF UPDATED LOGIC ---
 
         return Jwts.builder()
                 .setClaims(extraClaims)
@@ -89,6 +82,8 @@ public class JwtService {
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
+
+
 
     private Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);

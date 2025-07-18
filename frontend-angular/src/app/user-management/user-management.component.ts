@@ -1,10 +1,9 @@
-// FILE: src/app/user-management/user-management.component.ts
-
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Tenant } from '../models/tenant.model';
-import { AuthService } from '../services/auth.service';
+import { AuthService, AuthRequest } from '../services/auth.service'; // Import AuthRequest
+import { HttpErrorResponse } from '@angular/common/http'; // Import HttpErrorResponse
 
 // Material Imports
 import { MatCardModule } from '@angular/material/card';
@@ -17,17 +16,18 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 
+
 @Component({
   selector: 'app-user-management',
   standalone: true,
   imports: [
-    CommonModule, 
-    ReactiveFormsModule, 
-    MatCardModule, 
+    CommonModule,
+    ReactiveFormsModule,
+    MatCardModule,
     MatFormFieldModule,
-    MatInputModule, 
-    MatButtonModule, 
-    MatIconModule, 
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
     MatSnackBarModule,
     MatSelectModule,
     MatProgressSpinnerModule,
@@ -44,7 +44,6 @@ export class UserManagementComponent implements OnInit {
   hidePassword = true;
   isSubmitting = false;
 
-  // Available roles for the select dropdown
   readonly roles = [
     { value: 'TENANT_ADMIN', label: 'Administrator' },
     { value: 'TENANT_MANAGER', label: 'Manager' },
@@ -75,17 +74,18 @@ export class UserManagementComponent implements OnInit {
     this.isSubmitting = true;
     const formValue = this.userForm.value;
 
-    const request = {
+    const request: AuthRequest = {
       fullName: formValue.fullName.trim(),
       email: formValue.email.trim().toLowerCase(),
       password: formValue.password,
       role: formValue.role,
-      tenantId: this.tenant.id
+      // Assuming you will modify your backend to accept tenantId in this request
+      // tenantId: this.tenant.id 
     };
 
     this.authService.register(request).subscribe({
       next: () => {
-        this.snackBar.open('User created successfully!', 'Close', { 
+        this.snackBar.open('User created successfully!', 'Close', {
           duration: 3000,
           panelClass: ['success-snackbar']
         });
@@ -94,8 +94,9 @@ export class UserManagementComponent implements OnInit {
         this.hidePassword = true;
         this.isSubmitting = false;
       },
-      error: (err) => {
-        this.snackBar.open(this.getErrorMessage(err), 'Close', { 
+      // Add the correct type to the error parameter
+      error: (err: HttpErrorResponse) => {
+        this.snackBar.open(this.getErrorMessage(err), 'Close', {
           duration: 5000,
           panelClass: ['error-snackbar']
         });
@@ -117,7 +118,7 @@ export class UserManagementComponent implements OnInit {
     });
   }
 
-  private getErrorMessage(error: any): string {
+  private getErrorMessage(error: HttpErrorResponse): string {
     if (error?.error?.message) {
       return error.error.message;
     }

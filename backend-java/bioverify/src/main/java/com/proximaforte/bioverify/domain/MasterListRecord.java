@@ -1,14 +1,18 @@
 package com.proximaforte.bioverify.domain;
 
 import com.proximaforte.bioverify.crypto.StringCryptoConverter;
+import com.proximaforte.bioverify.domain.enums.RecordStatus;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "master_list_records")
 public class MasterListRecord {
@@ -22,10 +26,19 @@ public class MasterListRecord {
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
-    @ManyToOne(fetch = FetchType.LAZY) // Allow null until user is created
-    @JoinColumn(name = "user_id", unique = true) // A user can only be linked to one record
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true)
     private User user;
 
+    // --- NEW: Fields for PSN ---
+    @Column
+    @Convert(converter = StringCryptoConverter.class)
+    private String psn;
+
+    @Column(unique = true)
+    private String psnHash;
+    
+    // --- Existing Fields ---
     @Column
     @Convert(converter = StringCryptoConverter.class)
     private String ssid;
@@ -47,8 +60,7 @@ public class MasterListRecord {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RecordStatus status;
-    
-    // --- NEW HASH FIELDS FOR FAST LOOKUPS ---
+
     @Column(unique = true)
     private String ssidHash;
 
@@ -56,6 +68,22 @@ public class MasterListRecord {
     private String ninHash;
 
     private LocalDate lastProofOfLifeDate;
+    
+    @Column(columnDefinition = "TEXT")
+    private String originalUploadData;
+
+    @Column(columnDefinition = "TEXT")
+    private String sotData;
+
+    @Column
+    private Instant verifiedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "validated_by_user_id")
+    private User validatedBy;
+
+    @Column
+    private Instant validatedAt;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -63,34 +91,4 @@ public class MasterListRecord {
 
     @UpdateTimestamp
     private Instant updatedAt;
-
-    // --- Getters and Setters ---
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public Tenant getTenant() { return tenant; }
-    public void setTenant(Tenant tenant) { this.tenant = tenant; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-    public String getSsid() { return ssid; }
-    public void setSsid(String ssid) { this.ssid = ssid; }
-    public String getNin() { return nin; }
-    public void setNin(String nin) { this.nin = nin; }
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
-    public String getBusinessUnit() { return businessUnit; }
-    public void setBusinessUnit(String businessUnit) { this.businessUnit = businessUnit; }
-    public String getGradeLevel() { return gradeLevel; }
-    public void setGradeLevel(String gradeLevel) { this.gradeLevel = gradeLevel; }
-    public RecordStatus getStatus() { return status; }
-    public void setStatus(RecordStatus status) { this.status = status; }
-    public String getSsidHash() { return ssidHash; }
-    public void setSsidHash(String ssidHash) { this.ssidHash = ssidHash; }
-    public String getNinHash() { return ninHash; }
-    public void setNinHash(String ninHash) { this.ninHash = ninHash; }
-    public LocalDate getLastProofOfLifeDate() { return lastProofOfLifeDate; }
-    public void setLastProofOfLifeDate(LocalDate lastProofOfLifeDate) { this.lastProofOfLifeDate = lastProofOfLifeDate; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

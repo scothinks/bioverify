@@ -2,10 +2,11 @@ package com.proximaforte.bioverify.dto;
 
 import com.proximaforte.bioverify.domain.User;
 import com.proximaforte.bioverify.domain.enums.Role;
+import lombok.Getter;
 import java.util.UUID;
 
+@Getter
 public class UserDto {
-
     private UUID id;
     private String fullName;
     private String email;
@@ -17,10 +18,4 @@ public class UserDto {
         this.email = user.getEmail();
         this.role = user.getRole();
     }
-
-    // Getters
-    public UUID getId() { return id; }
-    public String getFullName() { return fullName; }
-    public String getEmail() { return email; }
-    public Role getRole() { return role; }
 }

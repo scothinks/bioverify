@@ -15,6 +15,9 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
 
     Optional<MasterListRecord> findBySsidHashAndNinHash(String ssidHash, String ninHash);
 
-    // NEW METHOD: Finds a master list record by its associated user's ID.
     Optional<MasterListRecord> findByUserId(UUID userId);
+
+    Optional<MasterListRecord> findByIdAndTenantId(UUID id, UUID tenantId);
+
+    Optional<MasterListRecord> findByPsnHashAndTenantId(String psnHash, UUID tenantId);
 }

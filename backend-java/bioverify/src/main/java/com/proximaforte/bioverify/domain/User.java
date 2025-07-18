@@ -2,6 +2,8 @@ package com.proximaforte.bioverify.domain;
 
 import com.proximaforte.bioverify.domain.enums.Role;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
@@ -13,6 +15,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
@@ -48,42 +52,12 @@ public class User implements UserDetails {
 
     @UpdateTimestamp
     private Instant updatedAt;
-
-    // --- Getters and Setters ---
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
-    public Tenant getTenant() { return tenant; }
-    public void setTenant(Tenant tenant) { this.tenant = tenant; }
-    public MasterListRecord getMasterListRecord() { return masterListRecord; }
-    public void setMasterListRecord(MasterListRecord masterListRecord) { this.masterListRecord = masterListRecord; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
-    public void setEmail(String email) { this.email = email; }
-    public void setPassword(String password) { this.password = password; }
     
-    // --- METHOD ADDED ---
-    public String getEmail() {
-        return this.email;
-    }
-
-
     // --- UserDetails Implementation ---
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.name()));
-    }
-
-    @Override
-    public String getPassword() {
-        return password;
     }
 
     @Override

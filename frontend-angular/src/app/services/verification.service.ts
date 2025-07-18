@@ -8,38 +8,45 @@ export interface VerificationRequest {
   nin: string;
 }
 
+// Updated to match the backend's VerificationResultDto
+export interface VerificationResponse {
+  recordId: string;
+  newStatus: string; // e.g., 'PENDING_GRADE_VALIDATION', 'FLAGGED_DATA_MISMATCH'
+  message: string;
+}
+
+// Interface for agent onboarding
 export interface OnboardRequest {
   ssid: string;
   nin: string;
   email: string;
 }
 
-export interface VerificationResponse {
-  success: boolean;
-  message: string;
-  record?: any; // The user's record details
-}
-
 @Injectable({
   providedIn: 'root'
 })
 export class VerificationService {
-  private verificationApiUrl = 'http://localhost:8080/api/v1/verification';
+  // Define a new base URL for the records API
+  private recordsApiUrl = 'http://localhost:8080/api/v1/records';
   private agentApiUrl = 'http://localhost:8080/api/v1/agent';
 
   constructor(private http: HttpClient) { }
 
   // --- Methods for Self-Service Users ---
 
-  verifyIdentity(data: VerificationRequest): Observable<VerificationResponse> {
-    return this.http.post<VerificationResponse>(`${this.verificationApiUrl}/verify`, data);
+  /**
+   * Submits SSID and NIN to the new verification endpoint for a specific record.
+   * @param recordId The ID of the master list record to verify.
+   * @param data The verification data containing SSID and NIN.
+   */
+  verifyIdentity(recordId: string, data: VerificationRequest): Observable<VerificationResponse> {
+    // Calls the new, more RESTful endpoint: POST /api/v1/records/{recordId}/verify
+    return this.http.post<VerificationResponse>(`${this.recordsApiUrl}/${recordId}/verify`, data);
   }
 
-  confirmVerification(recordId: string): Observable<any> {
-    return this.http.post<any>(`${this.verificationApiUrl}/confirm`, { recordId });
-  }
+  // The confirmVerification method has been removed as it's obsolete in the new workflow.
 
-  // --- Methods for Enumerators ---
+  // --- Methods for Enumerators (Unchanged) ---
 
   /**
    * Submits the full onboarding and verification package for an employee.

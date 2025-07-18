@@ -1,4 +1,4 @@
-// FILE: src/app/user-management/user-management.component.scss
+@use "sass:color";
 
 // Variables
 $primary-color: #1976d2;
@@ -58,7 +58,8 @@ $transition: all 0.3s ease;
 }
 
 .card-header {
-  background: linear-gradient(135deg, $primary-color 0%, lighten($primary-color, 10%) 100%);
+  // UPDATED to use color.adjust
+  background: linear-gradient(135deg, $primary-color 0%, color.adjust($primary-color, $lightness: 10%) 100%);
   color: white;
   padding: 24px;
   margin: -24px -24px 24px -24px;
@@ -261,7 +262,8 @@ $transition: all 0.3s ease;
       @include flex-center;
       width: 48px;
       height: 48px;
-      background: linear-gradient(135deg, $primary-color, lighten($primary-color, 20%));
+      // UPDATED to use color.adjust
+      background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: 20%));
       border-radius: 50%;
       color: white;
       

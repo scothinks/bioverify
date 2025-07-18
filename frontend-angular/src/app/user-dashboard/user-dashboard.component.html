@@ -1,47 +1,61 @@
-<div class="dashboard-container" *ngIf="!isLoading; else loadingSpinner">
-  <mat-card class="dashboard-card" *ngIf="userRecord">
+<div class="dashboard-container">
+  <mat-card class="dashboard-card">
     <mat-card-header>
-      <mat-card-title>Welcome, {{ userRecord.fullName }}</mat-card-title>
-      <mat-card-subtitle>Your Personal Dashboard</mat-card-subtitle>
+      <mat-card-title>Your Dashboard</mat-card-title>
     </mat-card-header>
-    <mat-card-content>
+    <mat-card-content *ngIf="userRecord; else loading">
       
-      <div class="status-display">
-        <span>Verification Status:</span>
-        <span class="status-badge" [ngClass]="'status-' + userRecord.status.toLowerCase()">
-          {{ userRecord.status.replace('_', ' ') }}
-        </span>
-      </div>
+      <h3>Welcome, {{ userRecord.fullName }}</h3>
+      
+      <mat-list role="list">
+        <mat-list-item role="listitem">
+          <span matListItemTitle>Status</span>
+          <span matListItemLine class="status-badge {{ userRecord.status }}">{{ userRecord.status }}</span>
+        </mat-list-item>
+        <mat-list-item role="listitem">
+          <span matListItemTitle>Business Unit</span>
+          <span matListItemLine>{{ userRecord.businessUnit }}</span>
+        </mat-list-item>
+        <mat-list-item role="listitem">
+          <span matListItemTitle>Grade Level</span>
+          <span matListItemLine>{{ userRecord.gradeLevel }}</span>
+        </mat-list-item>
+      </mat-list>
 
-      <div *ngIf="userRecord.status === 'VERIFIED_PENDING_CONFIRMATION' && !successMessage" class="confirmation-panel">
+      <div *ngIf="userRecord.status === 'AWAITING_REVALIDATION'" class="reverification-section">
         <hr>
-        <h3>Please Review Your Details</h3>
-        <p>Confirm that the following information is correct to finalize your verification.</p>
-        <mat-list role="list">
-          <mat-list-item role="listitem"><strong>Full Name:</strong> {{ userRecord.fullName }}</mat-list-item>
-          <mat-list-item role="listitem"><strong>Business Unit:</strong> {{ userRecord.businessUnit }}</mat-list-item>
-          <mat-list-item role="listitem"><strong>Grade Level:</strong> {{ userRecord.gradeLevel }}</mat-list-item>
-        </mat-list>
-        <div class="confirmation-actions">
-          <button mat-stroked-button color="warn">Details are Incorrect</button>
-          <button mat-raised-button color="primary" (click)="onConfirmDetails()" [disabled]="isConfirming">
-             <mat-spinner *ngIf="isConfirming" diameter="20"></mat-spinner>
-             <span *ngIf="!isConfirming">Confirm Details</span>
+        <h4><mat-icon>warning</mat-icon> Action Required: Re-verification Needed</h4>
+        <p>Your record details have been updated. Please re-verify your identity to continue.</p>
+
+        <form [formGroup]="reverifyForm" (ngSubmit)="onReverifySubmit()">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>SSID</mat-label>
+            <input matInput formControlName="ssid">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>NIN</mat-label>
+            <input matInput formControlName="nin">
+          </mat-form-field>
+
+          <button mat-raised-button color="primary" type="submit" [disabled]="reverifyForm.invalid || isLoading" class="full-width">
+            <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+            <span *ngIf="!isLoading">Submit Re-verification</span>
           </button>
-        </div>
+        </form>
       </div>
 
-      <div *ngIf="successMessage" class="success-message">
-        <mat-icon color="primary">check_circle</mat-icon>
-        <span>{{ successMessage }}</span>
+      <div *ngIf="statusMessage" class="status-message">
+        {{ statusMessage }}
       </div>
-
+      
     </mat-card-content>
+    
+    <ng-template #loading>
+      <div class="spinner-container">
+        <mat-spinner></mat-spinner>
+        <p>Loading your record...</p>
+      </div>
+    </ng-template>
+
   </mat-card>
 </div>
-
-<ng-template #loadingSpinner>
-  <div class="spinner-container">
-    <mat-spinner></mat-spinner>
-  </div>
-</ng-template>

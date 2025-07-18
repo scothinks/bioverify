@@ -11,7 +11,7 @@
         <mat-icon>attach_file</mat-icon>
         Choose File
       </button>
-      <input hidden #fileInput type="file" (change)="onFileSelected($event)" accept=".csv">
+      <input hidden #fileInput type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx, .xls">
       
       <div *ngIf="hasFileSelected" class="file-info">
         <div class="file-details">

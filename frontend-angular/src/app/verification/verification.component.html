@@ -4,46 +4,30 @@
     <mat-card-subtitle>Please provide your SSID and NIN to proceed.</mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
+    <form [formGroup]="verificationForm" (ngSubmit)="onSubmit()">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>SSID</mat-label>
+        <input matInput formControlName="ssid" placeholder="Enter your SSID">
+      </mat-form-field>
 
-    <!-- Step 1: Verification Form -->
-    <div *ngIf="!verificationResult">
-      <form [formGroup]="verificationForm" (ngSubmit)="onSubmit()">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>SSID</mat-label>
-          <input matInput formControlName="ssid" placeholder="Enter your SSID">
-        </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>NIN</mat-label>
+        <input matInput formControlName="nin" placeholder="Enter your National Identification Number">
+      </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>NIN</mat-label>
-          <input matInput formControlName="nin" placeholder="Enter your National Identification Number">
-        </mat-form-field>
-
-        <div *ngIf="errorMessage" class="error-message">
-          <mat-icon>warning</mat-icon>
-          <span>{{ errorMessage }}</span>
-        </div>
-
-        <button mat-raised-button color="primary" type="submit" [disabled]="verificationForm.invalid || isLoading" class="full-width">
-          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
-          <span *ngIf="!isLoading">Verify Identity</span>
-        </button>
-      </form>
-    </div>
-
-    <!-- Step 2: Confirmation View -->
-    <div *ngIf="verificationResult && verificationResult.success">
-      <h3>Please Review Your Details</h3>
-      <p>Confirm that the following information is correct.</p>
-      <mat-list role="list">
-        <mat-list-item role="listitem"><strong>Full Name:</strong> {{ verificationResult.record.fullName }}</mat-list-item>
-        <mat-list-item role="listitem"><strong>Business Unit:</strong> {{ verificationResult.record.businessUnit }}</mat-list-item>
-        <mat-list-item role="listitem"><strong>Grade Level:</strong> {{ verificationResult.record.gradeLevel }}</mat-list-item>
-      </mat-list>
-      <div class="confirmation-actions">
-        <button mat-stroked-button color="warn" (click)="onRejectDetails()">Details are Incorrect</button>
-        <button mat-raised-button color="primary" (click)="onConfirmDetails()">Confirm Details</button>
+      <div *ngIf="errorMessage" class="error-message">
+        <mat-icon>warning</mat-icon>
+        <span>{{ errorMessage }}</span>
       </div>
-    </div>
+       <div *ngIf="successMessage" class="success-message">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ successMessage }}</span>
+      </div>
 
+      <button mat-raised-button color="primary" type="submit" [disabled]="verificationForm.invalid || isLoading" class="full-width">
+        <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+        <span *ngIf="!isLoading">Verify Identity</span>
+      </button>
+    </form>
   </mat-card-content>
 </mat-card>

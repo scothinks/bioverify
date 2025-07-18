@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { VerificationService, VerificationResponse, OnboardRequest } from '../services/verification.service';
+import { VerificationService, OnboardRequest } from '../services/verification.service';
 
 // Import Angular Material Modules
 import { MatCardModule } from '@angular/material/card';
@@ -26,12 +26,9 @@ export class AgentDashboardComponent {
   onboardForm: FormGroup;
   
   isLoading = false;
-  isConfirming = false;
   errorMessage = '';
   successMessage = '';
   
-  verificationResult: VerificationResponse | null = null;
-
   constructor(
     private fb: FormBuilder,
     private verificationService: VerificationService
@@ -49,70 +46,33 @@ export class AgentDashboardComponent {
     this.isLoading = true;
     this.errorMessage = '';
     this.successMessage = '';
-    this.verificationResult = null;
 
     const requestData: OnboardRequest = this.onboardForm.value;
 
+    // The entire process is now handled by this single service call
     this.verificationService.onboardUserByAgent(requestData).subscribe({
       next: (response) => {
         this.isLoading = false;
-        if (response.success) {
-          this.verificationResult = response;
-        } else {
-          this.errorMessage = response.message;
-        }
+        // Assuming the response contains a success message
+        this.successMessage = response.message || 'User has been successfully onboarded and verified!';
+        this.onboardForm.reset(); // Reset the form for the next employee
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Onboarding process failed.';
+        this.errorMessage = err.error?.message || 'Onboarding process failed. Please check the details and try again.';
       }
     });
   }
 
-  onConfirmDetails(): void {
-    if (!this.verificationResult?.record?.id) return;
+  // The onConfirmDetails method is no longer needed and has been removed.
 
-    this.isConfirming = true;
-    this.verificationService.confirmVerification(this.verificationResult.record.id).subscribe({
-      next: (response) => {
-        this.isConfirming = false;
-        this.successMessage = response.message || 'Record has been successfully verified!';
-        this.reset();
-      },
-      error: (err) => {
-        this.isConfirming = false;
-        this.errorMessage = err.error?.message || 'Could not finalize verification.';
-      }
-    });
-  }
-
-  // --- NEW METHOD for Liveness Check ---
-  onLivenessCheck(): void {
-    if (!this.verificationResult?.record?.id) return;
-
-    this.isConfirming = true; // Reuse the confirming spinner
-    this.verificationService.performLivenessCheck(this.verificationResult.record.id).subscribe({
-      next: (response) => {
-        this.isConfirming = false;
-        // Update the local record to show the new date immediately
-        if(this.verificationResult?.record) {
-            this.verificationResult.record.lastProofOfLifeDate = new Date().toISOString();
-        }
-        alert('Proof of Life date updated successfully!');
-      },
-      error: (err) => {
-        this.isConfirming = false;
-        this.errorMessage = err.error?.message || 'Liveness check failed.';
-      }
-    });
-  }
+  // The onLivenessCheck method has been removed to focus on the core onboarding flow.
+  // It can be added back as a separate feature in the user dashboard or a different tool.
 
   reset(): void {
     this.onboardForm.reset();
-    this.verificationResult = null;
     this.errorMessage = '';
     this.successMessage = '';
     this.isLoading = false;
-    this.isConfirming = false;
   }
 }

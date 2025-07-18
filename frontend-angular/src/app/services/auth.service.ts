@@ -15,6 +15,7 @@ export interface AuthRequest {
   role?: string;
   ssid?: string;
   nin?: string;
+  recordId?: string;
 }
 
 export interface DecodedToken {
@@ -31,7 +32,7 @@ export interface DecodedToken {
 })
 export class AuthService {
   private authApiUrl = 'http://localhost:8080/api/v1/auth';
-  private v1ApiUrl = 'http://localhost:8080/api/v1'; // Base URL for general v1 APIs
+  private v1ApiUrl = 'http://localhost:8080/api/v1';
   private readonly TOKEN_KEY = 'bioverify_auth_token';
 
   private isLoggedInSubject = new BehaviorSubject<boolean>(this.isLoggedIn());
@@ -46,13 +47,28 @@ export class AuthService {
     );
   }
 
-  register(userData: AuthRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.authApiUrl}/register`, userData).pipe(
-      tap(response => this.setToken(response.token)),
+  /**
+   * For an ADMIN to create a new administrative user (e.g., Tenant Manager, Focal Officer).
+   * Does NOT log in as the created user.
+   */
+  register(userData: AuthRequest): Observable<any> {
+    return this.http.post<any>(`${this.authApiUrl}/register`, userData).pipe(
       catchError(this.handleError)
     );
   }
 
+  /**
+   * For an EMPLOYEE to create their own account after their identity has been successfully verified.
+   */
+  createAccount(accountData: AuthRequest): Observable<any> {
+    return this.http.post<any>(`${this.authApiUrl}/create-account`, accountData).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * @deprecated This method uses the old combined registration/verification flow and should be removed.
+   */
   registerEmployee(userData: AuthRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.authApiUrl}/register-employee`, userData).pipe(
       tap(response => this.setToken(response.token)),
@@ -61,7 +77,7 @@ export class AuthService {
   }
 
   /**
-   * NEW: Fetches the full MasterListRecord for the currently logged-in user.
+   * Fetches the full MasterListRecord for the currently logged-in user.
    */
   getCurrentUserRecord(): Observable<MasterListRecord> {
     return this.http.get<MasterListRecord>(`${this.v1ApiUrl}/users/me/record`).pipe(
