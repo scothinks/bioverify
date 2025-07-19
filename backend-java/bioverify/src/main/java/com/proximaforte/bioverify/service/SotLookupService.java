@@ -1,14 +1,18 @@
 package com.proximaforte.bioverify.service;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proximaforte.bioverify.domain.Tenant;
 import com.proximaforte.bioverify.dto.IdentitySourceConfigDto;
-import com.proximaforte.bioverify.dto.SotProfileDto; 
+import com.proximaforte.bioverify.dto.SotProfileDto;
 import com.proximaforte.bioverify.exception.TenantConfigurationException;
 import com.proximaforte.bioverify.exception.TenantNotFoundException;
 import com.proximaforte.bioverify.repository.TenantRepository;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -17,32 +21,20 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServletOAuth2AuthorizedClientExchangeFilterFunction;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
 import java.util.UUID;
 
-/**
- * A service to perform lookups against a tenant's configured Source of Truth (SoT) provider.
- * This service dynamically configures an OAuth 2.0 client for each request based on tenant-specific
- * settings stored in the database.
- */
 @Service
 @RequiredArgsConstructor
 public class SotLookupService {
 
     private final TenantRepository tenantRepository;
     private final EncryptionService encryptionService;
-    private final ObjectMapper objectMapper; 
+    private final ObjectMapper objectMapper;
+    private final WebClient.Builder webClientBuilder;
 
-    /**
-     * Fetches a user's profile from the correct SoT provider based on the tenantId.
-     *
-     * @param tenantId The ID of the tenant whose SoT we need to call.
-     * @param ssid     The user's State Security ID.
-     * @param nin      The user's National Identity Number.
-     * @return A Mono containing the user's profile DTO.
-     */
-    @SneakyThrows // A Lombok annotation to handle the checked exception from objectMapper.readValue
+    @SneakyThrows
     public Mono<SotProfileDto> getProfile(UUID tenantId, String ssid, String nin) {
-        // Step 1: Fetch the tenant entity from the database.
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new TenantNotFoundException("Configuration for tenant " + tenantId + " not found."));
 
@@ -51,13 +43,69 @@ public class SotLookupService {
             throw new TenantConfigurationException("SoT API configuration is missing for tenant " + tenantId);
         }
 
-        // Step 2: Parse the configuration from the JSON string into our DTO.
         IdentitySourceConfigDto config = objectMapper.readValue(jsonConfig, IdentitySourceConfigDto.class);
 
-        // Step 3: Build a WebClient IN REAL-TIME using the config from the DTO.
-        WebClient webClient = buildOAuthClientForConfig(tenant.getId().toString(), config);
+        if ("OPTIMA".equalsIgnoreCase(config.getProviderName())) {
+            return getProfileFromOptimaProvider(config, nin, ssid);
+        } else {
+            return getProfileWithOAuth2(tenant.getId().toString(), config, nin, ssid);
+        }
+    }
 
-        // Step 4: Make the API call to the tenant's specific API endpoint.
+    private Mono<SotProfileDto> getProfileFromOptimaProvider(IdentitySourceConfigDto config, String nin, String ssid) {
+        WebClient webClient = webClientBuilder.build();
+        String baseUrl = config.getApiBaseUrl();
+
+        // Step 1: Call /encrypt
+        Map<String, String> initialPayload = Map.of("nin", nin, "ssid", ssid);
+        return webClient.post()
+            .uri(baseUrl + "/encrypt")
+            .header("client-id", config.getClientId()) // **FIXED: Changed header to match Postman**
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(initialPayload)
+            .retrieve()
+            .bodyToMono(ApiResponseWrapper.class)
+            .flatMap(encryptResponse -> {
+                // Step 2: Call /data-inquiry
+                String encryptedRequestPayload = encryptResponse.getData();
+                return webClient.post()
+                    .uri(baseUrl + "/data-inquiry")
+                    .header("client-id", config.getClientId()) // **FIXED: Changed header to match Postman**
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(encryptedRequestPayload)
+                    .retrieve()
+                    .bodyToMono(ApiResponseWrapper.class);
+            })
+            .flatMap(inquiryResponse -> {
+                // Step 3: Call /decrypt
+                String encryptedResponsePayload = inquiryResponse.getData();
+                return webClient.post()
+                    .uri(baseUrl + "/decrypt")
+                    .header("client-id", config.getClientId()) // **FIXED: Changed header to match Postman**
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(encryptedResponsePayload)
+                    .retrieve()
+                    .bodyToMono(ApiResponseWrapper.class);
+            })
+            .map(decryptResponse -> {
+                // Final Step: Parse the decrypted JSON
+                try {
+                    String finalJson = decryptResponse.getData();
+                    return objectMapper.readValue(finalJson, SotProfileDto.class);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to parse final decrypted response", e);
+                }
+            });
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class ApiResponseWrapper {
+        private String data;
+    }
+    
+    private Mono<SotProfileDto> getProfileWithOAuth2(String registrationId, IdentitySourceConfigDto config, String nin, String ssid) {
+        WebClient webClient = buildOAuthClientForConfig(registrationId, config);
         String lookupUrl = config.getApiBaseUrl() + "/v1/identities/lookup";
         return webClient.get()
                 .uri(lookupUrl, uriBuilder -> uriBuilder
@@ -68,35 +116,20 @@ public class SotLookupService {
                 .bodyToMono(SotProfileDto.class);
     }
 
-    /**
-     * Constructs a WebClient instance on-the-fly, configured for OAuth 2.0 client credentials.
-     *
-     * @param registrationId A unique ID for the client registration (we use the tenant's UUID).
-     * @param config         The DTO containing the tenant's specific API credentials and URLs.
-     * @return A fully configured WebClient ready to make authenticated requests.
-     */
     private WebClient buildOAuthClientForConfig(String registrationId, IdentitySourceConfigDto config) {
-        // Decrypt the sensitive client secret retrieved from the database.
         String decryptedSecret = encryptionService.decrypt(config.getClientSecretEncrypted());
-
-        // Create a unique ClientRegistration for this specific tenant and request.
         ClientRegistration clientRegistration = ClientRegistration
                 .withRegistrationId(registrationId)
                 .clientId(config.getClientId())
                 .clientSecret(decryptedSecret)
                 .tokenUri(config.getTokenUri())
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .scope("api.read") // Example scope, can also be part of the config DTO
+                .scope("api.read")
                 .build();
-
-        // Create a repository for this single, in-memory registration.
         InMemoryClientRegistrationRepository registrationRepository = new InMemoryClientRegistrationRepository(clientRegistration);
-        
-        // This filter function handles the token exchange process automatically.
         ServletOAuth2AuthorizedClientExchangeFilterFunction oauth2Filter =
                 new ServletOAuth2AuthorizedClientExchangeFilterFunction(registrationRepository, null);
-
-        return WebClient.builder()
+        return webClientBuilder.build().mutate()
                 .apply(oauth2Filter.oauth2Configuration())
                 .build();
     }

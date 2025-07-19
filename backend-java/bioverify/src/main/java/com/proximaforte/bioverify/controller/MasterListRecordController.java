@@ -42,7 +42,6 @@ public class MasterListRecordController {
     public ResponseEntity<UploadSummaryDto> uploadMasterList(
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal User currentUser) throws Exception {
-        // CORRECTED: Pass the tenant's ID (UUID) instead of the whole Tenant object.
         UploadSummaryDto summary = uploadService.processUpload(file, currentUser.getTenant().getId());
         return ResponseEntity.ok(summary);
     }
