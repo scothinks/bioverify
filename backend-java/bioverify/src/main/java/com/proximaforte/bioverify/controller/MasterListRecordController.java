@@ -4,6 +4,7 @@ import com.proximaforte.bioverify.domain.MasterListRecord;
 import com.proximaforte.bioverify.domain.User;
 import com.proximaforte.bioverify.dto.*;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
+import com.proximaforte.bioverify.service.BulkVerificationService;
 import com.proximaforte.bioverify.service.MasterListUploadService;
 import com.proximaforte.bioverify.service.VerificationService;
 import lombok.RequiredArgsConstructor;
@@ -26,13 +27,14 @@ public class MasterListRecordController {
     private final MasterListUploadService uploadService;
     private final VerificationService verificationService;
     private final MasterListRecordRepository recordRepository;
+    private final BulkVerificationService bulkVerificationService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<MasterListRecordDto>> getTenantRecords(@AuthenticationPrincipal User currentUser) {
         List<MasterListRecord> records = recordRepository.findAllByTenantId(currentUser.getTenant().getId());
         List<MasterListRecordDto> recordDtos = records.stream()
-                .map(MasterListRecordDto::new) // Uses the new convenience constructor
+                .map(MasterListRecordDto::new)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(recordDtos);
     }
@@ -56,6 +58,17 @@ public class MasterListRecordController {
                 currentUser.getTenant().getId(), recordId, request.getSsid(), request.getNin()
         );
         return ResponseEntity.ok(result);
+    }
+
+   
+    @PostMapping("/bulk-verify")
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
+    public ResponseEntity<?> bulkVerify(@AuthenticationPrincipal User currentUser) {
+        // This call will now trigger the job for all pending records for the tenant
+        bulkVerificationService.startBulkVerification(currentUser);
+        
+        // Immediately return a 202 Accepted response
+        return ResponseEntity.accepted().body(Map.of("message", "Bulk verification process for all pending records has been initiated."));
     }
 
     @PostMapping("/notify")

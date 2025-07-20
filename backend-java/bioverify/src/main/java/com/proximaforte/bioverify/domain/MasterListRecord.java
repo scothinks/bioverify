@@ -25,47 +25,87 @@ public class MasterListRecord {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
+    
+    // --- FIELD TO ASSOCIATE WITH A BATCH UPLOAD ---
+    @Column(nullable = true)
+    private UUID uploadId;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
     private User user;
 
-    // --- NEW: Fields for PSN ---
+    // --- Core Identifiers ---
     @Column
     @Convert(converter = StringCryptoConverter.class)
     private String psn;
 
     @Column(unique = true)
     private String psnHash;
-    
-    // --- Existing Fields ---
+
     @Column
     @Convert(converter = StringCryptoConverter.class)
     private String ssid;
+
+    @Column(unique = true)
+    private String ssidHash;
 
     @Column
     @Convert(converter = StringCryptoConverter.class)
     private String nin;
 
+    @Column(unique = true)
+    private String ninHash;
+    
+    @Column
+    @Convert(converter = StringCryptoConverter.class)
+    private String bvn;
+
+    // --- Personal Details ---
     @Column(nullable = false)
     @Convert(converter = StringCryptoConverter.class)
     private String fullName;
+    
+    @Column
+    private LocalDate dateOfBirth;
 
+    @Column
+    private String gender;
+
+    // --- Contact Details ---
+    @Column
+    @Convert(converter = StringCryptoConverter.class)
+    private String phoneNumber;
+
+    @Column
+    @Convert(converter = StringCryptoConverter.class)
+    private String email;
+
+    // --- Civil Service Details ---
     @Column(nullable = false)
     private String businessUnit;
 
     @Column
     private String gradeLevel;
+    
+    @Column
+    private LocalDate dateOfFirstAppointment;
 
+    @Column
+    private LocalDate dateOfConfirmation;
+
+    @Column
+    private String cadre;
+    
+    @Column
+    private boolean onTransfer;
+
+    // --- System & Status Fields ---
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RecordStatus status;
 
-    @Column(unique = true)
-    private String ssidHash;
-
-    @Column(unique = true)
-    private String ninHash;
+    @Column
+    private boolean biometricStatus;
 
     private LocalDate lastProofOfLifeDate;
     

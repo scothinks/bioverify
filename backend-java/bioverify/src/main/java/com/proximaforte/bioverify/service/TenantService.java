@@ -2,7 +2,7 @@ package com.proximaforte.bioverify.service;
 
 import com.proximaforte.bioverify.domain.Tenant;
 import com.proximaforte.bioverify.repository.TenantRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,14 +11,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class TenantService {
 
     private final TenantRepository tenantRepository;
-
-    @Autowired
-    public TenantService(TenantRepository tenantRepository) {
-        this.tenantRepository = tenantRepository;
-    }
 
     @Transactional
     public Tenant createTenant(Tenant tenant) {
