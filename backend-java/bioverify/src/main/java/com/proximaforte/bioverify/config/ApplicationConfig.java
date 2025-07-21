@@ -1,7 +1,6 @@
 package com.proximaforte.bioverify.config;
 
 import com.proximaforte.bioverify.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,7 +18,6 @@ public class ApplicationConfig {
     private final UserRepository userRepository;
 
     // Using a standard constructor with @Autowired instead of Lombok
-    @Autowired
     public ApplicationConfig(UserRepository userRepository) {
         this.userRepository = userRepository;
     }

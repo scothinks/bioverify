@@ -1,0 +1,34 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h2 class="dashboard-title">Tenant Admin Dashboard</h2>
+      <p class="dashboard-subtitle">Upload and manage records for your tenant</p>
+    </div>
+    <div class="header-actions">
+        <button mat-raised-button class="primary-button" (click)="openCreateUserDialog()">
+            <mat-icon>person_add</mat-icon>
+            <span>Create New User</span>
+        </button>
+    </div>
+  </div>
+  
+  <nav mat-tab-nav-bar [tabPanel]="tabPanel" mat-stretch-tabs="false" mat-align-tabs="start">
+    <a mat-tab-link 
+       *ngFor="let link of navLinks"
+       [routerLink]="link.path"
+       routerLinkActive #rla="routerLinkActive"
+       [active]="rla.isActive">
+      <mat-icon class="nav-icon">{{link.icon}}</mat-icon>
+      {{link.label}}
+    </a>
+  </nav>
+
+  <mat-tab-nav-panel #tabPanel></mat-tab-nav-panel>
+
+  <div class="dashboard-card">
+    <div class="card-content">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+
+</div>

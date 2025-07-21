@@ -2,20 +2,82 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './login/login.component';
 import { EmployeeRegistrationComponent } from './employee-registration/employee-registration.component';
 import { VerificationComponent } from './verification/verification.component';
-import { AgentDashboardComponent } from './agent-dashboard/agent-dashboard.component'; // <-- IMPORT ADDED
+import { authGuard } from './guards/auth.guard';
+import { roleGuard } from './guards/role.guard';
+
+// Import the layout dashboard components
+import { GlobalAdminDashboardComponent } from './dashboards/global-admin-dashboard/global-admin-dashboard.component';
+import { TenantAdminDashboardComponent } from './dashboards/tenant-admin-dashboard/tenant-admin-dashboard.component';
+import { EnumeratorDashboardComponent } from './dashboards/enumerator-dashboard/enumerator-dashboard.component';
+import { SelfServiceUserDashboardComponent } from './dashboards/self-service-user-dashboard/self-service-user-dashboard.component';
+
+// Import the child components that will now be routed as screens
+import { TenantListComponent } from './tenant-list/tenant-list.component';
+import { UserListComponent } from './user-list/user-list.component';
+import { FileUploadComponent } from './file-upload/file-upload.component';
+import { MasterListComponent } from './master-list/master-list.component';
+import { BulkVerificationComponent } from './bulk-verification/bulk-verification.component';
+import { AgentDashboardComponent } from './agent-dashboard/agent-dashboard.component';
+import { UserDashboardComponent } from './user-dashboard/user-dashboard.component';
 
 export const routes: Routes = [
-  // When the user is at the base path, redirect them to the login page.
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-
-  // Define the routes for public-facing pages.
+  // Public routes
   { path: 'login', component: LoginComponent },
   { path: 'register-employee', component: EmployeeRegistrationComponent },
-
-  // Define routes for authenticated users.
   { path: 'verification', component: VerificationComponent },
-  { path: 'agent-dashboard', component: AgentDashboardComponent }, // <-- ROUTE ADDED
 
-  // A wildcard route to redirect any unknown URLs back to login.
-  { path: '**', redirectTo: 'login' }
+  // Main dashboard parent route, protected by the auth guard
+  {
+    path: 'dashboard',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: 'global-admin',
+        component: GlobalAdminDashboardComponent,
+        canActivate: [roleGuard],
+        data: { expectedRole: 'GLOBAL_SUPER_ADMIN' },
+        children: [
+          { path: 'tenants', component: TenantListComponent },
+          { path: '', redirectTo: 'tenants', pathMatch: 'full' }
+        ]
+      },
+      {
+        path: 'tenant-admin',
+        component: TenantAdminDashboardComponent,
+        canActivate: [roleGuard],
+        data: { expectedRole: 'TENANT_ADMIN' },
+        children: [
+          { path: 'users', component: UserListComponent },
+          { path: 'uploads', component: FileUploadComponent },
+          { path: 'records', component: MasterListComponent },
+          { path: 'bulk-verify', component: BulkVerificationComponent },
+          { path: '', redirectTo: 'users', pathMatch: 'full' }
+        ]
+      },
+      {
+        path: 'enumerator',
+        component: EnumeratorDashboardComponent,
+        canActivate: [roleGuard],
+        data: { expectedRole: 'ENUMERATOR' },
+        children: [
+          { path: 'tasks', component: AgentDashboardComponent },
+          { path: '', redirectTo: 'tasks', pathMatch: 'full' }
+        ]
+      },
+      {
+        path: 'user',
+        component: SelfServiceUserDashboardComponent,
+        canActivate: [roleGuard],
+        data: { expectedRole: 'SELF_SERVICE_USER' },
+        children: [
+          { path: 'profile', component: UserDashboardComponent },
+          { path: '', redirectTo: 'profile', pathMatch: 'full' }
+        ]
+      }
+    ]
+  },
+
+  // Default and wildcard routes
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  { path: '**', redirectTo: '/login' }
 ];

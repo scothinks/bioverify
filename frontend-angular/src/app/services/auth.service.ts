@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { MasterListRecord } from '../models/master-list-record.model';
+import { Router } from '@angular/router'; // <-- Import Router
 
 export interface AuthResponse {
   token: string;
@@ -38,11 +39,17 @@ export class AuthService {
   private isLoggedInSubject = new BehaviorSubject<boolean>(this.isLoggedIn());
   public isLoggedIn$ = this.isLoggedInSubject.asObservable();
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private router: Router // <-- Inject Router
+  ) { }
 
   login(credentials: AuthRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.authApiUrl}/authenticate`, credentials).pipe(
-      tap(response => this.setToken(response.token)),
+      tap(response => {
+        this.setToken(response.token);
+        this.redirectUserBasedOnRole(); // <-- Call new redirection logic
+      }),
       catchError(this.handleError)
     );
   }
@@ -88,12 +95,38 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     this.isLoggedInSubject.next(false);
-    window.location.reload();
+    this.router.navigate(['/login']); // <-- Navigate to login instead of reloading
   }
 
   private setToken(token: string): void {
     localStorage.setItem(this.TOKEN_KEY, token);
     this.isLoggedInSubject.next(true);
+  }
+
+  // --- NEW METHOD ---
+  /**
+   * Navigates the user to the correct dashboard based on their role.
+   */
+  public redirectUserBasedOnRole(): void {
+    const role = this.getUserRole();
+    switch (role) {
+      case 'GLOBAL_SUPER_ADMIN':
+        this.router.navigate(['/dashboard/global-admin']);
+        break;
+      case 'TENANT_ADMIN':
+        this.router.navigate(['/dashboard/tenant-admin']);
+        break;
+      case 'ENUMERATOR':
+        this.router.navigate(['/dashboard/enumerator']);
+        break;
+      case 'SELF_SERVICE_USER':
+        this.router.navigate(['/dashboard/user']);
+        break;
+      default:
+        // Fallback to login if role is unknown or null
+        this.router.navigate(['/login']);
+        break;
+    }
   }
 
   getToken(): string | null {

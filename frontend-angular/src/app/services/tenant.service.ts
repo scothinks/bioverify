@@ -4,12 +4,15 @@ import { Observable, BehaviorSubject, throwError, Subject } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { Tenant, UpdateTenantRequest } from '../models/tenant.model';
 import { MasterListRecord } from '../models/master-list-record.model';
+import { BulkJob } from '../models/bulk-job.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TenantService {
-  private globalAdminApiUrl = 'http://localhost:8080/api/admin/tenants';
+  // --- THIS IS THE FIX: Corrected the API URL path ---
+  private globalAdminApiUrl = 'http://localhost:8080/api/v1/global-admin/tenants';
+  
   private tenantAdminApiUrl = 'http://localhost:8080/api/v1/tenant-admin';
   private v1ApiUrl = 'http://localhost:8080/api/v1';
   
@@ -21,6 +24,28 @@ export class TenantService {
 
   constructor(private http: HttpClient) {}
 
+  // --- NEW METHODS FOR BULK VERIFICATION ---
+
+  /**
+   * Initiates the bulk verification process for all pending records for the tenant.
+   */
+  startBulkVerification(): Observable<any> {
+    return this.http.post<any>(`${this.v1ApiUrl}/records/bulk-verify`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Fetches the list of all bulk verification jobs for the tenant.
+   */
+  getBulkJobs(): Observable<BulkJob[]> {
+    return this.http.get<BulkJob[]>(`${this.v1ApiUrl}/bulk-jobs`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- EXISTING METHODS ---
+
   applyRecordFilter(recordIds: string[] | null): void {
     this.recordsFilterSubject.next(recordIds);
   }
@@ -31,21 +56,18 @@ export class TenantService {
     );
   }
   
-  // Method for TenantAdmins to create users
   createUser(userData: any): Observable<any> {
     return this.http.post<any>(`${this.tenantAdminApiUrl}/users`, userData).pipe(
         catchError(this.handleError)
     );
   }
   
-  // --- NEW METHOD for TenantAdmins to get users ---
   getUsers(): Observable<any[]> {
     return this.http.get<any[]>(`${this.tenantAdminApiUrl}/users`).pipe(
       catchError(this.handleError)
     );
   }
 
-  // --- Methods for GLOBAL ADMINS ---
   getTenants(): Observable<Tenant[]> {
     return this.http.get<Tenant[]>(this.globalAdminApiUrl).pipe(
       tap(tenants => this.tenantsSubject.next(tenants)),
@@ -94,7 +116,6 @@ export class TenantService {
     );
   }
   
-  // --- Methods for general use ---
   getRecordsForTenant(): Observable<MasterListRecord[]> {
     return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records`).pipe(
       catchError(this.handleError)

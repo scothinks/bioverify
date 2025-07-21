@@ -57,6 +57,12 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // --- If user is already logged in, redirect them immediately ---
+    if (this.authService.isLoggedIn()) {
+      this.authService.redirectUserBasedOnRole();
+      return;
+    }
+    
     const savedEmail = localStorage.getItem('rememberedEmail');
     if (savedEmail) {
       this.loginForm.patchValue({ email: savedEmail, rememberMe: true });
@@ -174,26 +180,14 @@ export class LoginComponent implements OnInit, OnDestroy {
       password: formValue.password
     }).subscribe({
       next: (response) => {
+        // The success block is now simplified.
+        // AuthService handles the redirection automatically.
         this.isLoading = false;
         this.loginAttempts = 0;
         localStorage.removeItem('loginAttempts');
         localStorage.removeItem('loginBlockUntil');
         
         this.showMessage('Login successful! Welcome back.');
-        
-        // --- UPDATED: Smart Routing Logic ---
-        const role = this.authService.getUserRole();
-        const status = this.authService.getUserStatus();
-
-        if (role === 'ENUMERATOR') {
-          this.router.navigate(['/agent-dashboard']);
-        } else if (role === 'SELF_SERVICE_USER' && (status === 'AWAITING_REVERIFICATION' || status === 'PENDING')) {
-          this.router.navigate(['/verification']);
-        } else {
-          // All other roles (GLOBAL_SUPER_ADMIN, TENANT_ADMIN) and verified self-service users
-          // will be handled by the logic in app.component.html based on their role.
-          this.router.navigate(['/']);
-        }
       },
       error: (error) => {
         this.isLoading = false;

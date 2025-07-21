@@ -25,10 +25,8 @@ public class MasterListRecord {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
-    
-    // --- FIELD TO ASSOCIATE WITH A BATCH UPLOAD ---
-    @Column(nullable = true)
-    private UUID uploadId;
+
+    // --- REMOVED: uploadId field is no longer needed ---
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
@@ -97,7 +95,7 @@ public class MasterListRecord {
     private String cadre;
     
     @Column
-    private boolean onTransfer;
+    private Boolean onTransfer;
 
     // --- System & Status Fields ---
     @Enumerated(EnumType.STRING)
@@ -105,7 +103,7 @@ public class MasterListRecord {
     private RecordStatus status;
 
     @Column
-    private boolean biometricStatus;
+    private Boolean biometricStatus;
 
     private LocalDate lastProofOfLifeDate;
     

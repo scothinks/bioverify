@@ -13,6 +13,7 @@ public class MasterListRecordDto {
     private String businessUnit;
     private String gradeLevel;
     private RecordStatus status;
+    private Boolean biometricStatus; // --- NEWLY ADDED FIELD ---
     private Instant createdAt;
 
     // Convenience constructor that maps an entity to this DTO
@@ -22,6 +23,7 @@ public class MasterListRecordDto {
         this.businessUnit = record.getBusinessUnit();
         this.gradeLevel = record.getGradeLevel();
         this.status = record.getStatus();
+        this.biometricStatus = record.getBiometricStatus(); // --- MAP THE NEW FIELD ---
         this.createdAt = record.getCreatedAt();
     }
 }

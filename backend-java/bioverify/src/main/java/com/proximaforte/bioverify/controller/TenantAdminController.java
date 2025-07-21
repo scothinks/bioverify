@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1/admin/users")
+// --- FIX: Changed path to match what the frontend is calling ---
+@RequestMapping("/api/v1/tenant-admin/users")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('TENANT_ADMIN')")
 public class TenantAdminController {
@@ -24,7 +25,9 @@ public class TenantAdminController {
 
     @PostMapping
     public ResponseEntity<UserDto> createUser(@RequestBody RegisterRequest request, @AuthenticationPrincipal User admin) {
+        // --- FIX: Enforce tenant ID from the authenticated admin for security ---
         request.setTenantId(admin.getTenant().getId());
+        
         User newUser = authenticationService.register(request);
         return ResponseEntity.ok(new UserDto(newUser));
     }

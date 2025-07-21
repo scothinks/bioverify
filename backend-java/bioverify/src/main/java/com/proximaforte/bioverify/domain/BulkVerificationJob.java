@@ -28,15 +28,14 @@ public class BulkVerificationJob {
     @JoinColumn(name = "initiated_by_user_id", nullable = false)
     private User initiatedBy;
 
-    @Column(nullable = false)
-    private UUID uploadId;
-
     private String externalJobId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private JobStatus status;
 
+    // --- This annotation fixes the "value too long" error ---
+    @Column(columnDefinition = "TEXT")
     private String statusMessage;
 
     private int totalRecords = 0;

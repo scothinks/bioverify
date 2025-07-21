@@ -10,7 +10,7 @@ import java.util.UUID;
 @Data
 public class BulkJobDto {
     private UUID id;
-    private UUID uploadId;
+    // --- REMOVED: The uploadId field is no longer needed ---
     private JobStatus status;
     private String statusMessage;
     private int totalRecords;
@@ -22,7 +22,6 @@ public class BulkJobDto {
 
     public BulkJobDto(BulkVerificationJob job) {
         this.id = job.getId();
-        this.uploadId = job.getUploadId();
         this.status = job.getStatus();
         this.statusMessage = job.getStatusMessage();
         this.totalRecords = job.getTotalRecords();
