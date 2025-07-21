@@ -21,6 +21,8 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
     Optional<MasterListRecord> findByIdAndTenantId(UUID id, UUID tenantId);
 
     Optional<MasterListRecord> findByPsnHashAndTenantId(String psnHash, UUID tenantId);
-    
+
     List<MasterListRecord> findAllByTenantIdAndStatus(UUID tenantId, RecordStatus status);
+
+    List<MasterListRecord> findByTenantIdAndStatusIn(UUID tenantId, List<RecordStatus> statuses);
 }

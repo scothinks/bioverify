@@ -5,14 +5,17 @@ import { RecordStatus } from './record-status.enum';
 export interface MasterListRecord {
   id: string;
   fullName: string;
-  businessUnit: string;
+  department: string;        
+  ministry?: string;        
   gradeLevel: string;
-  status: RecordStatus; 
-  
+  salaryStructure?: string;   
+  status: RecordStatus;
+
   // Optional fields that may or may not be present
   ssid?: string;
   nin?: string;
-  
+  dateOfBirth?: string; // Or Date
+
   // Timestamps and audit fields
   createdAt: string; 
   updatedAt: string;

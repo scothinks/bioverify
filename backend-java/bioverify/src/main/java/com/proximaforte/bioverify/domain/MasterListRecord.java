@@ -26,8 +26,6 @@ public class MasterListRecord {
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
-    // --- REMOVED: uploadId field is no longer needed ---
-
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
     private User user;
@@ -53,7 +51,7 @@ public class MasterListRecord {
 
     @Column(unique = true)
     private String ninHash;
-    
+
     @Column
     @Convert(converter = StringCryptoConverter.class)
     private String bvn;
@@ -62,7 +60,7 @@ public class MasterListRecord {
     @Column(nullable = false)
     @Convert(converter = StringCryptoConverter.class)
     private String fullName;
-    
+
     @Column
     private LocalDate dateOfBirth;
 
@@ -80,11 +78,17 @@ public class MasterListRecord {
 
     // --- Civil Service Details ---
     @Column(nullable = false)
-    private String businessUnit;
+    private String department; // <-- RENAMED from businessUnit
+
+    @Column
+    private String ministry; // <-- NEWLY ADDED
 
     @Column
     private String gradeLevel;
-    
+
+    @Column
+    private String salaryStructure; // <-- NEWLY ADDED
+
     @Column
     private LocalDate dateOfFirstAppointment;
 
@@ -93,7 +97,7 @@ public class MasterListRecord {
 
     @Column
     private String cadre;
-    
+
     @Column
     private Boolean onTransfer;
 
@@ -106,7 +110,7 @@ public class MasterListRecord {
     private Boolean biometricStatus;
 
     private LocalDate lastProofOfLifeDate;
-    
+
     @Column(columnDefinition = "TEXT")
     private String originalUploadData;
 
@@ -122,6 +126,10 @@ public class MasterListRecord {
 
     @Column
     private Instant validatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_updated_by_user_id")
+    private User lastUpdatedBy;
 
     @CreationTimestamp
     @Column(updatable = false)

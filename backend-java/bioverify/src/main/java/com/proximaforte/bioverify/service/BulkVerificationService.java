@@ -247,11 +247,10 @@ public class BulkVerificationService {
         record.setFullName(fullName);
         record.setBvn(profile.getBvn());
         record.setGradeLevel(profile.getGradeLevel());
-        record.setBusinessUnit(profile.getStateMinistry());
+        record.setDepartment(profile.getStateMinistry()); // <-- UPDATED from setBusinessUnit
         record.setCadre(profile.getCadre());
         record.setOnTransfer(profile.isOnTransfer());
 
-        // Convert epoch milliseconds string to LocalDate
         try {
             String firstAppointmentStr = profile.getDateOfFirstAppointment();
             if (firstAppointmentStr != null && !firstAppointmentStr.isBlank()) {

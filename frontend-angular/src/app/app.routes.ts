@@ -8,7 +8,7 @@ import { roleGuard } from './guards/role.guard';
 // Import the layout dashboard components
 import { GlobalAdminDashboardComponent } from './dashboards/global-admin-dashboard/global-admin-dashboard.component';
 import { TenantAdminDashboardComponent } from './dashboards/tenant-admin-dashboard/tenant-admin-dashboard.component';
-import { EnumeratorDashboardComponent } from './dashboards/enumerator-dashboard/enumerator-dashboard.component';
+import { AgentDashboardComponent } from './dashboards/agent-dashboard/agent-dashboard.component';
 import { SelfServiceUserDashboardComponent } from './dashboards/self-service-user-dashboard/self-service-user-dashboard.component';
 
 // Import the child components that will now be routed as screens
@@ -17,8 +17,8 @@ import { UserListComponent } from './user-list/user-list.component';
 import { FileUploadComponent } from './file-upload/file-upload.component';
 import { MasterListComponent } from './master-list/master-list.component';
 import { BulkVerificationComponent } from './bulk-verification/bulk-verification.component';
-import { AgentDashboardComponent } from './agent-dashboard/agent-dashboard.component';
 import { UserDashboardComponent } from './user-dashboard/user-dashboard.component';
+import { ValidationQueueComponent } from './validation-queue/validation-queue.component'; // <-- 1. Import the new component
 
 export const routes: Routes = [
   // Public routes
@@ -51,14 +51,15 @@ export const routes: Routes = [
           { path: 'uploads', component: FileUploadComponent },
           { path: 'records', component: MasterListComponent },
           { path: 'bulk-verify', component: BulkVerificationComponent },
+          { path: 'validation', component: ValidationQueueComponent }, // <-- 2. Add the new route for the validation queue
           { path: '', redirectTo: 'users', pathMatch: 'full' }
         ]
       },
       {
-        path: 'enumerator',
-        component: EnumeratorDashboardComponent,
+        path: 'agent',
+        component: AgentDashboardComponent,
         canActivate: [roleGuard],
-        data: { expectedRole: 'ENUMERATOR' },
+        data: { expectedRole: 'AGENT' },
         children: [
           { path: 'tasks', component: AgentDashboardComponent },
           { path: '', redirectTo: 'tasks', pathMatch: 'full' }

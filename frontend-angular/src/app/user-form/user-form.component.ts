@@ -23,7 +23,7 @@ import { MatSelectModule } from '@angular/material/select';
 export class UserFormComponent {
   userForm: FormGroup;
   // The roles a Tenant Admin is allowed to create
-  availableRoles = ['ENUMERATOR', 'SELF_SERVICE_USER'];
+  availableRoles = ['Agent', 'SELF_SERVICE_USER'];
 
   constructor(
     private fb: FormBuilder,

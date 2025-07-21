@@ -1,10 +1,10 @@
-.master-list-container {
+.validation-queue-container {
   padding: 24px;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   min-height: 100vh;
 }
 
-.list-card {
+.queue-card {
   max-width: 1400px;
   margin: 0 auto;
   border-radius: 16px !important;
@@ -15,7 +15,7 @@
 }
 
 .enhanced-header {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 32px 32px 24px 32px !important;
   margin: -16px -16px 0 -16px !important;
@@ -62,9 +62,6 @@
   }
 
   .header-stats {
-    display: flex;
-    gap: 12px;
-
     .stat-chip {
       background: rgba(255, 255, 255, 0.2);
       padding: 12px 20px;
@@ -154,34 +151,9 @@
   }
 }
 
-// ID styling
-.id-column {
-  width: 120px;
-}
-
-.id-cell {
-  text-align: center;
-}
-
-.id-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-  color: white;
-  border-radius: 16px;
-  font-weight: 600;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-family: 'Courier New', monospace;
-  min-width: 60px;
-  justify-content: center;
-}
-
 // Employee info styling
-.name-column {
-  min-width: 220px;
+.name-cell {
+  min-width: 200px;
 }
 
 .employee-info {
@@ -193,7 +165,7 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -201,31 +173,18 @@
     font-weight: 600;
     font-size: 14px;
     text-transform: uppercase;
-    flex-shrink: 0;
   }
 
   .employee-name {
     font-weight: 500;
     color: #1e293b;
-    line-height: 1.4;
   }
 }
 
-// Department and ministry styling with icons
+// Department and ministry styling
 .department-cell, .ministry-cell, .salary-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   font-weight: 500;
   color: #475569;
-
-  .dept-icon, .ministry-icon, .salary-icon {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    color: #64748b;
-    flex-shrink: 0;
-  }
 }
 
 // Grade badge
@@ -233,7 +192,7 @@
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   border-radius: 16px;
   font-weight: 600;
@@ -270,7 +229,7 @@
     border: 1px solid #fbbf24;
   }
 
-  &.validated, &.approved {
+  &.approved {
     background: #d1fae5;
     color: #059669;
     border: 1px solid #34d399;
@@ -281,11 +240,70 @@
     color: #dc2626;
     border: 1px solid #f87171;
   }
+}
 
-  &.unknown {
-    background: #f1f5f9;
-    color: #64748b;
-    border: 1px solid #cbd5e1;
+// Actions styling
+.actions-column {
+  width: 200px;
+  text-align: center;
+}
+
+.actions-cell {
+  text-align: center;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  .edit-btn {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+
+    &:hover {
+      background: rgba(59, 130, 246, 0.2);
+      transform: translateY(-1px);
+    }
+  }
+
+  .reject-btn {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+
+    &:hover {
+      background: rgba(220, 38, 38, 0.2);
+      transform: translateY(-1px);
+    }
+  }
+
+  .approve-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: white !important;
+    border: none;
+    padding: 8px 16px;
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    transition: all 0.2s ease;
+
+    mat-icon {
+      margin-right: 4px;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+    }
   }
 }
 
@@ -317,67 +335,6 @@
     p {
       font-size: 16px;
       color: #64748b;
-      margin: 0 0 24px 0;
-      line-height: 1.6;
-    }
-
-    .upload-btn {
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
-      color: white !important;
-      border: none;
-      padding: 12px 24px;
-      font-weight: 500;
-      font-size: 14px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
-      transition: all 0.2s ease;
-
-      mat-icon {
-        margin-right: 8px;
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
-      }
-    }
-  }
-}
-
-// Loading state styling
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 80px 20px;
-  color: #64748b;
-
-  .loading-spinner {
-    margin-bottom: 24px;
-
-    ::ng-deep .mat-mdc-progress-spinner {
-      --mdc-circular-progress-active-indicator-color: #4f46e5;
-    }
-  }
-
-  .loading-content {
-    text-align: center;
-
-    h3 {
-      font-size: 24px;
-      font-weight: 600;
-      color: #334155;
-      margin: 0 0 12px 0;
-    }
-
-    p {
-      font-size: 16px;
-      color: #64748b;
       margin: 0;
       line-height: 1.6;
     }
@@ -386,7 +343,7 @@
 
 // Responsive design
 @media (max-width: 768px) {
-  .master-list-container {
+  .validation-queue-container {
     padding: 16px;
   }
 
@@ -416,13 +373,6 @@
         }
       }
     }
-
-    .header-stats {
-      .stat-chip {
-        padding: 8px 16px;
-        font-size: 12px;
-      }
-    }
   }
 
   .enhanced-content {
@@ -438,35 +388,8 @@
     min-width: 800px;
   }
 
-  .employee-info {
-    .employee-name {
-      font-size: 13px;
-    }
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
   }
-
-  .department-cell, .ministry-cell, .salary-cell {
-    font-size: 12px;
-
-    mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-    }
-  }
-}
-
-// Animation keyframes
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.enhanced-row {
-  animation: fadeIn 0.3s ease-out;
 }

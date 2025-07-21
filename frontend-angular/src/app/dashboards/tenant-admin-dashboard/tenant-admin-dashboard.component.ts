@@ -30,7 +30,8 @@ export class TenantAdminDashboardComponent {
     { path: 'users', label: 'User Management', icon: 'group' },
     { path: 'uploads', label: 'File Upload', icon: 'upload_file' },
     { path: 'records', label: 'Master Records', icon: 'list_alt' },
-    { path: 'bulk-verify', label: 'Bulk Verification', icon: 'checklist' }
+    { path: 'bulk-verify', label: 'Bulk Verification', icon: 'checklist' },
+    { path: 'validation', label: 'Validation Queue', icon: 'fact_check' } // <-- ADDED
   ];
 
   constructor(

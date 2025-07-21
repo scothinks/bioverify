@@ -5,7 +5,7 @@ import com.proximaforte.bioverify.domain.User;
 import com.proximaforte.bioverify.dto.*;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
 import com.proximaforte.bioverify.service.BulkVerificationService;
-import com.proximaforte.bioverify.service.MasterListRecordService; 
+import com.proximaforte.bioverify.service.MasterListRecordService;
 import com.proximaforte.bioverify.service.MasterListUploadService;
 import com.proximaforte.bioverify.service.VerificationService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,40 @@ public class MasterListRecordController {
     private final VerificationService verificationService;
     private final MasterListRecordRepository recordRepository;
     private final BulkVerificationService bulkVerificationService;
-    private final MasterListRecordService recordService; 
+    private final MasterListRecordService recordService;
+
+    // --- NEW ENDPOINT ---
+    @GetMapping("/validation-queue")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
+    public ResponseEntity<List<MasterListRecordDto>> getValidationQueue(@AuthenticationPrincipal User currentUser) {
+        List<MasterListRecord> records = recordService.getValidationQueue(currentUser.getTenant().getId());
+        List<MasterListRecordDto> recordDtos = records.stream()
+                .map(MasterListRecordDto::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(recordDtos);
+    }
+
+    // --- NEW ENDPOINT ---
+    @PutMapping("/{recordId}")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
+    public ResponseEntity<MasterListRecordDto> updateRecord(
+            @PathVariable UUID recordId,
+            @RequestBody UpdateRecordRequestDto request,
+            @AuthenticationPrincipal User currentUser) {
+        MasterListRecord updatedRecord = recordService.updateRecordData(recordId, request, currentUser);
+        return ResponseEntity.ok(new MasterListRecordDto(updatedRecord));
+    }
+
+    // --- NEW ENDPOINT ---
+    @PostMapping("/{recordId}/validate")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
+    public ResponseEntity<MasterListRecordDto> validateRecord(
+            @PathVariable UUID recordId,
+            @RequestBody ValidateRecordRequestDto request,
+            @AuthenticationPrincipal User currentUser) {
+        MasterListRecord validatedRecord = recordService.performValidation(recordId, request, currentUser);
+        return ResponseEntity.ok(new MasterListRecordDto(validatedRecord));
+    }
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
@@ -42,7 +75,7 @@ public class MasterListRecordController {
     }
 
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'FOCAL_OFFICER')")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')") // Also allow REVIEWER to upload? Or keep as TENANT_ADMIN only?
     public ResponseEntity<UploadSummaryDto> uploadMasterList(
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal User currentUser) throws Exception {
@@ -73,8 +106,7 @@ public class MasterListRecordController {
     public ResponseEntity<?> notifyForReverification(@RequestBody NotificationRequestDto request) {
         return ResponseEntity.ok(Map.of("message", "Notification process initiated for " + request.getRecordIds().size() + " users."));
     }
-    
-    // --- NEW METHOD TO FIX DATA ---
+
     @PatchMapping("/{recordId}/psn")
     @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<?> updateRecordPsn(

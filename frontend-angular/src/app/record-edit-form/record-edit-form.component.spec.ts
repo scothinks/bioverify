@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AgentDashboardComponent } from './Agent-dashboard.component';
+import { RecordEditFormComponent } from './record-edit-form.component';
 
-describe('AgentDashboardComponent', () => {
-  let component: AgentDashboardComponent;
-  let fixture: ComponentFixture<AgentDashboardComponent>;
+describe('RecordEditFormComponent', () => {
+  let component: RecordEditFormComponent;
+  let fixture: ComponentFixture<RecordEditFormComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AgentDashboardComponent]
+      imports: [RecordEditFormComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(AgentDashboardComponent);
+    fixture = TestBed.createComponent(RecordEditFormComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -13,14 +13,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 
 @Component({
-  selector: 'app-agent-dashboard',
+  selector: 'app-Agent-dashboard',
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule,
     MatInputModule, MatButtonModule, MatProgressSpinnerModule, MatIconModule, MatListModule
   ],
-  templateUrl: './agent-dashboard.component.html',
-  styleUrls: ['./agent-dashboard.component.scss']
+  templateUrl: './Agent-dashboard.component.html',
+  styleUrls: ['./Agent-dashboard.component.scss']
 })
 export class AgentDashboardComponent {
   onboardForm: FormGroup;

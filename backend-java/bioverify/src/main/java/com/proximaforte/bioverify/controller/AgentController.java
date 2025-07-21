@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/agent")
+@RequestMapping("/api/v1/Agent")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ENUMERATOR')")
+@PreAuthorize("hasRole('Agent')")
 public class AgentController {
 
     private final VerificationService verificationService;
@@ -23,10 +23,10 @@ public class AgentController {
     public ResponseEntity<VerificationResultDto> verifyOnBehalfOf(
             @PathVariable UUID recordId,
             @RequestBody VerifyIdentityRequest request,
-            @AuthenticationPrincipal User agent) {
+            @AuthenticationPrincipal User Agent) {
         
         VerificationResultDto result = verificationService.initiateVerification(
-            agent.getTenant().getId(), recordId, request.getSsid(), request.getNin()
+            Agent.getTenant().getId(), recordId, request.getSsid(), request.getNin()
         );
         return ResponseEntity.ok(result);
     }

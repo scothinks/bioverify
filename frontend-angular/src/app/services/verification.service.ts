@@ -15,7 +15,7 @@ export interface VerificationResponse {
   message: string;
 }
 
-// Interface for agent onboarding
+// Interface for Agent onboarding
 export interface OnboardRequest {
   ssid: string;
   nin: string;
@@ -28,7 +28,7 @@ export interface OnboardRequest {
 export class VerificationService {
   // Define a new base URL for the records API
   private recordsApiUrl = 'http://localhost:8080/api/v1/records';
-  private agentApiUrl = 'http://localhost:8080/api/v1/agent';
+  private AgentApiUrl = 'http://localhost:8080/api/v1/Agent';
 
   constructor(private http: HttpClient) { }
 
@@ -46,19 +46,19 @@ export class VerificationService {
 
   // The confirmVerification method has been removed as it's obsolete in the new workflow.
 
-  // --- Methods for Enumerators (Unchanged) ---
+  // --- Methods for Agents (Unchanged) ---
 
   /**
    * Submits the full onboarding and verification package for an employee.
    */
   onboardUserByAgent(onboardRequest: OnboardRequest): Observable<any> {
-    return this.http.post<any>(`${this.agentApiUrl}/onboard-user`, onboardRequest);
+    return this.http.post<any>(`${this.AgentApiUrl}/onboard-user`, onboardRequest);
   }
 
   /**
    * Submits a liveness check for a given record.
    */
   performLivenessCheck(recordId: string): Observable<any> {
-    return this.http.post<any>(`${this.agentApiUrl}/liveness-check`, { recordId });
+    return this.http.post<any>(`${this.AgentApiUrl}/liveness-check`, { recordId });
   }
 }

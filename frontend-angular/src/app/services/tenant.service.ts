@@ -5,15 +5,15 @@ import { catchError, tap } from 'rxjs/operators';
 import { Tenant, UpdateTenantRequest } from '../models/tenant.model';
 import { MasterListRecord } from '../models/master-list-record.model';
 import { BulkJob } from '../models/bulk-job.model';
+import { User } from '../models/user.model';
+// The import for RecordStatus is no longer needed in this specific method, but we'll leave it for now.
+import { RecordStatus } from '../models/record-status.enum'; 
 
 @Injectable({
   providedIn: 'root'
 })
 export class TenantService {
-  // --- THIS IS THE FIX: Corrected the API URL path ---
   private globalAdminApiUrl = 'http://localhost:8080/api/v1/global-admin/tenants';
-  
-  private tenantAdminApiUrl = 'http://localhost:8080/api/v1/tenant-admin';
   private v1ApiUrl = 'http://localhost:8080/api/v1';
   
   private tenantsSubject = new BehaviorSubject<Tenant[]>([]);
@@ -24,27 +24,17 @@ export class TenantService {
 
   constructor(private http: HttpClient) {}
 
-  // --- NEW METHODS FOR BULK VERIFICATION ---
-
-  /**
-   * Initiates the bulk verification process for all pending records for the tenant.
-   */
   startBulkVerification(): Observable<any> {
     return this.http.post<any>(`${this.v1ApiUrl}/records/bulk-verify`, {}).pipe(
       catchError(this.handleError)
     );
   }
 
-  /**
-   * Fetches the list of all bulk verification jobs for the tenant.
-   */
   getBulkJobs(): Observable<BulkJob[]> {
     return this.http.get<BulkJob[]>(`${this.v1ApiUrl}/bulk-jobs`).pipe(
       catchError(this.handleError)
     );
   }
-
-  // --- EXISTING METHODS ---
 
   applyRecordFilter(recordIds: string[] | null): void {
     this.recordsFilterSubject.next(recordIds);
@@ -56,14 +46,14 @@ export class TenantService {
     );
   }
   
-  createUser(userData: any): Observable<any> {
-    return this.http.post<any>(`${this.tenantAdminApiUrl}/users`, userData).pipe(
+  createUser(userData: Partial<User>): Observable<User> {
+    return this.http.post<User>(`${this.v1ApiUrl}/users`, userData).pipe(
         catchError(this.handleError)
     );
   }
   
-  getUsers(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.tenantAdminApiUrl}/users`).pipe(
+  getUsers(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.v1ApiUrl}/users`).pipe(
       catchError(this.handleError)
     );
   }
@@ -132,6 +122,27 @@ export class TenantService {
     return this.http.request(req);
   }
 
+  // --- NEW METHODS FOR VALIDATION WORKFLOW ---
+
+  getValidationQueue(): Observable<MasterListRecord[]> {
+    return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records/validation-queue`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  updateRecord(recordId: string, recordData: Partial<MasterListRecord>): Observable<MasterListRecord> {
+    return this.http.put<MasterListRecord>(`${this.v1ApiUrl}/records/${recordId}`, recordData).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  validateRecord(recordId: string, decision: 'VALIDATED' | 'REJECTED', comments: string): Observable<MasterListRecord> {
+    const payload = { decision, comments };
+    return this.http.post<MasterListRecord>(`${this.v1ApiUrl}/records/${recordId}/validate`, payload).pipe(
+      catchError(this.handleError)
+    );
+  }
+  
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An error occurred';
     if (error.error instanceof ErrorEvent) {

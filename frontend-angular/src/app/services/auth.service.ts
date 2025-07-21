@@ -116,8 +116,8 @@ export class AuthService {
       case 'TENANT_ADMIN':
         this.router.navigate(['/dashboard/tenant-admin']);
         break;
-      case 'ENUMERATOR':
-        this.router.navigate(['/dashboard/enumerator']);
+      case 'Agent':
+        this.router.navigate(['/dashboard/Agent']);
         break;
       case 'SELF_SERVICE_USER':
         this.router.navigate(['/dashboard/user']);

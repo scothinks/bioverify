@@ -37,15 +37,17 @@ public class MasterListUploadService {
     private final TenantRepository tenantRepository;
     private final ObjectMapper objectMapper;
 
-    // Updated aliases to focus on PSN as the key identifier for uploads
+    // --- UPDATED HEADER ALIASES ---
     private static final Map<String, List<String>> HEADER_ALIASES = Map.of(
         "psn", List.of("psn", "publicservicenumber"),
         "fullName", List.of("fullname", "full name", "employeename"),
         "surname", List.of("surname"),
         "firstName", List.of("firstname", "first name"),
         "middleName", List.of("middlename", "middle name"),
-        "businessUnit", List.of("businessunit", "mda", "department", "agency"),
-        "gradeLevel", List.of("gradelevel", "grade")
+        "department", List.of("department", "businessunit", "mda", "agency"),
+        "ministry", List.of("ministry"),
+        "gradeLevel", List.of("gradelevel", "grade"),
+        "salaryStructure", List.of("salarystructure", "salary structure")
     );
 
     @Transactional
@@ -132,12 +134,13 @@ public class MasterListUploadService {
                 continue;
             }
 
-            // HASH THE PSN FOR SECURE LOOKUP
             String psnHash = toSha256(psn);
-
-            // LOOKUP BY HASHED PSN
             Optional<MasterListRecord> existingRecordOpt = recordRepository.findByPsnHashAndTenantId(psnHash, tenant.getId());
+            
             String gradeLevel = rowMap.get(discoveredHeaders.get("gradeLevel"));
+            String department = rowMap.get(discoveredHeaders.get("department"));
+            String ministry = rowMap.get(discoveredHeaders.get("ministry"));
+            String salaryStructure = rowMap.get(discoveredHeaders.get("salaryStructure"));
 
             if (existingRecordOpt.isPresent()) {
                 updatedRecordsCount++;
@@ -155,7 +158,6 @@ public class MasterListUploadService {
                 newRecord.setOriginalUploadData(originalUploadDataJson);
                 newRecord.setTenant(tenant);
                 
-                // Set both the (encrypted) PSN and its hash
                 newRecord.setPsn(psn);
                 newRecord.setPsnHash(psnHash);
                 
@@ -165,8 +167,10 @@ public class MasterListUploadService {
                             .filter(Objects::nonNull).map(String::trim).collect(Collectors.joining(" "));
 
                 newRecord.setFullName(fullName);
-                newRecord.setBusinessUnit(rowMap.get(discoveredHeaders.get("businessUnit")));
+                newRecord.setDepartment(department);
+                newRecord.setMinistry(ministry);
                 newRecord.setGradeLevel(gradeLevel);
+                newRecord.setSalaryStructure(salaryStructure);
                 newRecord.setStatus(RecordStatus.PENDING_VERIFICATION);
                 recordsToSave.add(newRecord);
             }
@@ -196,7 +200,6 @@ public class MasterListUploadService {
             }
         });
 
-        // The only required column for upload is now the PSN
         if (!mapping.containsKey("psn")) {
             throw new IllegalArgumentException("Uploaded file must contain a column for PSN.");
         }

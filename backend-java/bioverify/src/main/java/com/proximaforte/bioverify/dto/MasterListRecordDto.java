@@ -10,20 +10,24 @@ import java.util.UUID;
 public class MasterListRecordDto {
     private UUID id;
     private String fullName;
-    private String businessUnit;
+    private String department; // <-- RENAMED from businessUnit
+    private String ministry; // <-- ADDED
     private String gradeLevel;
+    private String salaryStructure; // <-- ADDED
     private RecordStatus status;
-    private Boolean biometricStatus; // --- NEWLY ADDED FIELD ---
+    private Boolean biometricStatus;
     private Instant createdAt;
 
     // Convenience constructor that maps an entity to this DTO
     public MasterListRecordDto(MasterListRecord record) {
         this.id = record.getId();
         this.fullName = record.getFullName();
-        this.businessUnit = record.getBusinessUnit();
+        this.department = record.getDepartment(); 
+        this.ministry = record.getMinistry(); 
         this.gradeLevel = record.getGradeLevel();
+        this.salaryStructure = record.getSalaryStructure();
         this.status = record.getStatus();
-        this.biometricStatus = record.getBiometricStatus(); // --- MAP THE NEW FIELD ---
+        this.biometricStatus = record.getBiometricStatus();
         this.createdAt = record.getCreatedAt();
     }
 }

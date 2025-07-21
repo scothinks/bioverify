@@ -1,0 +1,38 @@
+<h1 mat-dialog-title>Edit Record: {{ data.fullName }}</h1>
+
+<div mat-dialog-content>
+  <p>Make the necessary corrections to the record's details below.</p>
+
+  <form [formGroup]="editForm" class="edit-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Full Name</mat-label>
+      <input matInput formControlName="fullName">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Department</mat-label>
+      <input matInput formControlName="department">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Ministry</mat-label>
+      <input matInput formControlName="ministry">
+    </mat-form-field>
+    
+    <mat-form-field appearance="outline">
+      <mat-label>Grade Level</mat-label>
+      <input matInput formControlName="gradeLevel">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Salary Structure</mat-label>
+      <input matInput formControlName="salaryStructure">
+    </mat-form-field>
+    
+  </form>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-flat-button color="primary" [disabled]="!editForm.valid" (click)="onSave()">Save Changes</button>
+</div>
