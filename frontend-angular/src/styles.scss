@@ -450,3 +450,45 @@ body { margin: 0; font-family: var(--font-family-sans); }
     margin: var(--space-8) 0;
   }
 }
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25em 0.6em;
+  font-size: 75%;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 0.375rem;
+  color: #fff;
+  text-transform: uppercase;
+
+  &.status-PENDING_VERIFICATION {
+    background-color: #ffc107; // yellow
+  }
+
+  &.status-AWAITING_REVALIDATION {
+    background-color: #fd7e14; // orange
+  }
+
+  &.status-PENDING_GRADE_VALIDATION {
+    background-color: #007bff; // blue
+  }
+
+  &.status-VALIDATED {
+    background-color: #28a745; // green
+  }
+
+  &.status-FLAGGED_DATA_MISMATCH {
+    background-color: #6f42c1; // purple
+  }
+
+  &.status-FLAGGED_NOT_IN_SOT {
+    background-color: #17a2b8; // teal
+  }
+
+  &.status-REJECTED {
+    background-color: #dc3545; // red
+  }
+}

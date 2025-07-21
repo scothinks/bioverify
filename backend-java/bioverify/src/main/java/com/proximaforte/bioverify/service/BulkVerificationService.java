@@ -1,6 +1,5 @@
 package com.proximaforte.bioverify.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proximaforte.bioverify.domain.BulkVerificationJob;
@@ -16,6 +15,9 @@ import com.proximaforte.bioverify.repository.MasterListRecordRepository;
 import com.proximaforte.bioverify.repository.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -24,14 +26,25 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.zip.ZipInputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -126,6 +139,7 @@ public class BulkVerificationService {
             job.setExternalJobId(jobId);
             jobRepository.save(job);
             
+            String fileUrl = null;
             while (true) {
                 Thread.sleep(Duration.ofSeconds(30).toMillis());
                 
@@ -142,20 +156,60 @@ public class BulkVerificationService {
                 if ("COMPLETED".equalsIgnoreCase(status)) {
                     logger.info("Job {} completed successfully.", jobId);
                     
-                    String fileUrl = finalStatusNode.path("fileUrl").asText(null);
+                    fileUrl = finalStatusNode.path("fileUrl").asText(null);
                     if (fileUrl == null || fileUrl.isBlank()) {
                         throw new RuntimeException("Optima job completed but did not provide a valid file URL.");
                     }
                     
-                    // --- LOGIC MOVED: All result processing is now safely inside the completion block ---
-                    String resultsJson = webClient.get().uri(fileUrl).retrieve().bodyToMono(String.class).block();
-                    List<SotProfileDto> verifiedProfiles = objectMapper.readValue(resultsJson, new TypeReference<>() {});
+                    byte[] zipBytes = webClient.get().uri(fileUrl).retrieve().bodyToMono(byte[].class).block();
+
+                    byte[] encryptedCsvBytes = null;
+                    try (ZipInputStream zipInputStream = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+                        if (zipInputStream.getNextEntry() != null) {
+                            encryptedCsvBytes = zipInputStream.readAllBytes();
+                        }
+                    }
+
+                    if (encryptedCsvBytes == null) {
+                        throw new RuntimeException("Downloaded ZIP archive was empty or did not contain a file.");
+                    }
+
+                    String decryptedCsv = decrypt(encryptedCsvBytes, config.getAesKey(), config.getIv());
+                    
+                    List<SotProfileDto> verifiedProfiles = new ArrayList<>();
+                    try (Reader reader = new InputStreamReader(new ByteArrayInputStream(decryptedCsv.getBytes(StandardCharsets.UTF_8)))) {
+                        CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT
+                            .withFirstRecordAsHeader()
+                            .withIgnoreHeaderCase()
+                            .withTrim());
+
+                        for (CSVRecord csvRecord : csvParser) {
+                            SotProfileDto profile = new SotProfileDto();
+                            profile.setFirstName(csvRecord.get("first_name"));
+                            profile.setMiddleName(csvRecord.get("middle_name"));
+                            profile.setSurname(csvRecord.get("surname"));
+                            profile.setPsn(csvRecord.get("psn"));
+                            profile.setGradeLevel(csvRecord.get("grade_level"));
+                            profile.setStateMinistry(csvRecord.get("state_ministry"));
+                            profile.setCadre(csvRecord.get("cadre"));
+                            profile.setOnTransfer(Boolean.parseBoolean(csvRecord.get("on_transfer")));
+                            profile.setDateOfFirstAppointment(csvRecord.get("date_of_first_appointment"));
+                            profile.setDateOfConfirmation(csvRecord.get("date_of_confirmation"));
+                            profile.setBvn(csvRecord.get("bvn"));
+                            
+                            verifiedProfiles.add(profile);
+                        }
+                    }
+
+                    if (verifiedProfiles.isEmpty()) {
+                        logger.warn("CSV file from ZIP archive was empty or contained no records.");
+                    }
                     
                     Map<String, MasterListRecord> recordsByPsn = recordsToVerify.stream().collect(Collectors.toMap(MasterListRecord::getPsn, Function.identity()));
 
                     int successCount = 0;
                     for (SotProfileDto profile : verifiedProfiles) {
-                        MasterListRecord recordToUpdate = recordsByPsn.get(profile.getCivilServiceProfile().getPsn());
+                        MasterListRecord recordToUpdate = recordsByPsn.get(profile.getPsn());
                         if (recordToUpdate != null) {
                             updateRecordWithSotData(recordToUpdate, profile);
                             recordRepository.save(recordToUpdate);
@@ -166,8 +220,7 @@ public class BulkVerificationService {
                     job.setSuccessfullyVerifiedRecords(successCount);
                     job.setFailedRecords(job.getTotalRecords() - successCount);
 
-                    // The work is done, so we can exit the method.
-                    return; 
+                    return;
                 
                 } else if ("FAILED".equalsIgnoreCase(status)) {
                     throw new RuntimeException("Optima job failed with message: " + finalStatusNode.path("message").asText());
@@ -179,16 +232,46 @@ public class BulkVerificationService {
         }
     }
     
+    @SneakyThrows
+    private String decrypt(byte[] cipherText, String key, String iv) {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES");
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(iv.getBytes(StandardCharsets.UTF_8));
+        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
+        byte[] decryptedBytes = cipher.doFinal(cipherText);
+        return new String(decryptedBytes, StandardCharsets.UTF_8);
+    }
+    
     private void updateRecordWithSotData(MasterListRecord record, SotProfileDto profile) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        record.setFullName(profile.getIdentity().getFirstName() + " " + profile.getIdentity().getMiddleName() + " " + profile.getIdentity().getSurname());
+        String fullName = (profile.getFirstName() + " " + profile.getMiddleName() + " " + profile.getSurname()).replace("  ", " ").trim();
+        record.setFullName(fullName);
         record.setBvn(profile.getBvn());
-        record.setGradeLevel(profile.getCivilServiceProfile().getGradeLevel());
-        record.setBusinessUnit(profile.getCivilServiceProfile().getStateMinistry());
-        record.setCadre(profile.getCivilServiceProfile().getCadre());
-        record.setOnTransfer(profile.getCivilServiceProfile().isOnTransfer());
-        record.setDateOfFirstAppointment(LocalDate.parse(profile.getCivilServiceProfile().getDateOfFirstAppointment(), formatter));
-        record.setDateOfConfirmation(LocalDate.parse(profile.getCivilServiceProfile().getDateOfConfirmation(), formatter));
+        record.setGradeLevel(profile.getGradeLevel());
+        record.setBusinessUnit(profile.getStateMinistry());
+        record.setCadre(profile.getCadre());
+        record.setOnTransfer(profile.isOnTransfer());
+
+        // Convert epoch milliseconds string to LocalDate
+        try {
+            String firstAppointmentStr = profile.getDateOfFirstAppointment();
+            if (firstAppointmentStr != null && !firstAppointmentStr.isBlank()) {
+                long firstAppointmentMillis = Long.parseLong(firstAppointmentStr);
+                record.setDateOfFirstAppointment(
+                    Instant.ofEpochMilli(firstAppointmentMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+                );
+            }
+
+            String confirmationStr = profile.getDateOfConfirmation();
+            if (confirmationStr != null && !confirmationStr.isBlank()) {
+                long confirmationMillis = Long.parseLong(confirmationStr);
+                record.setDateOfConfirmation(
+                    Instant.ofEpochMilli(confirmationMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+                );
+            }
+        } catch (NumberFormatException e) {
+            logger.error("Could not parse date timestamp for PSN {}. Error: {}", profile.getPsn(), e.getMessage());
+        }
+        
         record.setStatus(RecordStatus.PENDING_GRADE_VALIDATION);
     }
 }

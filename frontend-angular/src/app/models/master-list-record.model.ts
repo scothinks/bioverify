@@ -7,7 +7,7 @@ export interface MasterListRecord {
   fullName: string;
   businessUnit: string;
   gradeLevel: string;
-  status: RecordStatus; // Use the new, clean enum
+  status: RecordStatus; 
   
   // Optional fields that may or may not be present
   ssid?: string;

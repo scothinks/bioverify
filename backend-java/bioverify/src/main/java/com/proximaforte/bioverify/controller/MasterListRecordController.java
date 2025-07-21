@@ -5,6 +5,7 @@ import com.proximaforte.bioverify.domain.User;
 import com.proximaforte.bioverify.dto.*;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
 import com.proximaforte.bioverify.service.BulkVerificationService;
+import com.proximaforte.bioverify.service.MasterListRecordService; 
 import com.proximaforte.bioverify.service.MasterListUploadService;
 import com.proximaforte.bioverify.service.VerificationService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class MasterListRecordController {
     private final VerificationService verificationService;
     private final MasterListRecordRepository recordRepository;
     private final BulkVerificationService bulkVerificationService;
+    private final MasterListRecordService recordService; 
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
@@ -60,19 +62,29 @@ public class MasterListRecordController {
         return ResponseEntity.ok(result);
     }
 
-   
     @PostMapping("/bulk-verify")
     @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<?> bulkVerify(@AuthenticationPrincipal User currentUser) {
-        // This call will now trigger the job for all pending records for the tenant
         bulkVerificationService.startBulkVerification(currentUser);
-        
-        // Immediately return a 202 Accepted response
         return ResponseEntity.accepted().body(Map.of("message", "Bulk verification process for all pending records has been initiated."));
     }
 
     @PostMapping("/notify")
     public ResponseEntity<?> notifyForReverification(@RequestBody NotificationRequestDto request) {
         return ResponseEntity.ok(Map.of("message", "Notification process initiated for " + request.getRecordIds().size() + " users."));
+    }
+    
+    // --- NEW METHOD TO FIX DATA ---
+    @PatchMapping("/{recordId}/psn")
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
+    public ResponseEntity<?> updateRecordPsn(
+            @PathVariable UUID recordId,
+            @RequestBody Map<String, String> requestBody) {
+        String newPsn = requestBody.get("psn");
+        if (newPsn == null || newPsn.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Request body must contain a 'psn' field."));
+        }
+        recordService.updatePsnForRecord(recordId, newPsn);
+        return ResponseEntity.ok(Map.of("message", "PSN for record " + recordId + " updated successfully."));
     }
 }

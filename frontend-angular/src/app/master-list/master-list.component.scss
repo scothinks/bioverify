@@ -49,19 +49,31 @@ table {
   color: #fff;
   text-transform: uppercase;
 
-  &.status-pending {
-    background-color: #ffc107;
+  &.status-PENDING_VERIFICATION {
+    background-color: #ffc107; // yellow
   }
-  &.status-verified {
-    background-color: #28a745;
+
+  &.status-AWAITING_REVALIDATION {
+    background-color: #fd7e14; // orange
   }
-  &.status-failed {
-    background-color: #dc3545;
+
+  &.status-PENDING_GRADE_VALIDATION {
+    background-color: #007bff; // blue
   }
-  &.status-action_required {
-    background-color: #007bff;
+
+  &.status-VALIDATED {
+    background-color: #28a745; // green
   }
-  &.status-awaiting_reverification {
-  background-color: #fd7e14;
-}
+
+  &.status-FLAGGED_DATA_MISMATCH {
+    background-color: #6f42c1; // purple
+  }
+
+  &.status-FLAGGED_NOT_IN_SOT {
+    background-color: #17a2b8; // teal
+  }
+
+  &.status-REJECTED {
+    background-color: #dc3545; // red
+  }
 }

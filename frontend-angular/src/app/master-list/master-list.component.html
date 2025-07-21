@@ -19,7 +19,7 @@
           <td>{{ record.businessUnit }}</td>
           <td>{{ record.gradeLevel }}</td>
           <td>
-            <span *ngIf="record.status" class="status-badge" [ngClass]="'status-' + record.status.toLowerCase()">
+            <span *ngIf="record.status" class="status-badge" [ngClass]="'status-' + record.status.toUpperCase()">
               {{ record.status }}
             </span>
           </td>
