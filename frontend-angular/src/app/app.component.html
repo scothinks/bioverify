@@ -1,13 +1,49 @@
-<mat-toolbar class="app-toolbar" *ngIf="authService.isLoggedIn$ | async">
-  <mat-icon class="toolbar-icon">verified_user</mat-icon>
-  <span class="app-title">ProximaForte BioVerify™</span>
-  <span class="spacer"></span>
-  <button mat-button class="logout-btn" (click)="logout()">
-    <mat-icon>logout</mat-icon>
-    <span>Sign Out</span>
-  </button>
-</mat-toolbar>
+<!-- Enhanced Application Shell - Simplified Version -->
+<div class="app-container">
+  <!-- Enhanced Glassmorphism Toolbar -->
+  <mat-toolbar class="app-toolbar" *ngIf="authService.isLoggedIn$ | async">
+    <!-- Enhanced Brand Section with Interactive Elements -->
+    <div class="brand-section" (click)="navigateToHome()" tabindex="0" role="button" 
+         [attr.aria-label]="'Navigate to ' + appTitle + ' home page'">
+      <mat-icon class="toolbar-icon" aria-hidden="true">verified_user</mat-icon>
+      <span class="app-title">{{ appTitle }}</span>
+    </div>
+    
+    <!-- Dynamic Spacer -->
+    <span class="spacer"></span>
+    
+    <!-- Enhanced User Section with Premium Styling -->
+    <div class="user-section">
+      <!-- Enhanced Logout Button with Gradient Hover -->
+      <button mat-button 
+              class="logout-btn" 
+              (click)="logout()"
+              [attr.aria-label]="'Sign out of ' + appTitle"
+              type="button">
+        <mat-icon aria-hidden="true">logout</mat-icon>
+        <span>Sign Out</span>
+      </button>
+    </div>
+  </mat-toolbar>
 
-<main class="main-content">
-  <router-outlet></router-outlet>
-</main>
+  <!-- Enhanced Main Content with Animated Background -->
+  <main class="main-content" role="main" id="main-content">
+    <!-- Enhanced Router Outlet with Page Wrapper -->
+    <div class="page-wrapper" [class.page-wrapper-elevated]="isElevatedPage">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+
+  <!-- Simple Loading State Overlay -->
+  <div class="app-loading" *ngIf="isLoading$ | async" role="status" aria-live="polite">
+    <div class="loading-content">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p class="loading-text">{{ loadingMessage }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Accessibility Skip Link -->
+<a class="skip-link" href="#main-content" (click)="focusMainContent()">
+  Skip to main content
+</a>

@@ -9,161 +9,91 @@
             <mat-card-subtitle>Complete employee records database</mat-card-subtitle>
           </div>
         </div>
-        <div class="header-stats" *ngIf="filteredRecords?.length">
-          <div class="stat-chip">
+        <div class="header-actions">
+           <div class="stat-chip" *ngIf="!isLoading">
             <mat-icon>people</mat-icon>
-            <span>{{filteredRecords.length}} records</span>
+            <span>{{dataSource.data.length}} / {{allRecords.length}} records</span>
           </div>
-          <div class="stat-chip" *ngIf="getFilteredCount() !== allRecords.length">
-            <mat-icon>filter_list</mat-icon>
-            <span>filtered</span>
-          </div>
+          <button mat-flat-button class="header-button" (click)="clearFilters()" *ngIf="dataSource.data.length !== allRecords.length">
+            <mat-icon>clear_all</mat-icon>
+            Clear Filter
+          </button>
         </div>
       </div>
     </mat-card-header>
 
     <mat-card-content class="enhanced-content">
-      <div *ngIf="filteredRecords; else loading" class="table-container">
-        <div *ngIf="filteredRecords.length > 0; else noRecords" class="table-wrapper">
-          <table mat-table [dataSource]="filteredRecords" class="enhanced-table">
+      <div *ngIf="!isLoading; else loading">
+        <div class="table-container" *ngIf="dataSource.data.length > 0; else noRecords">
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="dataSource" class="enhanced-table">
 
-            <ng-container matColumnDef="id">
-              <th mat-header-cell *matHeaderCellDef class="id-column"> 
-                <div class="header-cell">
-                  <mat-icon>tag</mat-icon>
-                  <span>ID</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record" class="id-cell"> 
-                <div class="id-badge">{{record.id}}</div>
-              </td>
-            </ng-container>
+              <!-- FIXED: Removed the 'id' column definition -->
 
-            <ng-container matColumnDef="fullName">
-              <th mat-header-cell *matHeaderCellDef class="name-column"> 
-                <div class="header-cell">
-                  <mat-icon>person</mat-icon>
-                  <span>Employee</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record" class="name-cell"> 
-                <div class="employee-info">
-                  <div class="employee-avatar">{{getInitials(record.fullName)}}</div>
-                  <span class="employee-name">{{record.fullName}}</span>
-                </div>
-              </td>
-            </ng-container>
+              <ng-container matColumnDef="fullName">
+                <th mat-header-cell *matHeaderCellDef>Employee</th>
+                <td mat-cell *matCellDef="let record">
+                  <div class="employee-info">
+                    <div class="employee-avatar">{{getInitials(record.fullName)}}</div>
+                    <span class="employee-name">{{record.fullName}}</span>
+                  </div>
+                </td>
+              </ng-container>
 
-            <ng-container matColumnDef="department">
-              <th mat-header-cell *matHeaderCellDef> 
-                <div class="header-cell">
-                  <mat-icon>business</mat-icon>
-                  <span>Department</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record"> 
-                <div class="department-cell">
-                  <mat-icon class="dept-icon">domain</mat-icon>
-                  {{record.department}}
-                </div>
-              </td>
-            </ng-container>
+              <ng-container matColumnDef="department">
+                <th mat-header-cell *matHeaderCellDef>Department</th>
+                <td mat-cell *matCellDef="let record">{{record.department}}</td>
+              </ng-container>
 
-            <ng-container matColumnDef="ministry">
-              <th mat-header-cell *matHeaderCellDef> 
-                <div class="header-cell">
-                  <mat-icon>account_balance</mat-icon>
-                  <span>Ministry</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record"> 
-                <div class="ministry-cell">
-                  <mat-icon class="ministry-icon">gavel</mat-icon>
-                  {{record.ministry}}
-                </div>
-              </td>
-            </ng-container>
+              <ng-container matColumnDef="ministry">
+                <th mat-header-cell *matHeaderCellDef>Ministry</th>
+                <td mat-cell *matCellDef="let record">{{record.ministry}}</td>
+              </ng-container>
 
-            <ng-container matColumnDef="gradeLevel">
-              <th mat-header-cell *matHeaderCellDef> 
-                <div class="header-cell">
-                  <mat-icon>military_tech</mat-icon>
-                  <span>Grade</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record"> 
-                <div class="grade-badge">{{record.gradeLevel}}</div>
-              </td>
-            </ng-container>
+              <ng-container matColumnDef="gradeLevel">
+                <th mat-header-cell *matHeaderCellDef>Grade</th>
+                <td mat-cell *matCellDef="let record">
+                  <div class="grade-badge">{{record.gradeLevel}}</div>
+                </td>
+              </ng-container>
+              
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let record">
+                  <div class="status-chip" [ngClass]="getStatusClass(record.status)">
+                    <mat-icon>{{getStatusIcon(record.status)}}</mat-icon>
+                    <span>{{record.status || 'Unknown' | titlecase}}</span>
+                  </div>
+                </td>
+              </ng-container>
 
-            <ng-container matColumnDef="salaryStructure">
-              <th mat-header-cell *matHeaderCellDef> 
-                <div class="header-cell">
-                  <mat-icon>payments</mat-icon>
-                  <span>Salary Structure</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record"> 
-                <div class="salary-cell">
-                  <mat-icon class="salary-icon">account_balance_wallet</mat-icon>
-                  {{record.salaryStructure}}
-                </div>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef> 
-                <div class="header-cell">
-                  <mat-icon>info</mat-icon>
-                  <span>Status</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record"> 
-                <div class="status-chip" [ngClass]="getStatusClass(record.status)" *ngIf="record.status">
-                  <mat-icon>{{getStatusIcon(record.status)}}</mat-icon>
-                  <span>{{record.status | titlecase}}</span>
-                </div>
-                <div class="status-chip unknown" *ngIf="!record.status">
-                  <mat-icon>help</mat-icon>
-                  <span>Unknown</span>
-                </div>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns" class="enhanced-header-row"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="enhanced-row"></tr>
-          </table>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+          </div>
+          <mat-paginator [pageSizeOptions]="[10, 25, 100]" showFirstLastButtons
+                         aria-label="Select page of records">
+          </mat-paginator>
         </div>
-
         <ng-template #noRecords>
           <div class="empty-state">
-            <div class="empty-icon">
-              <mat-icon>folder_open</mat-icon>
-            </div>
-            <div class="empty-content">
-              <h3>No Records Found</h3>
-              <p>Upload a master list to get started or adjust your filter criteria.</p>
-              <button mat-flat-button class="upload-btn" (click)="onUploadClick()">
-                <mat-icon>cloud_upload</mat-icon>
-                Upload Master List
-              </button>
-            </div>
+            <mat-icon class="empty-icon">folder_off</mat-icon>
+            <h3>No Records Found</h3>
+            <p>Your master list is empty or your filter returned no results.</p>
+            <button mat-flat-button class="primary-button" (click)="onUploadClick()">
+              <mat-icon>cloud_upload</mat-icon>
+              Upload Master List
+            </button>
           </div>
         </ng-template>
       </div>
 
       <ng-template #loading>
         <div class="loading-state">
-          <div class="loading-spinner">
-            <mat-spinner diameter="60"></mat-spinner>
-          </div>
-          <div class="loading-content">
-            <h3>Loading Records</h3>
-            <p>Please wait while we fetch your data...</p>
-          </div>
+          <mat-progress-spinner mode="indeterminate" diameter="50"></mat-progress-spinner>
+          <p>Loading Master Records...</p>
         </div>
       </ng-template>
-
     </mat-card-content>
   </mat-card>
 </div>

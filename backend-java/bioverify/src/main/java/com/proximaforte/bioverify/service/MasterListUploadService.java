@@ -1,11 +1,15 @@
 package com.proximaforte.bioverify.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.proximaforte.bioverify.domain.Department;
 import com.proximaforte.bioverify.domain.MasterListRecord;
+import com.proximaforte.bioverify.domain.Ministry;
 import com.proximaforte.bioverify.domain.Tenant;
 import com.proximaforte.bioverify.domain.enums.RecordStatus;
 import com.proximaforte.bioverify.dto.UploadSummaryDto;
+import com.proximaforte.bioverify.repository.DepartmentRepository;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
+import com.proximaforte.bioverify.repository.MinistryRepository;
 import com.proximaforte.bioverify.repository.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -35,6 +39,8 @@ public class MasterListUploadService {
 
     private final MasterListRecordRepository recordRepository;
     private final TenantRepository tenantRepository;
+    private final MinistryRepository ministryRepository; // <-- ADDED
+    private final DepartmentRepository departmentRepository; // <-- ADDED
     private final ObjectMapper objectMapper;
 
     // --- UPDATED HEADER ALIASES ---
@@ -138,8 +144,8 @@ public class MasterListUploadService {
             Optional<MasterListRecord> existingRecordOpt = recordRepository.findByPsnHashAndTenantId(psnHash, tenant.getId());
             
             String gradeLevel = rowMap.get(discoveredHeaders.get("gradeLevel"));
-            String department = rowMap.get(discoveredHeaders.get("department"));
-            String ministry = rowMap.get(discoveredHeaders.get("ministry"));
+            String departmentName = rowMap.get(discoveredHeaders.get("department"));
+            String ministryName = rowMap.get(discoveredHeaders.get("ministry"));
             String salaryStructure = rowMap.get(discoveredHeaders.get("salaryStructure"));
 
             if (existingRecordOpt.isPresent()) {
@@ -167,8 +173,12 @@ public class MasterListUploadService {
                             .filter(Objects::nonNull).map(String::trim).collect(Collectors.joining(" "));
 
                 newRecord.setFullName(fullName);
-                newRecord.setDepartment(department);
-                newRecord.setMinistry(ministry);
+                
+                // --- UPDATED LOGIC ---
+                // Find or create Department and Ministry entities from the string names
+                newRecord.setDepartment(findOrCreateDepartment(departmentName, tenant));
+                newRecord.setMinistry(findOrCreateMinistry(ministryName, tenant));
+                
                 newRecord.setGradeLevel(gradeLevel);
                 newRecord.setSalaryStructure(salaryStructure);
                 newRecord.setStatus(RecordStatus.PENDING_VERIFICATION);
@@ -220,5 +230,30 @@ public class MasterListUploadService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 algorithm not found", e);
         }
+    }
+
+    // --- NEW HELPER METHODS ---
+    private Department findOrCreateDepartment(String name, Tenant tenant) {
+        if (name == null || name.isBlank()) return null;
+        // Find by name and tenant to ensure uniqueness within a tenant
+        return departmentRepository.findByNameAndTenantId(name, tenant.getId())
+                .orElseGet(() -> {
+                    Department newDept = new Department();
+                    newDept.setName(name);
+                    newDept.setTenant(tenant);
+                    return departmentRepository.save(newDept);
+                });
+    }
+
+    private Ministry findOrCreateMinistry(String name, Tenant tenant) {
+        if (name == null || name.isBlank()) return null;
+        // Find by name and tenant to ensure uniqueness within a tenant
+        return ministryRepository.findByNameAndTenantId(name, tenant.getId())
+                .orElseGet(() -> {
+                    Ministry newMin = new Ministry();
+                    newMin.setName(name);
+                    newMin.setTenant(tenant);
+                    return ministryRepository.save(newMin);
+                });
     }
 }

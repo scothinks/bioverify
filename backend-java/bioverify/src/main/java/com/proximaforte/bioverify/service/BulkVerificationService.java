@@ -2,17 +2,12 @@ package com.proximaforte.bioverify.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.proximaforte.bioverify.domain.BulkVerificationJob;
-import com.proximaforte.bioverify.domain.MasterListRecord;
-import com.proximaforte.bioverify.domain.Tenant;
-import com.proximaforte.bioverify.domain.User;
+import com.proximaforte.bioverify.domain.*;
 import com.proximaforte.bioverify.domain.enums.JobStatus;
 import com.proximaforte.bioverify.domain.enums.RecordStatus;
 import com.proximaforte.bioverify.dto.IdentitySourceConfigDto;
 import com.proximaforte.bioverify.dto.SotProfileDto;
-import com.proximaforte.bioverify.repository.BulkVerificationJobRepository;
-import com.proximaforte.bioverify.repository.MasterListRecordRepository;
-import com.proximaforte.bioverify.repository.TenantRepository;
+import com.proximaforte.bioverify.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.csv.CSVFormat;
@@ -37,7 +32,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +48,7 @@ public class BulkVerificationService {
     private final MasterListRecordRepository recordRepository;
     private final BulkVerificationJobRepository jobRepository;
     private final TenantRepository tenantRepository;
+    private final DepartmentRepository departmentRepository; // <-- ADDED
     private final ObjectMapper objectMapper;
     private final WebClient.Builder webClientBuilder;
 
@@ -247,7 +242,11 @@ public class BulkVerificationService {
         record.setFullName(fullName);
         record.setBvn(profile.getBvn());
         record.setGradeLevel(profile.getGradeLevel());
-        record.setDepartment(profile.getStateMinistry()); // <-- UPDATED from setBusinessUnit
+        
+        // --- UPDATED LOGIC ---
+        // Use the find or create logic for the department from SoT data
+        record.setDepartment(findOrCreateDepartment(profile.getStateMinistry(), record.getTenant()));
+        
         record.setCadre(profile.getCadre());
         record.setOnTransfer(profile.isOnTransfer());
 
@@ -272,5 +271,17 @@ public class BulkVerificationService {
         }
         
         record.setStatus(RecordStatus.PENDING_GRADE_VALIDATION);
+    }
+    
+    // --- NEW HELPER METHOD ---
+    private Department findOrCreateDepartment(String name, Tenant tenant) {
+        if (name == null || name.isBlank()) return null;
+        return departmentRepository.findByNameAndTenantId(name, tenant.getId())
+                .orElseGet(() -> {
+                    Department newDept = new Department();
+                    newDept.setName(name);
+                    newDept.setTenant(tenant);
+                    return departmentRepository.save(newDept);
+                });
     }
 }

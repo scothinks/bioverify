@@ -77,17 +77,19 @@ public class MasterListRecord {
     private String email;
 
     // --- Civil Service Details ---
-    @Column(nullable = false)
-    private String department; // <-- RENAMED from businessUnit
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department; 
 
-    @Column
-    private String ministry; // <-- NEWLY ADDED
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ministry_id")
+    private Ministry ministry;
 
     @Column
     private String gradeLevel;
 
     @Column
-    private String salaryStructure; // <-- NEWLY ADDED
+    private String salaryStructure;
 
     @Column
     private LocalDate dateOfFirstAppointment;

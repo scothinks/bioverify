@@ -31,18 +31,17 @@ public class MasterListRecordController {
     private final BulkVerificationService bulkVerificationService;
     private final MasterListRecordService recordService;
 
-    // --- NEW ENDPOINT ---
     @GetMapping("/validation-queue")
     @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
     public ResponseEntity<List<MasterListRecordDto>> getValidationQueue(@AuthenticationPrincipal User currentUser) {
-        List<MasterListRecord> records = recordService.getValidationQueue(currentUser.getTenant().getId());
+        // --- CORRECTED: Pass the entire 'currentUser' object to the service ---
+        List<MasterListRecord> records = recordService.getValidationQueue(currentUser);
         List<MasterListRecordDto> recordDtos = records.stream()
                 .map(MasterListRecordDto::new)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(recordDtos);
     }
 
-    // --- NEW ENDPOINT ---
     @PutMapping("/{recordId}")
     @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
     public ResponseEntity<MasterListRecordDto> updateRecord(
@@ -53,7 +52,6 @@ public class MasterListRecordController {
         return ResponseEntity.ok(new MasterListRecordDto(updatedRecord));
     }
 
-    // --- NEW ENDPOINT ---
     @PostMapping("/{recordId}/validate")
     @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
     public ResponseEntity<MasterListRecordDto> validateRecord(
@@ -75,7 +73,7 @@ public class MasterListRecordController {
     }
 
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')") // Also allow REVIEWER to upload? Or keep as TENANT_ADMIN only?
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
     public ResponseEntity<UploadSummaryDto> uploadMasterList(
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal User currentUser) throws Exception {

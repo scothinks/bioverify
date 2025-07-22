@@ -37,7 +37,6 @@ export class FileUploadComponent {
   uploadMessage = '';
   isError = false;
 
-  // NEW: Property to hold the summary report
   uploadSummary: UploadSummary | null = null;
 
   constructor(private tenantService: TenantService) {}
@@ -47,16 +46,16 @@ export class FileUploadComponent {
     this.uploadProgress = 0;
     this.uploadMessage = '';
     this.isError = false;
-    this.uploadSummary = null; // Reset summary on new file selection
+    this.uploadSummary = null;
   }
 
   uploadFile(): void {
     if (!this.selectedFile) return;
 
-    this.uploadProgress = 0;
+    this.uploadProgress = 1; // Start progress immediately
     this.uploadMessage = '';
     this.isError = false;
-    this.uploadSummary = null; // Reset summary before upload
+    this.uploadSummary = null;
 
     this.tenantService.uploadMasterList(this.selectedFile).subscribe({
       next: (event: any) => {
@@ -65,9 +64,10 @@ export class FileUploadComponent {
             this.uploadProgress = Math.round(100 * event.loaded / event.total);
           }
         } else if (event instanceof HttpResponse) {
-          this.uploadMessage = 'Upload complete.'; // Simple success message
-          this.uploadSummary = event.body as UploadSummary; // Store the detailed summary
+          this.uploadMessage = 'File processed successfully!';
+          this.uploadSummary = event.body as UploadSummary;
           this.isError = false;
+          this.uploadProgress = 100; // Ensure progress is 100 on completion
         }
       },
       error: (err: any) => {
@@ -79,14 +79,12 @@ export class FileUploadComponent {
     });
   }
 
-  // NEW: Method to trigger the filter
   onViewRecordsToVerify(): void {
     if (this.uploadSummary?.recordsRequiringReverificationIds) {
       this.tenantService.applyRecordFilter(this.uploadSummary.recordsRequiringReverificationIds);
     }
   }
 
-  // NEW: Method to trigger the notification
   onNotifyRecords(): void {
     if (this.uploadSummary?.recordsRequiringReverificationIds && this.uploadSummary.recordsRequiringReverificationIds.length > 0) {
       this.tenantService.notifyForReverification(this.uploadSummary.recordsRequiringReverificationIds)
@@ -97,18 +95,19 @@ export class FileUploadComponent {
     }
   }
 
-  // Helper methods (no changes needed below)
   get isUploading(): boolean { return this.uploadProgress > 0 && this.uploadProgress < 100; }
   get hasFileSelected(): boolean { return !!this.selectedFile; }
   get fileName(): string { return this.selectedFile?.name || ''; }
   get fileSize(): string {
     if (!this.selectedFile) return '';
     const bytes = this.selectedFile.size;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     if (bytes === 0) return '0 Bytes';
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
+
   resetUpload(): void {
     this.selectedFile = undefined;
     this.uploadProgress = 0;

@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -43,8 +44,27 @@ public class User implements UserDetails {
     @JoinColumn(name = "tenant_id")
     private Tenant tenant;
 
+    // --- CORRECTED TYPO: mappedby -> mappedBy ---
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private MasterListRecord masterListRecord;
+
+    // --- NEW RELATIONSHIPS FOR REVIEWER ACCESS CONTROL ---
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "user_ministries",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "ministry_id")
+    )
+    private Set<Ministry> assignedMinistries;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "user_departments",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "department_id")
+    )
+    private Set<Department> assignedDepartments;
+
 
     @CreationTimestamp
     @Column(updatable = false)

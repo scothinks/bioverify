@@ -1,88 +1,88 @@
-<!-- FILE: src/app/file-upload/file-upload.component.html -->
-
-<mat-card class="upload-card">
-  <mat-card-header>
-    <mat-card-title>Master List Uploader</mat-card-title>
-    <mat-card-subtitle>Select a CSV file to upload for the selected tenant.</mat-card-subtitle>
-  </mat-card-header>
-  <mat-card-content>
-    <div class="file-input-container">
-      <button mat-stroked-button color="primary" (click)="fileInput.click()" [disabled]="isUploading">
-        <mat-icon>attach_file</mat-icon>
-        Choose File
-      </button>
-      <input hidden #fileInput type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx, .xls">
-      
-      <div *ngIf="hasFileSelected" class="file-info">
-        <div class="file-details">
-          <span class="file-name">{{ fileName }}</span>
-          <span class="file-size">({{ fileSize }})</span>
+<div class="file-upload-container">
+  <mat-card class="list-card">
+    <mat-card-header class="enhanced-header">
+      <div class="header-content">
+        <div class="title-section">
+          <mat-icon class="header-icon">cloud_upload</mat-icon>
+          <div class="title-text">
+            <mat-card-title>Master List Uploader</mat-card-title>
+            <mat-card-subtitle>Upload employee data via CSV or Excel files</mat-card-subtitle>
+          </div>
         </div>
-        <button mat-icon-button color="warn" (click)="resetUpload()" [disabled]="isUploading" 
-                matTooltip="Remove selected file">
-          <mat-icon>close</mat-icon>
+      </div>
+    </mat-card-header>
+    <mat-card-content class="enhanced-content">
+
+      <div *ngIf="uploadSummary; else uploadView" class="summary-container">
+        <div class="summary-icon-container" [ngClass]="isError ? 'error' : 'success'">
+          <mat-icon>{{ isError ? 'error_outline' : 'check_circle_outline' }}</mat-icon>
+        </div>
+        <h2>{{ uploadMessage }}</h2>
+        
+        <div class="summary-stats">
+          <div class="summary-stat">
+            <span class="stat-value">{{ uploadSummary.newRecordsCreated }}</span>
+            <span class="stat-label">New Records Created</span>
+          </div>
+          <div class="summary-stat">
+            <span class="stat-value">{{ uploadSummary.existingRecordsUpdated }}</span>
+            <span class="stat-label">Records Updated</span>
+          </div>
+        </div>
+
+        <div *ngIf="uploadSummary.recordsRequiringReverificationIds.length > 0" class="reverification-actions">
+          <h3>Re-verification Required</h3>
+          <p>
+            <strong>{{ uploadSummary.recordsRequiringReverificationIds.length }}</strong> records have data mismatches and require re-verification.
+          </p>
+          <div class="action-buttons">
+            <button mat-flat-button class="primary-button" (click)="onViewRecordsToVerify()">
+              <mat-icon>visibility</mat-icon> View Records
+            </button>
+            <button mat-stroked-button color="accent" (click)="onNotifyRecords()">
+              <mat-icon>notifications</mat-icon> Notify All
+            </button>
+          </div>
+        </div>
+        <button mat-stroked-button class="upload-another-button" (click)="resetUpload()">
+          <mat-icon>refresh</mat-icon>
+          Upload Another File
         </button>
       </div>
-    </div>
 
-    <div *ngIf="uploadProgress > 0 && uploadProgress < 100" class="progress-container">
-      <div class="progress-text">
-        <span>Uploading...</span>
-        <span>{{ uploadProgress }}%</span>
-      </div>
-      <mat-progress-bar [value]="uploadProgress" mode="determinate"></mat-progress-bar>
-    </div>
+      <ng-template #uploadView>
+        <div class="upload-area">
+          <div class="file-dropzone" (click)="fileInput.click()">
+            <input hidden #fileInput type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx, .xls">
+            <mat-icon class="drop-icon">upload_file</mat-icon>
+            <p *ngIf="!hasFileSelected">Click to browse or drag & drop a file here</p>
+            <p *ngIf="hasFileSelected">File ready for upload</p>
+            <span class="file-types">Supported formats: CSV, XLSX, XLS</span>
+          </div>
 
-    <div *ngIf="uploadMessage && !uploadSummary" 
-         [ngClass]="{'message-success': !isError, 'message-error': isError}"
-         class="message-container">
-      <mat-icon *ngIf="!isError" color="primary">check_circle</mat-icon>
-      <mat-icon *ngIf="isError" color="warn">error</mat-icon>
-      <span>{{ uploadMessage }}</span>
-    </div>
+          <div *ngIf="hasFileSelected && !isUploading" class="file-info-chip">
+            <mat-icon>description</mat-icon>
+            <span class="file-name">{{ fileName }} ({{ fileSize }})</span>
+            <button mat-icon-button (click)="resetUpload()" matTooltip="Remove file">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+          
+          <div *ngIf="isUploading" class="progress-container">
+            <span class="progress-text">Uploading "{{ fileName }}"...</span>
+            <mat-progress-bar [value]="uploadProgress" mode="determinate"></mat-progress-bar>
+            <span class="progress-percent">{{ uploadProgress }}%</span>
+          </div>
 
-    <div *ngIf="uploadSummary" class="upload-summary">
-      <mat-icon color="primary">check_circle</mat-icon>
-      <h3>{{ uploadMessage }}</h3>
-      <ul>
-        <li>New Records Created: <strong>{{ uploadSummary.newRecordsCreated }}</strong></li>
-        <li>Existing Records Updated: <strong>{{ uploadSummary.existingRecordsUpdated }}</strong></li>
-      </ul>
-    
-      <div *ngIf="uploadSummary.recordsRequiringReverificationIds.length > 0" class="summary-actions">
-        <p class="reverification-text">
-          <strong>{{ uploadSummary.recordsRequiringReverificationIds.length }}</strong> records require re-verification.
-        </p>
-        <div class="action-buttons">
-          <button mat-flat-button color="primary" (click)="onViewRecordsToVerify()">
-            <mat-icon>visibility</mat-icon>
-            View These Records
-          </button>
-          <button mat-stroked-button color="accent" (click)="onNotifyRecords()">
-            <mat-icon>notifications_active</mat-icon>
-            Notify All {{ uploadSummary.recordsRequiringReverificationIds.length }}
+          <button mat-flat-button class="primary-button upload-button" 
+                  [disabled]="!hasFileSelected || isUploading || uploadProgress > 0" 
+                  (click)="uploadFile()">
+            <mat-icon>cloud_upload</mat-icon>
+            Upload and Process File
           </button>
         </div>
-      </div>
-    </div>
+      </ng-template>
 
-  </mat-card-content>
-  
-  <mat-card-actions align="end">
-    <button mat-raised-button color="primary" 
-            [disabled]="!hasFileSelected || isUploading" 
-            (click)="uploadFile()">
-      <mat-icon *ngIf="!isUploading">cloud_upload</mat-icon>
-      <mat-icon *ngIf="isUploading" class="spinning">hourglass_empty</mat-icon>
-      {{ isUploading ? 'Uploading...' : 'Upload' }}
-    </button>
-    
-    <button *ngIf="uploadSummary && !isUploading" 
-            mat-stroked-button 
-            color="primary" 
-            (click)="resetUpload()">
-      <mat-icon>refresh</mat-icon>
-      Upload Another
-    </button>
-  </mat-card-actions>
-</mat-card>
+    </mat-card-content>
+  </mat-card>
+</div>

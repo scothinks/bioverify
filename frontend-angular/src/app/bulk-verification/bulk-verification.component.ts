@@ -1,13 +1,14 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subscription, timer, switchMap, takeWhile, tap } from 'rxjs';
+import { Subscription, timer, switchMap } from 'rxjs';
 import { TenantService } from '../services/tenant.service';
 import { BulkJob } from '../models/bulk-job.model';
 
 // Import Angular Material Modules
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -20,6 +21,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatCardModule,
     MatButtonModule,
     MatTableModule,
+    MatPaginatorModule, // Added
     MatIconModule,
     MatProgressSpinnerModule,
     MatTooltipModule
@@ -27,12 +29,14 @@ import { MatTooltipModule } from '@angular/material/tooltip';
   templateUrl: './bulk-verification.component.html',
   styleUrls: ['./bulk-verification.component.scss']
 })
-export class BulkVerificationComponent implements OnInit, OnDestroy {
-  jobs: BulkJob[] = [];
-  isLoading = false;
+export class BulkVerificationComponent implements OnInit, OnDestroy, AfterViewInit {
+  dataSource = new MatTableDataSource<BulkJob>();
+  isLoading = true;
   isPolling = false;
-  displayedColumns: string[] = ['status', 'totalRecords', 'processed', 'createdAt', 'updatedAt'];
+  displayedColumns: string[] = ['status', 'progress', 'totalRecords', 'createdAt', 'actions'];
   private pollingSubscription?: Subscription;
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   constructor(private tenantService: TenantService) { }
 
@@ -40,14 +44,17 @@ export class BulkVerificationComponent implements OnInit, OnDestroy {
     this.loadJobs();
   }
 
+  ngAfterViewInit() {
+    this.dataSource.paginator = this.paginator;
+  }
+
   loadJobs(): void {
     this.isLoading = true;
     this.tenantService.getBulkJobs().subscribe({
       next: (jobs) => {
-        this.jobs = jobs;
+        this.dataSource.data = jobs;
         this.isLoading = false;
-        // If there are active jobs, start polling
-        if (jobs.some(job => job.status === 'RUNNING' || job.status === 'PENDING') && !this.isPolling) {
+        if (this.shouldPoll(jobs) && !this.isPolling) {
           this.startPolling();
         }
       },
@@ -59,38 +66,50 @@ export class BulkVerificationComponent implements OnInit, OnDestroy {
   }
 
   startVerification(): void {
-    this.isLoading = true;
     this.tenantService.startBulkVerification().subscribe({
       next: () => {
         alert('Bulk verification process has been initiated.');
-        this.loadJobs(); // Refresh the list immediately
+        this.loadJobs();
       },
       error: (err) => {
         alert('Failed to start bulk verification: ' + err.message);
-        this.isLoading = false;
       }
     });
   }
 
   startPolling(): void {
     this.isPolling = true;
-    this.pollingSubscription = timer(0, 10000) // Poll every 10 seconds
+    this.pollingSubscription = timer(5000, 10000) // Start after 5s, then every 10s
       .pipe(
-        switchMap(() => this.tenantService.getBulkJobs()),
-        tap(jobs => {
-          this.jobs = jobs;
-          // Stop polling if no jobs are active
-          if (!jobs.some(job => job.status === 'RUNNING' || job.status === 'PENDING')) {
-            this.stopPolling();
-          }
-        })
-      ).subscribe();
+        switchMap(() => this.tenantService.getBulkJobs())
+      ).subscribe(jobs => {
+        this.dataSource.data = jobs;
+        if (!this.shouldPoll(jobs)) {
+          this.stopPolling();
+        }
+      });
   }
 
   stopPolling(): void {
-    if (this.pollingSubscription) {
-      this.pollingSubscription.unsubscribe();
-      this.isPolling = false;
+    this.pollingSubscription?.unsubscribe();
+    this.isPolling = false;
+  }
+
+  private shouldPoll(jobs: BulkJob[]): boolean {
+    return jobs.some(job => job.status === 'RUNNING' || job.status === 'PENDING');
+  }
+  
+  getStatusClass(status: string): string {
+    return `status-${status.toLowerCase()}`;
+  }
+  
+  getStatusIcon(status: string): string {
+    switch(status) {
+      case 'COMPLETED': return 'check_circle';
+      case 'FAILED': return 'error';
+      case 'RUNNING': return 'autorenew';
+      case 'PENDING': return 'hourglass_empty';
+      default: return 'help';
     }
   }
 

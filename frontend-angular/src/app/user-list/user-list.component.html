@@ -1,23 +1,30 @@
 <div class="user-management-container">
-  <mat-card class="add-user-card">
-    <mat-card-header>
-      <mat-card-title>Create New User</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
-        <div class="form-row">
+  <div class="user-grid">
+
+    <mat-card class="user-card form-card">
+      <mat-card-header class="enhanced-header">
+        <div class="header-content">
+          <div class="title-section">
+            <mat-icon class="header-icon">person_add</mat-icon>
+            <div class="title-text">
+              <mat-card-title>Create New User</mat-card-title>
+              <mat-card-subtitle>Add a new member to your tenant</mat-card-subtitle>
+            </div>
+          </div>
+        </div>
+      </mat-card-header>
+      <mat-card-content class="enhanced-content">
+        <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="user-form">
           <mat-form-field appearance="outline">
             <mat-label>Full Name</mat-label>
-            <input matInput formControlName="fullName" placeholder="Enter full name">
+            <input matInput formControlName="fullName" placeholder="Jane Doe">
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
-            <input matInput formControlName="email" placeholder="Enter email address">
+            <input matInput formControlName="email" placeholder="jane.doe@example.com">
           </mat-form-field>
-        </div>
 
-        <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>Password</mat-label>
             <input matInput formControlName="password" type="password" placeholder="Enter initial password">
@@ -27,57 +34,120 @@
             <mat-label>Role</mat-label>
             <mat-select formControlName="role">
               <mat-option *ngFor="let role of roles" [value]="role">
-                {{ role }}
+                {{ role | titlecase }}
               </mat-option>
             </mat-select>
           </mat-form-field>
+
+          <div *ngIf="showReviewerFields" class="reviewer-fields">
+            <mat-form-field appearance="outline">
+              <mat-label>Assigned Ministries</mat-label>
+              <mat-select formControlName="assignedMinistryIds" multiple>
+                <mat-option *ngFor="let ministry of ministries$ | async" [value]="ministry.id">
+                  {{ ministry.name }}
+                </mat-option>
+              </mat-select>
+              <mat-hint>Select one or more ministries</mat-hint>
+            </mat-form-field>
+          
+            <mat-form-field appearance="outline">
+              <mat-label>Assigned Departments</mat-label>
+              <mat-select formControlName="assignedDepartmentIds" multiple>
+                <mat-option *ngFor="let department of departments$ | async" [value]="department.id">
+                  {{ department.name }}
+                </mat-option>
+              </mat-select>
+              <mat-hint>Select one or more departments</mat-hint>
+            </mat-form-field>
+          </div>
+
+          <button mat-flat-button class="primary-button" type="submit" [disabled]="!userForm.valid">
+            <mat-icon>add_circle_outline</mat-icon>
+            Create User
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="user-card list-card">
+      <mat-card-header class="enhanced-header">
+        <div class="header-content">
+          <div class="title-section">
+            <mat-icon class="header-icon">group</mat-icon>
+            <div class="title-text">
+              <mat-card-title>User Management</mat-card-title>
+              <mat-card-subtitle>List of all users in your tenant</mat-card-subtitle>
+            </div>
+          </div>
         </div>
+      </mat-card-header>
+      <mat-card-content class="enhanced-content">
+        <div *ngIf="!isLoading; else loading">
+          <div *ngIf="dataSource.data.length > 0; else noUsers" class="table-container">
+            <div class="table-wrapper">
+              <table mat-table [dataSource]="dataSource" class="enhanced-table">
 
-        <button mat-flat-button color="primary" type="submit" [disabled]="!userForm.valid">
-          <mat-icon>add</mat-icon>
-          Create User
-        </button>
-      </form>
-    </mat-card-content>
-  </mat-card>
+                <ng-container matColumnDef="fullName">
+                  <th mat-header-cell *matHeaderCellDef>Employee</th>
+                  <td mat-cell *matCellDef="let user">
+                    <div class="user-info">
+                      <div class="user-avatar">{{getInitials(user.fullName)}}</div>
+                      <span class="user-name">{{user.fullName}}</span>
+                    </div>
+                  </td>
+                </ng-container>
 
-  <mat-card>
-    <mat-card-header>
-      <mat-card-title>User Management</mat-card-title>
-      <mat-card-subtitle>List of all users in your tenant</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <div *ngIf="users$ | async as users; else loading">
-        <table mat-table [dataSource]="users" class="mat-elevation-z2" *ngIf="users.length > 0; else noUsers">
+                <ng-container matColumnDef="email">
+                  <th mat-header-cell *matHeaderCellDef>Email</th>
+                  <td mat-cell *matCellDef="let user" class="email-cell">{{user.email}}</td>
+                </ng-container>
 
-          <ng-container matColumnDef="fullName">
-            <th mat-header-cell *matHeaderCellDef> Full Name </th>
-            <td mat-cell *matCellDef="let user"> {{user.fullName}} </td>
-          </ng-container>
+                <ng-container matColumnDef="role">
+                  <th mat-header-cell *matHeaderCellDef>Role</th>
+                  <td mat-cell *matCellDef="let user">
+                    <div class="role-badge" [ngClass]="getRoleClass(user.role)">
+                      {{user.role | titlecase}}
+                    </div>
+                  </td>
+                </ng-container>
 
-          <ng-container matColumnDef="email">
-            <th mat-header-cell *matHeaderCellDef> Email </th>
-            <td mat-cell *matCellDef="let user"> {{user.email}} </td>
-          </ng-container>
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+                  <td mat-cell *matCellDef="let user" class="actions-cell">
+                    <button mat-icon-button matTooltip="Edit User (Future feature)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button matTooltip="Delete User (Future feature)" color="warn">
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </td>
+                </ng-container>
 
-          <ng-container matColumnDef="role">
-            <th mat-header-cell *matHeaderCellDef> Role </th>
-            <td mat-cell *matCellDef="let user"> {{user.role}} </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
-
-        <ng-template #noUsers>
-          <p>No users found for this tenant.</p>
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+              </table>
+            </div>
+            <mat-paginator [pageSizeOptions]="[5, 10, 25]"
+                           showFirstLastButtons
+                           aria-label="Select page of users">
+            </mat-paginator>
+          </div>
+          <ng-template #noUsers>
+            <div class="empty-state">
+              <mat-icon class="empty-icon">people_outline</mat-icon>
+              <h3>No Users Found</h3>
+              <p>Create a new user using the form to get started.</p>
+            </div>
+          </ng-template>
+        </div>
+        <ng-template #loading>
+          <div class="loading-state">
+            <mat-progress-spinner mode="indeterminate" diameter="50"></mat-progress-spinner>
+            <p>Loading Users...</p>
+          </div>
         </ng-template>
-      </div>
+      </mat-card-content>
+    </mat-card>
 
-      <ng-template #loading>
-        <p>Loading users...</p>
-      </ng-template>
-
-    </mat-card-content>
-  </mat-card>
+  </div>
 </div>

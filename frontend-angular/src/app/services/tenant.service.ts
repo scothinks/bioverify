@@ -6,8 +6,9 @@ import { Tenant, UpdateTenantRequest } from '../models/tenant.model';
 import { MasterListRecord } from '../models/master-list-record.model';
 import { BulkJob } from '../models/bulk-job.model';
 import { User } from '../models/user.model';
-// The import for RecordStatus is no longer needed in this specific method, but we'll leave it for now.
 import { RecordStatus } from '../models/record-status.enum'; 
+import { Ministry } from '../models/ministry.model';
+import { Department } from '../models/department.model';
 
 @Injectable({
   providedIn: 'root'
@@ -15,6 +16,7 @@ import { RecordStatus } from '../models/record-status.enum';
 export class TenantService {
   private globalAdminApiUrl = 'http://localhost:8080/api/v1/global-admin/tenants';
   private v1ApiUrl = 'http://localhost:8080/api/v1';
+  private tenantAdminApiUrl = 'http://localhost:8080/api/v1/tenant-admin';
   
   private tenantsSubject = new BehaviorSubject<Tenant[]>([]);
   public tenants$ = this.tenantsSubject.asObservable();
@@ -47,13 +49,13 @@ export class TenantService {
   }
   
   createUser(userData: Partial<User>): Observable<User> {
-    return this.http.post<User>(`${this.v1ApiUrl}/users`, userData).pipe(
+    return this.http.post<User>(`${this.tenantAdminApiUrl}/users`, userData).pipe(
         catchError(this.handleError)
     );
   }
   
   getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.v1ApiUrl}/users`).pipe(
+    return this.http.get<User[]>(`${this.tenantAdminApiUrl}/users`).pipe(
       catchError(this.handleError)
     );
   }
@@ -122,8 +124,6 @@ export class TenantService {
     return this.http.request(req);
   }
 
-  // --- NEW METHODS FOR VALIDATION WORKFLOW ---
-
   getValidationQueue(): Observable<MasterListRecord[]> {
     return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records/validation-queue`).pipe(
       catchError(this.handleError)
@@ -139,6 +139,20 @@ export class TenantService {
   validateRecord(recordId: string, decision: 'VALIDATED' | 'REJECTED', comments: string): Observable<MasterListRecord> {
     const payload = { decision, comments };
     return this.http.post<MasterListRecord>(`${this.v1ApiUrl}/records/${recordId}/validate`, payload).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- NEW METHODS FOR ASSIGNING WORK ---
+
+  getMinistries(): Observable<Ministry[]> {
+    return this.http.get<Ministry[]>(`${this.tenantAdminApiUrl}/ministries`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getDepartments(): Observable<Department[]> {
+    return this.http.get<Department[]>(`${this.tenantAdminApiUrl}/departments`).pipe(
       catchError(this.handleError)
     );
   }

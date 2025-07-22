@@ -1,11 +1,17 @@
 package com.proximaforte.bioverify.service;
 
+import com.proximaforte.bioverify.domain.Department;
 import com.proximaforte.bioverify.domain.MasterListRecord;
+import com.proximaforte.bioverify.domain.Ministry;
+import com.proximaforte.bioverify.domain.Tenant;
 import com.proximaforte.bioverify.domain.User;
 import com.proximaforte.bioverify.domain.enums.RecordStatus;
+import com.proximaforte.bioverify.domain.enums.Role;
 import com.proximaforte.bioverify.dto.UpdateRecordRequestDto;
 import com.proximaforte.bioverify.dto.ValidateRecordRequestDto;
+import com.proximaforte.bioverify.repository.DepartmentRepository;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
+import com.proximaforte.bioverify.repository.MinistryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +22,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -24,13 +32,39 @@ import java.util.UUID;
 public class MasterListRecordService {
 
     private final MasterListRecordRepository recordRepository;
+    private final DepartmentRepository departmentRepository;
+    private final MinistryRepository ministryRepository;
 
     /**
-     * Fetches records that are ready for human review.
+     * Fetches records for human review. If the user is a REVIEWER, it filters
+     * records based on their assigned Ministries and Departments. If the user is
+     * a TENANT_ADMIN, it returns all records for the tenant.
      */
-    public List<MasterListRecord> getValidationQueue(UUID tenantId) {
-        return recordRepository.findByTenantIdAndStatusIn(tenantId,
-                List.of(RecordStatus.PENDING_GRADE_VALIDATION, RecordStatus.FLAGGED_DATA_MISMATCH));
+    public List<MasterListRecord> getValidationQueue(User currentUser) {
+        UUID tenantId = currentUser.getTenant().getId();
+        List<RecordStatus> statuses = List.of(RecordStatus.PENDING_GRADE_VALIDATION, RecordStatus.FLAGGED_DATA_MISMATCH);
+
+        // Tenant Admins see everything.
+        if (currentUser.getRole() == Role.TENANT_ADMIN) {
+            return recordRepository.findByTenantIdAndStatusIn(tenantId, statuses);
+        }
+
+        // Reviewers only see records from their assigned areas.
+        if (currentUser.getRole() == Role.REVIEWER) {
+            Set<Department> depts = currentUser.getAssignedDepartments();
+            Set<Ministry> mins = currentUser.getAssignedMinistries();
+
+            // If a reviewer has no assignments, they see nothing.
+            if ((depts == null || depts.isEmpty()) && (mins == null || mins.isEmpty())) {
+                return Collections.emptyList();
+            }
+
+            // Call the new custom query method
+            return recordRepository.findRecordsByReviewerAssignments(tenantId, statuses, depts, mins);
+        }
+
+        // Other roles see nothing by default.
+        return Collections.emptyList();
     }
 
     /**
@@ -41,17 +75,20 @@ public class MasterListRecordService {
         MasterListRecord record = recordRepository.findById(recordId)
                 .orElseThrow(() -> new EntityNotFoundException("Record not found with ID: " + recordId));
 
-        // Update only the fields provided in the request
         if (request.getFullName() != null) record.setFullName(request.getFullName());
-        if (request.getDepartment() != null) record.setDepartment(request.getDepartment());
-        if (request.getMinistry() != null) record.setMinistry(request.getMinistry());
         if (request.getGradeLevel() != null) record.setGradeLevel(request.getGradeLevel());
         if (request.getSalaryStructure() != null) record.setSalaryStructure(request.getSalaryStructure());
         if (request.getDateOfBirth() != null) record.setDateOfBirth(request.getDateOfBirth());
 
-        // Set the user who performed this update for logging purposes
-        record.setLastUpdatedBy(reviewer);
+        Tenant tenant = record.getTenant();
+        if (request.getDepartment() != null) {
+            record.setDepartment(findOrCreateDepartment(request.getDepartment(), tenant));
+        }
+        if (request.getMinistry() != null) {
+            record.setMinistry(findOrCreateMinistry(request.getMinistry(), tenant));
+        }
 
+        record.setLastUpdatedBy(reviewer);
         return recordRepository.save(record);
     }
 
@@ -100,5 +137,27 @@ public class MasterListRecordService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Could not find SHA-256 algorithm", e);
         }
+    }
+
+    private Department findOrCreateDepartment(String name, Tenant tenant) {
+        if (name == null || name.isBlank()) return null;
+        return departmentRepository.findByNameAndTenantId(name, tenant.getId())
+                .orElseGet(() -> {
+                    Department newDept = new Department();
+                    newDept.setName(name);
+                    newDept.setTenant(tenant);
+                    return departmentRepository.save(newDept);
+                });
+    }
+
+    private Ministry findOrCreateMinistry(String name, Tenant tenant) {
+        if (name == null || name.isBlank()) return null;
+        return ministryRepository.findByNameAndTenantId(name, tenant.getId())
+                .orElseGet(() -> {
+                    Ministry newMin = new Ministry();
+                    newMin.setName(name);
+                    newMin.setTenant(tenant);
+                    return ministryRepository.save(newMin);
+                });
     }
 }

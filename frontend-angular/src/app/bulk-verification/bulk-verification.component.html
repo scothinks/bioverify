@@ -1,59 +1,87 @@
-<div class="bulk-verify-header">
-  <h3 class="card-title">
-    <mat-icon>checklist</mat-icon>
-    Bulk Verification
-  </h3>
-  <button mat-raised-button color="primary" (click)="startVerification()" [disabled]="isLoading">
-    <mat-icon>play_circle_filled</mat-icon>
-    <span>Verify All Pending Records</span>
-  </button>
-</div>
-
-<div *ngIf="isLoading && jobs.length === 0" class="spinner-container">
-  <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
-</div>
-
-<div *ngIf="!isLoading && jobs.length === 0" class="no-jobs-message">
-  <p>No bulk verification jobs found.</p>
-</div>
-
-<table mat-table [dataSource]="jobs" *ngIf="jobs.length > 0" class="mat-elevation-z4">
-
-  <ng-container matColumnDef="status">
-    <th mat-header-cell *matHeaderCellDef> Status </th>
-    <td mat-cell *matCellDef="let job">
-      <div class="status-cell">
-        <ng-container [ngSwitch]="job.status">
-          <mat-icon *ngSwitchCase="'COMPLETED'" color="primary" matTooltip="Completed">check_circle</mat-icon>
-          <mat-icon *ngSwitchCase="'FAILED'" color="warn" matTooltip="Failed: {{job.statusMessage}}">error</mat-icon>
-          <mat-progress-spinner *ngSwitchCase="'RUNNING'" mode="indeterminate" [diameter]="24" matTooltip="Running..."></mat-progress-spinner>
-          <mat-icon *ngSwitchCase="'PENDING'" matTooltip="Pending">hourglass_empty</mat-icon>
-        </ng-container>
-        <span>{{ job.status | titlecase }}</span>
+<div class="bulk-verification-container">
+  <mat-card class="list-card">
+    <mat-card-header class="enhanced-header">
+      <div class="header-content">
+        <div class="title-section">
+          <mat-icon class="header-icon">checklist</mat-icon>
+          <div class="title-text">
+            <mat-card-title>Bulk Verification Jobs</mat-card-title>
+            <mat-card-subtitle>Monitor and initiate batch verification processes</mat-card-subtitle>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button mat-flat-button class="primary-button" (click)="startVerification()">
+            <mat-icon>play_circle</mat-icon>
+            Verify All Pending
+          </button>
+        </div>
       </div>
-    </td>
-  </ng-container>
+    </mat-card-header>
 
-  <ng-container matColumnDef="totalRecords">
-    <th mat-header-cell *matHeaderCellDef> Total </th>
-    <td mat-cell *matCellDef="let job"> {{job.totalRecords}} </td>
-  </ng-container>
+    <mat-card-content class="enhanced-content">
+      <div *ngIf="!isLoading; else loading">
+        <div class="table-container" *ngIf="dataSource.data.length > 0; else noJobs">
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="dataSource" class="enhanced-table">
+              
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let job">
+                  <div class="job-status-badge" [ngClass]="getStatusClass(job.status)" [matTooltip]="job.statusMessage || job.status">
+                    <mat-icon [class.spinner-icon]="job.status === 'RUNNING'">{{getStatusIcon(job.status)}}</mat-icon>
+                    <span>{{ job.status | titlecase }}</span>
+                  </div>
+                </td>
+              </ng-container>
 
-  <ng-container matColumnDef="processed">
-    <th mat-header-cell *matHeaderCellDef> Progress </th>
-    <td mat-cell *matCellDef="let job"> {{job.successfullyVerifiedRecords}} / {{job.totalRecords}} </td>
-  </ng-container>
+              <ng-container matColumnDef="progress">
+                <th mat-header-cell *matHeaderCellDef>Progress</th>
+                <td mat-cell *matCellDef="let job">
+                  {{job.successfullyVerifiedRecords}} / {{job.totalRecords}}
+                </td>
+              </ng-container>
 
-  <ng-container matColumnDef="createdAt">
-    <th mat-header-cell *matHeaderCellDef> Started On </th>
-    <td mat-cell *matCellDef="let job"> {{job.createdAt | date:'short'}} </td>
-  </ng-container>
+              <ng-container matColumnDef="totalRecords">
+                <th mat-header-cell *matHeaderCellDef>Total Records</th>
+                <td mat-cell *matCellDef="let job">{{job.totalRecords}}</td>
+              </ng-container>
 
-  <ng-container matColumnDef="updatedAt">
-    <th mat-header-cell *matHeaderCellDef> Last Update </th>
-    <td mat-cell *matCellDef="let job"> {{job.updatedAt | date:'short'}} </td>
-  </ng-container>
+              <ng-container matColumnDef="createdAt">
+                <th mat-header-cell *matHeaderCellDef>Started On</th>
+                <td mat-cell *matCellDef="let job">{{job.createdAt | date:'medium'}}</td>
+              </ng-container>
+              
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let job">
+                  <button mat-icon-button (click)="loadJobs()" matTooltip="Refresh Job Status">
+                    <mat-icon>refresh</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
 
-  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-</table>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+          </div>
+          <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons
+                         aria-label="Select page of verification jobs">
+          </mat-paginator>
+        </div>
+        <ng-template #noJobs>
+          <div class="empty-state">
+            <mat-icon class="empty-icon">history_toggle_off</mat-icon>
+            <h3>No Jobs Found</h3>
+            <p>Start a new verification process to see jobs appear here.</p>
+          </div>
+        </ng-template>
+      </div>
+      <ng-template #loading>
+        <div class="loading-state">
+          <mat-progress-spinner mode="indeterminate" diameter="50"></mat-progress-spinner>
+          <p>Loading Verification Jobs...</p>
+        </div>
+      </ng-template>
+    </mat-card-content>
+  </mat-card>
+</div>

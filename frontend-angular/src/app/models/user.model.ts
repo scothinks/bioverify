@@ -3,5 +3,7 @@ export interface User {
   fullName: string;
   email: string;
   role: string;
-  password?: string; 
+  password?: string;
+  assignedMinistryIds?: string[];
+  assignedDepartmentIds?: string[];
 }
