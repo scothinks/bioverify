@@ -18,7 +18,8 @@ import { FileUploadComponent } from './file-upload/file-upload.component';
 import { MasterListComponent } from './master-list/master-list.component';
 import { BulkVerificationComponent } from './bulk-verification/bulk-verification.component';
 import { UserDashboardComponent } from './user-dashboard/user-dashboard.component';
-import { ValidationQueueComponent } from './validation-queue/validation-queue.component'; // <-- 1. Import the new component
+import { ValidationQueueComponent } from './validation-queue/validation-queue.component';
+import { PayrollExportComponent } from './payroll-export/payroll-export.component';
 
 export const routes: Routes = [
   // Public routes
@@ -51,7 +52,8 @@ export const routes: Routes = [
           { path: 'uploads', component: FileUploadComponent },
           { path: 'records', component: MasterListComponent },
           { path: 'bulk-verify', component: BulkVerificationComponent },
-          { path: 'validation', component: ValidationQueueComponent }, // <-- 2. Add the new route for the validation queue
+          { path: 'validation', component: ValidationQueueComponent },
+          { path: 'export', component: PayrollExportComponent },
           { path: '', redirectTo: 'users', pathMatch: 'full' }
         ]
       },

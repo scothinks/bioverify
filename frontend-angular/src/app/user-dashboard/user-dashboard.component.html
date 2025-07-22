@@ -13,8 +13,10 @@
           <span matListItemLine class="status-badge {{ userRecord.status }}">{{ userRecord.status }}</span>
         </mat-list-item>
         <mat-list-item role="listitem">
-          <span matListItemTitle>Business Unit</span>
-          <span matListItemLine>{{ userRecord.businessUnit }}</span>
+          <span matListItemTitle>Ministry / Department</span>
+          <span matListItemLine>
+            {{ userRecord.ministry }} <span *ngIf="userRecord.department"> / {{ userRecord.department }}</span>
+          </span>
         </mat-list-item>
         <mat-list-item role="listitem">
           <span matListItemTitle>Grade Level</span>

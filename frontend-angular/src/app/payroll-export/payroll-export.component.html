@@ -1,0 +1,57 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Payroll Exports</mat-card-title>
+    <mat-card-subtitle>Generate a new clean payroll file or download previous exports.</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="action-bar">
+      <button mat-flat-button color="primary" (click)="generateNewExport()" [disabled]="isGenerating">
+        <mat-icon>add_circle_outline</mat-icon>
+        Generate New Payroll Export
+      </button>
+      <mat-spinner *ngIf="isGenerating" diameter="24" style="margin-left: 16px;"></mat-spinner>
+    </div>
+
+    <div *ngIf="isLoading" class="spinner-container">
+      <mat-spinner></mat-spinner>
+    </div>
+
+    <table mat-table [dataSource]="history" class="mat-elevation-z8" *ngIf="!isLoading && history.length > 0">
+
+      <ng-container matColumnDef="exportTimestamp">
+        <th mat-header-cell *matHeaderCellDef> Export Date </th>
+        <td mat-cell *matCellDef="let element"> {{element.exportTimestamp | date:'medium'}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="recordCount">
+        <th mat-header-cell *matHeaderCellDef> Record Count </th>
+        <td mat-cell *matCellDef="let element"> {{element.recordCount}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef> Status </th>
+        <td mat-cell *matCellDef="let element"> {{element.status}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="exportedByEmail">
+        <th mat-header-cell *matHeaderCellDef> Initiated By </th>
+        <td mat-cell *matCellDef="let element"> {{element.exportedByEmail}} </td>
+      </ng-container> <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef> Download </th>
+        <td mat-cell *matCellDef="let element">
+          <button mat-icon-button color="primary" (click)="downloadFile(element)" [disabled]="element.status !== 'COMPLETED'">
+            <mat-icon>cloud_download</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+    
+    <div *ngIf="!isLoading && history.length === 0" class="empty-state">
+      <p>No payroll exports have been generated yet.</p>
+    </div>
+
+  </mat-card-content>
+</mat-card>

@@ -31,7 +31,8 @@ export class TenantAdminDashboardComponent {
     { path: 'uploads', label: 'File Upload', icon: 'upload_file' },
     { path: 'records', label: 'Master Records', icon: 'list_alt' },
     { path: 'bulk-verify', label: 'Bulk Verification', icon: 'checklist' },
-    { path: 'validation', label: 'Validation Queue', icon: 'fact_check' } // <-- ADDED
+    { path: 'validation', label: 'Validation Queue', icon: 'fact_check' },
+    { path: 'export', label: 'Payroll Export', icon: 'download_for_offline' }
   ];
 
   constructor(

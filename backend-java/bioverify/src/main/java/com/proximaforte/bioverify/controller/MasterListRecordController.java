@@ -1,20 +1,25 @@
 package com.proximaforte.bioverify.controller;
 
 import com.proximaforte.bioverify.domain.MasterListRecord;
+import com.proximaforte.bioverify.domain.PayrollExportLog;
 import com.proximaforte.bioverify.domain.User;
 import com.proximaforte.bioverify.dto.*;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
-import com.proximaforte.bioverify.service.BulkVerificationService;
-import com.proximaforte.bioverify.service.MasterListRecordService;
-import com.proximaforte.bioverify.service.MasterListUploadService;
-import com.proximaforte.bioverify.service.VerificationService;
+import com.proximaforte.bioverify.repository.PayrollExportLogRepository;
+import com.proximaforte.bioverify.service.*;
+import com.proximaforte.bioverify.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -23,6 +28,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/records")
 @RequiredArgsConstructor
+@Slf4j
 public class MasterListRecordController {
 
     private final MasterListUploadService uploadService;
@@ -30,11 +36,15 @@ public class MasterListRecordController {
     private final MasterListRecordRepository recordRepository;
     private final BulkVerificationService bulkVerificationService;
     private final MasterListRecordService recordService;
+    private final ExportService exportService;
+    private final PayrollExportLogRepository payrollExportLogRepository;
+    private final FileStorageService fileStorageService;
+
+    // --- EXISTING ENDPOINTS (UNCHANGED) ---
 
     @GetMapping("/validation-queue")
     @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
     public ResponseEntity<List<MasterListRecordDto>> getValidationQueue(@AuthenticationPrincipal User currentUser) {
-        // --- CORRECTED: Pass the entire 'currentUser' object to the service ---
         List<MasterListRecord> records = recordService.getValidationQueue(currentUser);
         List<MasterListRecordDto> recordDtos = records.stream()
                 .map(MasterListRecordDto::new)
@@ -116,5 +126,53 @@ public class MasterListRecordController {
         }
         recordService.updatePsnForRecord(recordId, newPsn);
         return ResponseEntity.ok(Map.of("message", "PSN for record " + recordId + " updated successfully."));
+    }
+
+    // --- PAYROLL EXPORT ENDPOINTS ---
+
+    @PostMapping("/export")
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
+    public ResponseEntity<?> initiateExport(@AuthenticationPrincipal User currentUser) {
+        exportService.generateExport(currentUser);
+        return ResponseEntity.accepted().body(Map.of("message", "Payroll export process has been initiated."));
+    }
+
+    @GetMapping("/export-logs")
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
+    public ResponseEntity<List<PayrollExportLogDto>> getExportHistory(@AuthenticationPrincipal User currentUser) {
+        List<PayrollExportLog> logs = payrollExportLogRepository.findByTenantIdOrderByExportTimestampDesc(currentUser.getTenant().getId());
+        List<PayrollExportLogDto> dtos = logs.stream().map(PayrollExportLogDto::new).collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/export-logs/{logId}/download")
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
+    public ResponseEntity<ByteArrayResource> downloadExportedFile(@PathVariable UUID logId, @AuthenticationPrincipal User currentUser) {
+        // --- RENAMED VARIABLE TO AVOID CONFLICT ---
+        PayrollExportLog exportLog = payrollExportLogRepository.findById(logId)
+                .orElseThrow(() -> new RuntimeException("Export log not found"));
+
+        // Security check: ensure the log belongs to the admin's tenant
+        if (!exportLog.getTenant().getId().equals(currentUser.getTenant().getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        try {
+            byte[] data = fileStorageService.load(exportLog.getFileUrl());
+            ByteArrayResource resource = new ByteArrayResource(data);
+            
+            String filename = "payroll-export-" + exportLog.getId() + ".csv";
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + filename)
+                    .contentType(MediaType.parseMediaType("text/csv"))
+                    .contentLength(data.length)
+                    .body(resource);
+
+        } catch (IOException e) {
+            // This 'log' now correctly refers to the SLF4J logger from the @Slf4j annotation
+            log.error("Error loading file for export log {}: {}", logId, e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

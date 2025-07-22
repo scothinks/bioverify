@@ -10,6 +10,16 @@ import { RecordStatus } from '../models/record-status.enum';
 import { Ministry } from '../models/ministry.model';
 import { Department } from '../models/department.model';
 
+// New interface for the export log data
+export interface PayrollExportLog {
+  id: string;
+  exportTimestamp: string;
+  recordCount: number;
+  exportedByEmail: string;
+  status: string;
+  statusMessage: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -143,8 +153,6 @@ export class TenantService {
     );
   }
 
-  // --- NEW METHODS FOR ASSIGNING WORK ---
-
   getMinistries(): Observable<Ministry[]> {
     return this.http.get<Ministry[]>(`${this.tenantAdminApiUrl}/ministries`).pipe(
       catchError(this.handleError)
@@ -153,6 +161,37 @@ export class TenantService {
 
   getDepartments(): Observable<Department[]> {
     return this.http.get<Department[]>(`${this.tenantAdminApiUrl}/departments`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- PAYROLL EXPORT METHODS ---
+
+  /**
+   * Initiates a new payroll export job on the backend.
+   */
+  initiateExport(): Observable<any> {
+    return this.http.post(`${this.v1ApiUrl}/records/export`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Fetches the history of all past payroll exports.
+   */
+  getExportHistory(): Observable<PayrollExportLog[]> {
+    return this.http.get<PayrollExportLog[]>(`${this.v1ApiUrl}/records/export-logs`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Downloads a specific export file as a raw data blob.
+   */
+  downloadExportFile(logId: string): Observable<Blob> {
+    return this.http.get(`${this.v1ApiUrl}/records/export-logs/${logId}/download`, {
+      responseType: 'blob'
+    }).pipe(
       catchError(this.handleError)
     );
   }

@@ -34,6 +34,7 @@ public class MasterListRecordService {
     private final MasterListRecordRepository recordRepository;
     private final DepartmentRepository departmentRepository;
     private final MinistryRepository ministryRepository;
+    private final EmployeeIdService employeeIdService; // Injected new service
 
     /**
      * Fetches records for human review. If the user is a REVIEWER, it filters
@@ -94,6 +95,7 @@ public class MasterListRecordService {
 
     /**
      * Sets the final status of a record to VALIDATED or REJECTED.
+     * If validated, it also generates the employee's Work ID (WID).
      */
     @Transactional
     public MasterListRecord performValidation(UUID recordId, ValidateRecordRequestDto request, User reviewer) {
@@ -103,6 +105,12 @@ public class MasterListRecordService {
         RecordStatus decision = request.getDecision();
         if (decision != RecordStatus.VALIDATED && decision != RecordStatus.REJECTED) {
             throw new IllegalArgumentException("Decision must be either VALIDATED or REJECTED.");
+        }
+
+        // If the decision is to validate and the record doesn't already have a Work ID, generate one.
+        if (decision == RecordStatus.VALIDATED && record.getEmployeeId() == null) {
+            String newWorkId = employeeIdService.generateNewWorkId(record.getTenant());
+            record.setEmployeeId(newWorkId);
         }
 
         record.setStatus(decision);

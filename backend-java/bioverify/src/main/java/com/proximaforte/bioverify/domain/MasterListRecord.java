@@ -56,6 +56,9 @@ public class MasterListRecord {
     @Convert(converter = StringCryptoConverter.class)
     private String bvn;
 
+    @Column(unique = true, updatable = false)
+    private String employeeId; // The new Work ID (WID)
+
     // --- Personal Details ---
     @Column(nullable = false)
     @Convert(converter = StringCryptoConverter.class)
@@ -128,6 +131,10 @@ public class MasterListRecord {
 
     @Column
     private Instant validatedAt;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payroll_export_log_id")
+    private PayrollExportLog payrollExportLog; // Link to a specific payroll export event
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_updated_by_user_id")
