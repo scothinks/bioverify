@@ -9,7 +9,6 @@ import { RecordStatus } from '../models/record-status.enum';
 import { Ministry } from '../models/ministry.model';
 import { Department } from '../models/department.model';
 
-// This interface is based on the previously provided BulkJobDto.java
 export interface BulkVerificationJob {
   id: string;
   status: string;
@@ -32,6 +31,19 @@ export interface PayrollExportLog {
   statusMessage: string;
 }
 
+export interface DashboardStats {
+  totalUniqueRecords: number;
+  totalVerified: number;
+  totalValidated: number;
+  totalPendingApproval: number;
+  totalMismatched: number;
+  totalNotFound: number;
+  totalAwaitingReVerification: number;
+  totalReviewers: number;
+  totalSelfServiceUsers: number;
+  totalAgentAccounts: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -48,16 +60,20 @@ export class TenantService {
 
   constructor(private http: HttpClient) {}
 
+  getDashboardStats(): Observable<DashboardStats> {
+    return this.http.get<DashboardStats>(`${this.v1ApiUrl}/dashboard/stats`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   startBulkVerification(): Observable<any> {
     return this.http.post<any>(`${this.v1ApiUrl}/records/bulk-verify`, {}).pipe(
       catchError(this.handleError)
     );
   }
 
-  // This method is now superseded by getBulkJobHistory, but we'll leave it for now
-  // to avoid breaking any existing components that might use it.
-  getBulkJobs(): Observable<any[]> { // Changed from BulkJob[] to any[] for compatibility
-    return this.http.get<any[]>(`${this.v1ApiUrl}/bulk-jobs`).pipe(
+  getBulkJobHistory(): Observable<BulkVerificationJob[]> {
+    return this.http.get<BulkVerificationJob[]>(`${this.v1ApiUrl}/bulk-jobs`).pipe(
       catchError(this.handleError)
     );
   }
@@ -132,8 +148,15 @@ export class TenantService {
     );
   }
   
+  // --- RESTORED THIS METHOD ---
   getRecordsForTenant(): Observable<MasterListRecord[]> {
     return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getFlaggedNotInSot(): Observable<MasterListRecord[]> {
+    return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records/flagged/not-in-sot`).pipe(
       catchError(this.handleError)
     );
   }
@@ -207,26 +230,6 @@ export class TenantService {
     return this.http.get(`${this.v1ApiUrl}/records/export-logs/${logId}/download`, {
       responseType: 'blob'
     }).pipe(
-      catchError(this.handleError)
-    );
-  }
-
-  // --- NEW METHODS FOR BULK VERIFICATION DASHBOARD ---
-
-  /**
-   * Fetches the history of all bulk verification jobs for the tenant.
-   */
-  getBulkJobHistory(): Observable<BulkVerificationJob[]> {
-    return this.http.get<BulkVerificationJob[]>(`${this.v1ApiUrl}/bulk-jobs`).pipe(
-      catchError(this.handleError)
-    );
-  }
-
-  /**
-   * Fetches all records flagged as not found in the Source of Truth.
-   */
-  getFlaggedNotInSot(): Observable<MasterListRecord[]> {
-    return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records/flagged/not-in-sot`).pipe(
       catchError(this.handleError)
     );
   }

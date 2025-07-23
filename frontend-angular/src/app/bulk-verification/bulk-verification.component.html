@@ -45,9 +45,9 @@
           <div class="table-wrapper">
             <table mat-table [dataSource]="jobHistoryDataSource" class="enhanced-table">
               
-              <ng-container matColumnDef="initiatedAt">
-                <th mat-header-cell *matHeaderCellDef>Date Initiated</th>
-                <td mat-cell *matCellDef="let job">{{job.initiatedAt | date:'medium'}}</td>
+              <ng-container matColumnDef="createdAt">
+                <th mat-header-cell *matHeaderCellDef>Date Created</th>
+                <td mat-cell *matCellDef="let job">{{job.createdAt | date:'medium'}}</td>
               </ng-container>
 
               <ng-container matColumnDef="totalRecords">

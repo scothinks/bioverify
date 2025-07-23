@@ -27,6 +27,7 @@ export class TenantAdminDashboardComponent {
   
   // Navigation links for the tab group
   navLinks = [
+    { path: 'overview', label: 'Overview', icon: 'dashboard' }, // <-- NEW PATH ADDED
     { path: 'users', label: 'User Management', icon: 'group' },
     { path: 'uploads', label: 'File Upload', icon: 'upload_file' },
     { path: 'records', label: 'Master Records', icon: 'list_alt' },

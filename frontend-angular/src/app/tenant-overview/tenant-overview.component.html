@@ -1,0 +1,101 @@
+<div class="overview-container">
+  <div *ngIf="isLoading" class="spinner-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <div *ngIf="!isLoading && stats">
+    <mat-grid-list cols="3" rowHeight="150px" gutterSize="20px">
+      
+      <mat-grid-tile>
+        <mat-card class="stat-card">
+          <mat-card-header>
+            <mat-icon mat-card-avatar>folder_shared</mat-icon>
+            <mat-card-title class="stat-number">{{ stats.totalUniqueRecords }}</mat-card-title>
+            <mat-card-subtitle>Total Unique Records</mat-card-subtitle>
+          </mat-card-header>
+        </mat-card>
+      </mat-grid-tile>
+
+      <mat-grid-tile>
+        <mat-card class="stat-card">
+          <mat-card-header>
+            <mat-icon mat-card-avatar>how_to_reg</mat-icon>
+            <mat-card-title class="stat-number">{{ stats.totalVerified }}</mat-card-title>
+            <mat-card-subtitle>Total Verified (SoT)</mat-card-subtitle>
+          </mat-card-header>
+        </mat-card>
+      </mat-grid-tile>
+
+      <mat-grid-tile>
+        <mat-card class="stat-card">
+          <mat-card-header>
+            <mat-icon mat-card-avatar>task_alt</mat-icon>
+            <mat-card-title class="stat-number">{{ stats.totalValidated }}</mat-card-title>
+            <mat-card-subtitle>Total Validated (Final)</mat-card-subtitle>
+          </mat-card-header>
+        </mat-card>
+      </mat-grid-tile>
+      
+      <mat-grid-tile>
+        <mat-card class="stat-card clickable" (click)="navigate('validation')">
+          <mat-card-header>
+            <mat-icon mat-card-avatar>pending_actions</mat-icon>
+            <mat-card-title class="stat-number">{{ stats.totalPendingApproval }}</mat-card-title>
+            <mat-card-subtitle>Pending Approval</mat-card-subtitle>
+          </mat-card-header>
+        </mat-card>
+      </mat-grid-tile>
+
+      <mat-grid-tile>
+        <mat-card class="stat-card clickable" (click)="navigate('validation')">
+          <mat-card-header>
+            <mat-icon mat-card-avatar color="warn">error_outline</mat-icon>
+            <mat-card-title class="stat-number warn">{{ stats.totalMismatched }}</mat-card-title>
+            <mat-card-subtitle>Mismatched Records</mat-card-subtitle>
+          </mat-card-header>
+        </mat-card>
+      </mat-grid-tile>
+      
+      <mat-grid-tile>
+        <mat-card class="stat-card clickable" (click)="navigate('not-found')">
+          <mat-card-header>
+            <mat-icon mat-card-avatar color="warn">help_outline</mat-icon>
+            <mat-card-title class="stat-number warn">{{ stats.totalNotFound }}</mat-card-title>
+            <mat-card-subtitle>Not Found in SoT</mat-card-subtitle>
+          </mat-card-header>
+        </mat-card>
+      </mat-grid-tile>
+
+      <mat-grid-tile>
+        <mat-card class="stat-card clickable" (click)="navigate('users')">
+          <mat-card-header>
+            <mat-icon mat-card-avatar>supervised_user_circle</mat-icon>
+            <mat-card-title class="stat-number">{{ stats.totalReviewers }}</mat-card-title>
+            <mat-card-subtitle>Total Reviewers</mat-card-subtitle>
+          </mat-card-header>
+        </mat-card>
+      </mat-grid-tile>
+
+      <mat-grid-tile>
+        <mat-card class="stat-card">
+          <mat-card-header>
+            <mat-icon mat-card-avatar>person</mat-icon>
+            <mat-card-title class="stat-number">{{ stats.totalSelfServiceUsers }}</mat-card-title>
+            <mat-card-subtitle>Self-Service Users</mat-card-subtitle>
+          </mat-card-header>
+        </mat-card>
+      </mat-grid-tile>
+      
+      <mat-grid-tile>
+        <mat-card class="stat-card">
+          <mat-card-header>
+            <mat-icon mat-card-avatar>support_agent</mat-icon>
+            <mat-card-title class="stat-number">{{ stats.totalAgentAccounts }}</mat-card-title>
+            <mat-card-subtitle>Agent Accounts</mat-card-subtitle>
+          </mat-card-header>
+        </mat-card>
+      </mat-grid-tile>
+
+    </mat-grid-list>
+  </div>
+</div>

@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -25,26 +26,44 @@ import { MatTabsModule } from '@angular/material/tabs';
     MatTooltipModule,
     MatDialogModule,
     MatSnackBarModule,
-    MatTabsModule
+    MatTabsModule,
+    MatPaginatorModule
   ],
   templateUrl: './validation-queue.component.html',
   styleUrl: './validation-queue.component.scss'
 })
 export class ValidationQueueComponent implements OnInit {
   
-  public pendingRecords: MasterListRecord[] = [];
-  public mismatchedRecords: MasterListRecord[] = [];
+  public pendingRecords = new MatTableDataSource<MasterListRecord>();
+  public mismatchedRecords = new MatTableDataSource<MasterListRecord>();
   
-  // 'status' has been removed from this array to hide the column
   public displayedColumns: string[] = [
     'fullName', 
     'department', 
     'ministry', 
-    'gradeLevel', 
+    'gradeLevel',
+    'salaryGradeId',
     'salaryStructure', 
     'actions'
   ];
   public selectedTabIndex = 0;
+
+  // 1. REMOVE the old @ViewChild properties
+  // @ViewChild('pendingPaginator') pendingPaginator!: MatPaginator;
+  // @ViewChild('mismatchedPaginator') mismatchedPaginator!: MatPaginator;
+
+  // 2. REPLACE with these setters. This is the key change.
+  @ViewChild('pendingPaginator') set pendingPaginator(paginator: MatPaginator) {
+    if (paginator) {
+      this.pendingRecords.paginator = paginator;
+    }
+  }
+
+  @ViewChild('mismatchedPaginator') set mismatchedPaginator(paginator: MatPaginator) {
+    if (paginator) {
+      this.mismatchedRecords.paginator = paginator;
+    }
+  }
 
   constructor(
     private tenantService: TenantService,
@@ -59,16 +78,24 @@ export class ValidationQueueComponent implements OnInit {
   loadDataForCurrentTab(): void {
     if (this.selectedTabIndex === 0) {
       this.tenantService.getPendingApprovalQueue().subscribe({
-        next: (data) => this.pendingRecords = data,
+        next: (data) => {
+          // 3. Assign data. The setter will handle the paginator automatically.
+          this.pendingRecords.data = data;
+        },
         error: (error) => this.showSnackBar('Failed to load pending queue', 'error')
       });
     } else {
       this.tenantService.getMismatchedQueue().subscribe({
-        next: (data) => this.mismatchedRecords = data,
+        next: (data) => {
+          // 4. Assign data. The setter will handle the paginator automatically.
+          this.mismatchedRecords.data = data;
+        },
         error: (error) => this.showSnackBar('Failed to load mismatched queue', 'error')
       });
     }
   }
+  
+  // ... All other methods remain the same ...
 
   onTabChange(index: number): void {
     this.selectedTabIndex = index;
@@ -143,26 +170,6 @@ export class ValidationQueueComponent implements OnInit {
     return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
   }
   
-  getStatusClass(status: string): string {
-    const statusLower = status?.toLowerCase() || '';
-    switch (statusLower) {
-      case 'pending': return 'pending';
-      case 'approved': case 'validated': return 'approved';
-      case 'rejected': return 'rejected';
-      default: return 'pending';
-    }
-  }
-
-  getStatusIcon(status: string): string {
-    const statusLower = status?.toLowerCase() || '';
-    switch (statusLower) {
-      case 'pending': return 'schedule';
-      case 'approved': case 'validated': return 'check_circle';
-      case 'rejected': return 'cancel';
-      default: return 'help';
-    }
-  }
-
   private showSnackBar(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
     const config = { 
       duration: 4000, 

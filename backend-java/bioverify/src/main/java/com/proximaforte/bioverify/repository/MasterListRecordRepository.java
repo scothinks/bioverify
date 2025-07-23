@@ -31,10 +31,6 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
 
     List<MasterListRecord> findByTenantIdAndStatusIn(UUID tenantId, List<RecordStatus> statuses);
 
-    /**
-     * Finds all records for export, eagerly fetching the 'validatedBy' user.
-     * This now fetches ALL validated records for a complete snapshot.
-     */
     @Query("SELECT r FROM MasterListRecord r LEFT JOIN FETCH r.validatedBy WHERE r.tenant.id = :tenantId AND r.status = :status")
     List<MasterListRecord> findAllToExport(@Param("tenantId") UUID tenantId, @Param("status") RecordStatus status);
 
@@ -49,9 +45,18 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
             @Param("ministries") Set<Ministry> ministries
     );
     
-    /**
-     * Finds all records for a tenant with a specific status, ordered by most recently created.
-     * Used to fetch the list of records not found in the Source of Truth.
-     */
     List<MasterListRecord> findAllByTenantIdAndStatusOrderByCreatedAtDesc(UUID tenantId, RecordStatus status);
+    
+    // --- NEW METHODS FOR DASHBOARD STATS ---
+
+    /**
+     * Counts the total number of unique records for a tenant.
+     */
+    long countByTenantId(UUID tenantId);
+
+    /**
+     * Counts the number of records for a tenant that have a specific status.
+     * This will be used for Validated, Mismatched, Not Found, etc.
+     */
+    long countByTenantIdAndStatus(UUID tenantId, RecordStatus status);
 }

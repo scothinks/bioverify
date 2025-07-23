@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
@@ -27,20 +27,25 @@ import { TenantService } from '../services/tenant.service';
   templateUrl: './master-list.component.html',
   styleUrls: ['./master-list.component.scss']
 })
-export class MasterListComponent implements OnInit, OnDestroy, AfterViewInit {
+export class MasterListComponent implements OnInit, OnDestroy { // Removed AfterViewInit
   
-  // FIXED: Removed 'id' from the displayed columns
   public displayedColumns: string[] = [
     'fullName', 'department', 'ministry', 'gradeLevel', 'status'
   ];
   
   dataSource = new MatTableDataSource<MasterListRecord>();
-  // FIXED: Changed from 'private' to 'public' to allow template access
   public allRecords: MasterListRecord[] = [];
   private filterSubscription!: Subscription;
   public isLoading = true;
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  // --- UPDATED PAGINATOR LOGIC ---
+  // Use a setter to ensure the paginator is assigned to the datasource
+  // as soon as it becomes available in the view, fixing timing issues with *ngIf.
+  @ViewChild(MatPaginator) set paginator(paginator: MatPaginator) {
+    if (paginator) {
+      this.dataSource.paginator = paginator;
+    }
+  }
 
   constructor(
     private tenantService: TenantService,
@@ -52,9 +57,7 @@ export class MasterListComponent implements OnInit, OnDestroy, AfterViewInit {
     this.setupFilterSubscription();
   }
   
-  ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
-  }
+  // The ngAfterViewInit hook is no longer needed and has been removed.
 
   ngOnDestroy(): void {
     if (this.filterSubscription) {

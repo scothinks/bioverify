@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subscription, timer, switchMap } from 'rxjs';
@@ -19,7 +19,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
   standalone: true,
   imports: [
     CommonModule,
-    DatePipe, // Added for formatting dates in the template
+    DatePipe,
     MatCardModule,
     MatButtonModule,
     MatTableModule,
@@ -27,72 +27,78 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     MatIconModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
-    MatSnackBarModule // Added for user feedback
+    MatSnackBarModule
   ],
   templateUrl: './bulk-verification.component.html',
   styleUrls: ['./bulk-verification.component.scss']
 })
-export class BulkVerificationComponent implements OnInit, OnDestroy, AfterViewInit {
-  // --- UPDATED PROPERTIES FOR DASHBOARD VIEW ---
+export class BulkVerificationComponent implements OnInit, OnDestroy {
   jobHistoryDataSource = new MatTableDataSource<BulkVerificationJob>();
   isLoading = true;
   isPolling = false;
   isStartingJob = false;
-  displayedColumns: string[] = ['initiatedAt', 'totalRecords', 'successfullyVerifiedRecords', 'failedRecords', 'status', 'actions'];
+  displayedColumns: string[] = ['createdAt', 'totalRecords', 'successfullyVerifiedRecords', 'failedRecords', 'status', 'actions'];
   totalVerified = 0;
   totalNotFound = 0;
   private pollingSubscription?: Subscription;
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatPaginator) set paginator(paginator: MatPaginator) {
+    if (paginator) {
+      this.jobHistoryDataSource.paginator = paginator;
+    }
+  }
 
   constructor(
     private tenantService: TenantService,
-    private router: Router, // Injected Router for navigation
-    private snackBar: MatSnackBar // Injected MatSnackBar for feedback
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
     this.loadJobHistory();
   }
 
-  ngAfterViewInit() {
-    this.jobHistoryDataSource.paginator = this.paginator;
-  }
-
-  // --- UPDATED TO FETCH FULL HISTORY AND CALCULATE TOTALS ---
   loadJobHistory(): void {
     this.isLoading = true;
     this.tenantService.getBulkJobHistory().subscribe({
       next: (jobs) => {
-        this.jobHistoryDataSource.data = jobs;
-        this.calculateTotals(jobs);
+        const processedJobs = this.processJobs(jobs);
+        this.jobHistoryDataSource.data = processedJobs;
+        this.calculateTotals(processedJobs);
         this.isLoading = false;
-        if (this.shouldPoll(jobs) && !this.isPolling) {
+        if (this.shouldPoll(processedJobs) && !this.isPolling) {
           this.startPolling();
-        } else if (!this.shouldPoll(jobs) && this.isPolling) {
+        } else if (!this.shouldPoll(processedJobs) && this.isPolling) {
           this.stopPolling();
         }
       },
       error: (err) => {
         console.error('Failed to load bulk jobs', err);
         this.isLoading = false;
+        this.snackBar.open('Could not load job history.', 'Close', { duration: 3000 });
       }
     });
   }
+  
+  // FIX 1: Use a type assertion ('any') to resolve the Date/string type mismatch.
+  private processJobs(jobs: BulkVerificationJob[]): BulkVerificationJob[] {
+    return jobs.map(job => {
+      const newJob: any = { ...job };
+      newJob.createdAt = new Date(job.createdAt);
+      return newJob;
+    });
+  }
 
-  // --- NEW METHOD TO CALCULATE OVERALL STATS ---
   private calculateTotals(jobs: BulkVerificationJob[]): void {
     this.totalVerified = jobs.reduce((sum, job) => sum + job.successfullyVerifiedRecords, 0);
     this.totalNotFound = jobs.reduce((sum, job) => sum + job.failedRecords, 0);
   }
 
-  // --- UPDATED FOR BETTER UX ---
   startNewJob(): void {
     this.isStartingJob = true;
     this.tenantService.startBulkVerification().subscribe({
       next: () => {
         this.snackBar.open('Bulk verification job has been initiated.', 'Close', { duration: 3000 });
-        // Refresh the list after a short delay to show the new PENDING job
         setTimeout(() => this.loadJobHistory(), 1500);
         this.isStartingJob = false;
       },
@@ -103,7 +109,6 @@ export class BulkVerificationComponent implements OnInit, OnDestroy, AfterViewIn
     });
   }
 
-  // --- POLLING LOGIC (UNCHANGED CORE, UPDATED SERVICE CALL) ---
   startPolling(): void {
     if (this.isPolling) return;
     this.isPolling = true;
@@ -111,9 +116,10 @@ export class BulkVerificationComponent implements OnInit, OnDestroy, AfterViewIn
       .pipe(
         switchMap(() => this.tenantService.getBulkJobHistory())
       ).subscribe(jobs => {
-        this.jobHistoryDataSource.data = jobs;
-        this.calculateTotals(jobs);
-        if (!this.shouldPoll(jobs)) {
+        const processedJobs = this.processJobs(jobs);
+        this.jobHistoryDataSource.data = processedJobs;
+        this.calculateTotals(processedJobs);
+        if (!this.shouldPoll(processedJobs)) {
           this.stopPolling();
         }
       });
@@ -128,7 +134,6 @@ export class BulkVerificationComponent implements OnInit, OnDestroy, AfterViewIn
     return jobs.some(job => job.status === 'RUNNING' || job.status === 'PENDING');
   }
 
-  // --- NEW NAVIGATION METHODS ---
   goToValidationQueue(): void {
     this.router.navigate(['/dashboard/tenant-admin/validation']);
   }
@@ -137,7 +142,6 @@ export class BulkVerificationComponent implements OnInit, OnDestroy, AfterViewIn
     this.router.navigate(['/dashboard/tenant-admin/not-found']);
   }
   
-  // --- HELPER METHODS (UNCHANGED) ---
   getStatusClass(status: string): string {
     return `status-${status.toLowerCase()}`;
   }
@@ -147,6 +151,7 @@ export class BulkVerificationComponent implements OnInit, OnDestroy, AfterViewIn
       case 'COMPLETED': return 'check_circle';
       case 'FAILED': return 'error';
       case 'RUNNING': return 'autorenew';
+      // FIX 2: Add the missing 'return' statement.
       case 'PENDING': return 'hourglass_empty';
       default: return 'help';
     }
