@@ -20,6 +20,7 @@ import { BulkVerificationComponent } from './bulk-verification/bulk-verification
 import { UserDashboardComponent } from './user-dashboard/user-dashboard.component';
 import { ValidationQueueComponent } from './validation-queue/validation-queue.component';
 import { PayrollExportComponent } from './payroll-export/payroll-export.component';
+import { NotFoundRecordsComponent } from './not-found-records/not-found-records.component'; // 1. Import new component
 
 export const routes: Routes = [
   // Public routes
@@ -54,6 +55,7 @@ export const routes: Routes = [
           { path: 'bulk-verify', component: BulkVerificationComponent },
           { path: 'validation', component: ValidationQueueComponent },
           { path: 'export', component: PayrollExportComponent },
+          { path: 'not-found', component: NotFoundRecordsComponent }, // 2. Add new route
           { path: '', redirectTo: 'users', pathMatch: 'full' }
         ]
       },

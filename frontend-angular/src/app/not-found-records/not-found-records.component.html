@@ -1,0 +1,31 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Records Not Found in SoT</mat-card-title>
+    <mat-card-subtitle>These records could not be found in the Source of Truth and may require manual investigation.</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div *ngIf="isLoading" style="display: flex; justify-content: center; padding: 2rem;">
+      <mat-spinner></mat-spinner>
+    </div>
+    <table mat-table [dataSource]="records" *ngIf="!isLoading">
+      <ng-container matColumnDef="fullName">
+        <th mat-header-cell *matHeaderCellDef> Full Name </th>
+        <td mat-cell *matCellDef="let element"> {{element.fullName}} </td>
+      </ng-container>
+      <ng-container matColumnDef="psn">
+        <th mat-header-cell *matHeaderCellDef> PSN </th>
+        <td mat-cell *matCellDef="let element"> {{element.psn}} </td>
+      </ng-container>
+      <ng-container matColumnDef="department">
+        <th mat-header-cell *matHeaderCellDef> Department </th>
+        <td mat-cell *matCellDef="let element"> {{element.department}} </td>
+      </ng-container>
+      <ng-container matColumnDef="ministry">
+        <th mat-header-cell *matHeaderCellDef> Ministry </th>
+        <td mat-cell *matCellDef="let element"> {{element.ministry}} </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+  </mat-card-content>
+</mat-card>

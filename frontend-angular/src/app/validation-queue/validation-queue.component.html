@@ -5,152 +5,169 @@
         <div class="title-section">
           <mat-icon class="header-icon">fact_check</mat-icon>
           <div class="title-text">
-            <mat-card-title>Validation Queue</mat-card-title>
-            <mat-card-subtitle>Review and approve pending records</mat-card-subtitle>
-          </div>
-        </div>
-        <div class="header-stats" *ngIf="records.length > 0">
-          <div class="stat-chip">
-            <mat-icon>pending_actions</mat-icon>
-            <span>{{records.length}} pending</span>
+            <mat-card-title>Validation Queues</mat-card-title>
+            <mat-card-subtitle>Review records pending approval or resolve data mismatches</mat-card-subtitle>
           </div>
         </div>
       </div>
     </mat-card-header>
 
     <mat-card-content class="enhanced-content">
-      <div *ngIf="records.length > 0; else noRecords" class="table-container">
-        <div class="table-wrapper">
-          <table mat-table [dataSource]="records" class="enhanced-table">
+      <mat-tab-group (selectedIndexChange)="onTabChange($event)" [selectedIndex]="selectedTabIndex" animationDuration="0ms">
+        
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>pending_actions</mat-icon>
+            Pending Approval
+            <span *ngIf="pendingRecords.length > 0" class="tab-badge">{{pendingRecords.length}}</span>
+          </ng-template>
 
-            <ng-container matColumnDef="fullName">
-              <th mat-header-cell *matHeaderCellDef class="name-column"> 
-                <div class="header-cell">
-                  <mat-icon>person</mat-icon>
-                  <span>Employee</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record" class="name-cell"> 
-                <div class="employee-info">
-                  <div class="employee-avatar">{{getInitials(record.fullName)}}</div>
-                  <span class="employee-name">{{record.fullName}}</span>
-                </div>
-              </td>
-            </ng-container>
+          <div *ngIf="pendingRecords.length > 0; else noPendingRecords" class="table-container">
+            <table mat-table [dataSource]="pendingRecords" class="enhanced-table">
+              <ng-container matColumnDef="fullName">
+                <th mat-header-cell *matHeaderCellDef>Employee</th>
+                <td mat-cell *matCellDef="let record" class="name-cell"> 
+                  <div class="employee-info">
+                    <div class="employee-avatar">{{getInitials(record.fullName)}}</div>
+                    <span class="employee-name">{{record.fullName}}</span>
+                  </div>
+                </td>
+              </ng-container>
 
-            <ng-container matColumnDef="department">
-              <th mat-header-cell *matHeaderCellDef> 
-                <div class="header-cell">
-                  <mat-icon>business</mat-icon>
-                  <span>Department</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record"> 
-                <div class="department-cell">{{record.department}}</div>
-              </td>
-            </ng-container>
+              <ng-container matColumnDef="department">
+                <th mat-header-cell *matHeaderCellDef>Department</th>
+                <td mat-cell *matCellDef="let record">{{record.department}}</td>
+              </ng-container>
 
-            <ng-container matColumnDef="ministry">
-              <th mat-header-cell *matHeaderCellDef> 
-                <div class="header-cell">
-                  <mat-icon>account_balance</mat-icon>
-                  <span>Ministry</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record"> 
-                <div class="ministry-cell">{{record.ministry}}</div>
-              </td>
-            </ng-container>
+              <ng-container matColumnDef="ministry">
+                <th mat-header-cell *matHeaderCellDef>Ministry</th>
+                <td mat-cell *matCellDef="let record">{{record.ministry}}</td>
+              </ng-container>
 
-            <ng-container matColumnDef="gradeLevel">
-              <th mat-header-cell *matHeaderCellDef> 
-                <div class="header-cell">
-                  <mat-icon>military_tech</mat-icon>
-                  <span>Grade</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record"> 
-                <div class="grade-badge">{{record.gradeLevel}}</div>
-              </td>
-            </ng-container>
+              <ng-container matColumnDef="gradeLevel">
+                <th mat-header-cell *matHeaderCellDef>Grade</th>
+                <td mat-cell *matCellDef="let record"> 
+                  <div class="grade-badge">{{record.gradeLevel}}</div>
+                </td>
+              </ng-container>
 
-            <ng-container matColumnDef="salaryStructure">
-              <th mat-header-cell *matHeaderCellDef> 
-                <div class="header-cell">
-                  <mat-icon>payments</mat-icon>
-                  <span>Salary Structure</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record"> 
-                <div class="salary-cell">{{record.salaryStructure}}</div>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef> 
-                <div class="header-cell">
-                  <mat-icon>info</mat-icon>
-                  <span>Status</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record"> 
-                <div class="status-chip" [ngClass]="getStatusClass(record.status)">
-                  <mat-icon>{{getStatusIcon(record.status)}}</mat-icon>
-                  <span>{{record.status | titlecase}}</span>
-                </div>
-              </td>
-            </ng-container>
-            
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef class="actions-column"> 
-                <div class="header-cell">
-                  <mat-icon>settings</mat-icon>
-                  <span>Actions</span>
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let record" class="actions-cell">
-                <div class="action-buttons">
-                  <button mat-icon-button 
-                          matTooltip="Edit Record" 
-                          class="edit-btn"
-                          (click)="onEdit(record)">
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <button mat-icon-button 
-                          matTooltip="Reject Record" 
-                          class="reject-btn"
-                          (click)="onReject(record.id)">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                  <button mat-flat-button 
-                          matTooltip="Approve Record"
-                          class="approve-btn"
-                          (click)="onApprove(record.id)">
-                    <mat-icon>check</mat-icon>
-                    Approve
-                  </button>
-                </div>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns" class="enhanced-header-row"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="enhanced-row"></tr>
-          </table>
-        </div>
-      </div>
-
-      <ng-template #noRecords>
-        <div class="empty-state">
-          <div class="empty-icon">
-            <mat-icon>playlist_add_check</mat-icon>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let record"> 
+                  <div class="status-chip" [ngClass]="getStatusClass(record.status)">
+                    <mat-icon>{{getStatusIcon(record.status)}}</mat-icon>
+                    <span>{{record.status | titlecase}}</span>
+                  </div>
+                </td>
+              </ng-container>
+              
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+                <td mat-cell *matCellDef="let record" class="actions-cell">
+                  <div class="action-buttons">
+                    <button mat-flat-button color="primary" class="action-btn" (click)="onApprove(record.id)">
+                      <mat-icon>check</mat-icon>
+                      Approve
+                    </button>
+                    <button mat-icon-button matTooltip="Edit Record" (click)="onEdit(record)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button matTooltip="Reject Record" color="warn" (click)="onReject(record.id)">
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
           </div>
-          <div class="empty-content">
-            <h3>No Records Pending</h3>
-            <p>The validation queue is currently empty. All records have been processed.</p>
-          </div>
-        </div>
-      </ng-template>
+          <ng-template #noPendingRecords>
+            <div class="empty-state">
+              <mat-icon>playlist_add_check</mat-icon>
+              <h3>Queue is Clear</h3>
+              <p>No records are currently pending approval.</p>
+            </div>
+          </ng-template>
+        </mat-tab>
 
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon color="warn">error_outline</mat-icon>
+            Mismatched Records
+            <span *ngIf="mismatchedRecords.length > 0" class="tab-badge warn">{{mismatchedRecords.length}}</span>
+          </ng-template>
+
+           <div *ngIf="mismatchedRecords.length > 0; else noMismatchedRecords" class="table-container">
+            <table mat-table [dataSource]="mismatchedRecords" class="enhanced-table">
+              <ng-container matColumnDef="fullName">
+                <th mat-header-cell *matHeaderCellDef>Employee</th>
+                <td mat-cell *matCellDef="let record" class="name-cell"> 
+                  <div class="employee-info">
+                    <div class="employee-avatar">{{getInitials(record.fullName)}}</div>
+                    <span class="employee-name">{{record.fullName}}</span>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="department">
+                <th mat-header-cell *matHeaderCellDef>Department</th>
+                <td mat-cell *matCellDef="let record">{{record.department}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="ministry">
+                <th mat-header-cell *matHeaderCellDef>Ministry</th>
+                <td mat-cell *matCellDef="let record">{{record.ministry}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="gradeLevel">
+                <th mat-header-cell *matHeaderCellDef>Grade</th>
+                <td mat-cell *matCellDef="let record"> 
+                  <div class="grade-badge">{{record.gradeLevel}}</div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let record"> 
+                  <div class="status-chip" [ngClass]="getStatusClass(record.status)">
+                    <mat-icon>{{getStatusIcon(record.status)}}</mat-icon>
+                    <span>{{record.status | titlecase}}</span>
+                  </div>
+                </td>
+              </ng-container>
+              
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+                <td mat-cell *matCellDef="let record" class="actions-cell">
+                  <div class="action-buttons">
+                    <button mat-flat-button color="warn" class="action-btn" (click)="onResolve(record)">
+                      <mat-icon>error</mat-icon>
+                      Resolve
+                    </button>
+                    <button mat-icon-button matTooltip="Edit Record" (click)="onEdit(record)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button matTooltip="Reject Record" color="warn" (click)="onReject(record.id)">
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+          </div>
+          <ng-template #noMismatchedRecords>
+            <div class="empty-state">
+              <mat-icon>gpp_good</mat-icon>
+              <h3>No Mismatches</h3>
+              <p>No records are currently flagged for data mismatch.</p>
+            </div>
+          </ng-template>
+        </mat-tab>
+
+      </mat-tab-group>
     </mat-card-content>
   </mat-card>
 </div>

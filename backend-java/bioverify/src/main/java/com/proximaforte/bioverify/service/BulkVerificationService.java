@@ -35,6 +35,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -71,6 +72,10 @@ public class BulkVerificationService {
         job = jobRepository.save(job);
 
         runVerificationJob(job, tenantId, recordsToVerify);
+    }
+    
+    public List<BulkVerificationJob> getJobHistoryForTenant(User currentUser) {
+        return jobRepository.findAllByTenantIdOrderByCreatedAtDesc(currentUser.getTenant().getId());
     }
 
     @Async
@@ -180,10 +185,8 @@ public class BulkVerificationService {
 
                         for (CSVRecord csvRecord : csvParser) {
                             SotProfileDto profile = new SotProfileDto();
-                            // --- FIX 1: PARSE SSID AND NIN FROM THE CSV ---
                             profile.setSsid(csvRecord.get("ssid"));
                             profile.setNin(csvRecord.get("nin"));
-
                             profile.setFirstName(csvRecord.get("first_name"));
                             profile.setMiddleName(csvRecord.get("middle_name"));
                             profile.setSurname(csvRecord.get("surname"));
@@ -206,18 +209,38 @@ public class BulkVerificationService {
                     
                     Map<String, MasterListRecord> recordsByPsn = recordsToVerify.stream().collect(Collectors.toMap(MasterListRecord::getPsn, Function.identity()));
 
-                    int successCount = 0;
+                    // --- UPDATED LOGIC TO PROCESS SUCCESSES AND FAILURES ---
+
+                    // 1. Update records that were successfully verified
                     for (SotProfileDto profile : verifiedProfiles) {
                         MasterListRecord recordToUpdate = recordsByPsn.get(profile.getPsn());
                         if (recordToUpdate != null) {
                             updateRecordWithSotData(recordToUpdate, profile);
-                            recordRepository.save(recordToUpdate);
-                            successCount++;
                         }
-                        job.setProcessedRecords(job.getProcessedRecords() + 1);
                     }
-                    job.setSuccessfullyVerifiedRecords(successCount);
-                    job.setFailedRecords(job.getTotalRecords() - successCount);
+                    
+                    // 2. Identify records that were NOT found in the verified profiles
+                    Set<String> successfulPsns = verifiedProfiles.stream()
+                        .map(SotProfileDto::getPsn)
+                        .collect(Collectors.toSet());
+
+                    List<MasterListRecord> failedRecordsList = recordsToVerify.stream()
+                        .filter(record -> !successfulPsns.contains(record.getPsn()))
+                        .collect(Collectors.toList());
+                    
+                    // 3. Update the status for all "not found" records
+                    for (MasterListRecord failedRecord : failedRecordsList) {
+                        failedRecord.setStatus(RecordStatus.FLAGGED_NOT_IN_SOT);
+                    }
+                    
+                    // 4. Save all modified records (both updated and flagged) in a single batch
+                    recordRepository.saveAll(recordsToVerify);
+                    logger.info("Updated {} successfully verified records and flagged {} 'not found' records.", verifiedProfiles.size(), failedRecordsList.size());
+
+                    // 5. Update the final job statistics
+                    job.setProcessedRecords(recordsToVerify.size());
+                    job.setSuccessfullyVerifiedRecords(verifiedProfiles.size());
+                    job.setFailedRecords(failedRecordsList.size());
 
                     return;
                 
@@ -243,17 +266,12 @@ public class BulkVerificationService {
     
     private void updateRecordWithSotData(MasterListRecord record, SotProfileDto profile) {
         String fullName = (profile.getFirstName() + " " + profile.getMiddleName() + " " + profile.getSurname()).replace("  ", " ").trim();
-        
-        // --- FIX 2: SET THE SSID AND NIN ON THE RECORD ---
         record.setSsid(profile.getSsid());
         record.setNin(profile.getNin());
-
         record.setFullName(fullName);
         record.setBvn(profile.getBvn());
         record.setGradeLevel(profile.getGradeLevel());
-        
         record.setDepartment(findOrCreateDepartment(profile.getStateMinistry(), record.getTenant()));
-        
         record.setCadre(profile.getCadre());
         record.setOnTransfer(profile.isOnTransfer());
 

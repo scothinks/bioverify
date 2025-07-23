@@ -10,6 +10,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { TenantService } from '../services/tenant.service';
 import { MasterListRecord } from '../models/master-list-record.model';
 import { RecordEditFormComponent } from '../record-edit-form/record-edit-form.component';
+import { RecordMismatchDialogComponent } from '../record-mismatch-dialog/record-mismatch-dialog.component';
+import { MatTabsModule } from '@angular/material/tabs';
 
 @Component({
   selector: 'app-validation-queue',
@@ -22,23 +24,27 @@ import { RecordEditFormComponent } from '../record-edit-form/record-edit-form.co
     MatButtonModule,
     MatTooltipModule,
     MatDialogModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatTabsModule
   ],
   templateUrl: './validation-queue.component.html',
   styleUrl: './validation-queue.component.scss'
 })
 export class ValidationQueueComponent implements OnInit {
   
-  public records: MasterListRecord[] = [];
+  public pendingRecords: MasterListRecord[] = [];
+  public mismatchedRecords: MasterListRecord[] = [];
+  
+  // 'status' has been removed from this array to hide the column
   public displayedColumns: string[] = [
     'fullName', 
     'department', 
     'ministry', 
     'gradeLevel', 
     'salaryStructure', 
-    'status', 
     'actions'
   ];
+  public selectedTabIndex = 0;
 
   constructor(
     private tenantService: TenantService,
@@ -47,31 +53,35 @@ export class ValidationQueueComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadQueue();
+    this.loadDataForCurrentTab();
   }
 
-  loadQueue(): void {
-    this.tenantService.getValidationQueue().subscribe({
-      next: (data) => {
-        this.records = data;
-      },
-      error: (error) => {
-        this.showSnackBar('Failed to load validation queue', 'error');
-        console.error('Error loading validation queue:', error);
-      }
-    });
+  loadDataForCurrentTab(): void {
+    if (this.selectedTabIndex === 0) {
+      this.tenantService.getPendingApprovalQueue().subscribe({
+        next: (data) => this.pendingRecords = data,
+        error: (error) => this.showSnackBar('Failed to load pending queue', 'error')
+      });
+    } else {
+      this.tenantService.getMismatchedQueue().subscribe({
+        next: (data) => this.mismatchedRecords = data,
+        error: (error) => this.showSnackBar('Failed to load mismatched queue', 'error')
+      });
+    }
+  }
+
+  onTabChange(index: number): void {
+    this.selectedTabIndex = index;
+    this.loadDataForCurrentTab();
   }
 
   onApprove(recordId: string): void {
     this.tenantService.validateRecord(recordId, 'VALIDATED', 'Approved by reviewer.').subscribe({
       next: () => {
-        this.records = this.records.filter(r => r.id !== recordId);
         this.showSnackBar('Record approved successfully!', 'success');
+        this.loadDataForCurrentTab();
       },
-      error: (error) => {
-        this.showSnackBar('Failed to approve record', 'error');
-        console.error('Error approving record:', error);
-      }
+      error: (error) => this.showSnackBar('Failed to approve record', 'error')
     });
   }
 
@@ -80,13 +90,10 @@ export class ValidationQueueComponent implements OnInit {
     if (reason?.trim()) {
       this.tenantService.validateRecord(recordId, 'REJECTED', reason).subscribe({
         next: () => {
-          this.records = this.records.filter(r => r.id !== recordId);
           this.showSnackBar('Record rejected successfully!', 'success');
+          this.loadDataForCurrentTab();
         },
-        error: (error) => {
-          this.showSnackBar('Failed to reject record', 'error');
-          console.error('Error rejecting record:', error);
-        }
+        error: (error) => this.showSnackBar('Failed to reject record', 'error')
       });
     }
   }
@@ -94,81 +101,75 @@ export class ValidationQueueComponent implements OnInit {
   onEdit(record: MasterListRecord): void {
     const dialogRef = this.dialog.open(RecordEditFormComponent, {
       width: '600px',
-      maxWidth: '90vw',
-      disableClose: false,
-      autoFocus: true,
-      data: record,
-      panelClass: 'enhanced-dialog'
+      data: record
     });
 
-    dialogRef.afterClosed().subscribe(updatedRecord => {
-      if (updatedRecord) {
-        const index = this.records.findIndex(r => r.id === updatedRecord.id);
-        if (index !== -1) {
-          const newRecords = [...this.records];
-          newRecords[index] = updatedRecord;
-          this.records = newRecords;
-          this.showSnackBar('Record updated successfully!', 'success');
-        }
+    dialogRef.afterClosed().subscribe(wasUpdated => {
+      if (wasUpdated) {
+        this.showSnackBar('Record updated successfully!', 'success');
+        this.loadDataForCurrentTab();
       }
     });
   }
 
-  // Helper method to get employee initials for avatar
+  onResolve(record: MasterListRecord): void {
+    const dialogRef = this.dialog.open(RecordMismatchDialogComponent, {
+      width: '800px',
+      maxWidth: '90vw',
+      data: record
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === 'accept') {
+        this.tenantService.resolveMismatch(record.id).subscribe({
+          next: () => {
+            this.showSnackBar('Record resolved and validated successfully!', 'success');
+            this.loadDataForCurrentTab();
+          },
+          error: (err) => this.showSnackBar('Failed to resolve record.', 'error')
+        });
+      } else if (result === 'edit') {
+        this.onEdit(record);
+      }
+    });
+  }
+
   getInitials(fullName: string): string {
     if (!fullName) return '?';
-    
     const names = fullName.trim().split(' ');
     if (names.length === 1) {
       return names[0].charAt(0).toUpperCase();
     }
-    
     return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
   }
-
-  // Helper method to get status-specific CSS class
+  
   getStatusClass(status: string): string {
     const statusLower = status?.toLowerCase() || '';
-    
     switch (statusLower) {
-      case 'pending':
-        return 'pending';
-      case 'approved':
-      case 'validated':
-        return 'approved';
-      case 'rejected':
-        return 'rejected';
-      default:
-        return 'pending';
+      case 'pending': return 'pending';
+      case 'approved': case 'validated': return 'approved';
+      case 'rejected': return 'rejected';
+      default: return 'pending';
     }
   }
 
-  // Helper method to get status-specific icon
   getStatusIcon(status: string): string {
     const statusLower = status?.toLowerCase() || '';
-    
     switch (statusLower) {
-      case 'pending':
-        return 'schedule';
-      case 'approved':
-      case 'validated':
-        return 'check_circle';
-      case 'rejected':
-        return 'cancel';
-      default:
-        return 'help';
+      case 'pending': return 'schedule';
+      case 'approved': case 'validated': return 'check_circle';
+      case 'rejected': return 'cancel';
+      default: return 'help';
     }
   }
 
-  // Enhanced snackbar method with styling
   private showSnackBar(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
-    const config = {
-      duration: 4000,
-      horizontalPosition: 'end' as const,
-      verticalPosition: 'top' as const,
-      panelClass: [`snackbar-${type}`]
+    const config = { 
+      duration: 4000, 
+      horizontalPosition: 'end' as const, 
+      verticalPosition: 'top' as const, 
+      panelClass: [`snackbar-${type}`] 
     };
-
     this.snackBar.open(message, 'Close', config);
   }
 }

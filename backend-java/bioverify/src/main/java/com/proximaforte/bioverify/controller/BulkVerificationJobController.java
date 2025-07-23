@@ -1,8 +1,10 @@
 package com.proximaforte.bioverify.controller;
 
+import com.proximaforte.bioverify.domain.BulkVerificationJob;
 import com.proximaforte.bioverify.domain.User;
 import com.proximaforte.bioverify.dto.BulkJobDto;
 import com.proximaforte.bioverify.repository.BulkVerificationJobRepository;
+import com.proximaforte.bioverify.service.BulkVerificationService; // 1. Import the service
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,15 +24,17 @@ import java.util.stream.Collectors;
 public class BulkVerificationJobController {
 
     private final BulkVerificationJobRepository jobRepository;
+    private final BulkVerificationService bulkVerificationService; // 2. Inject the service
 
     @GetMapping
     @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<List<BulkJobDto>> getJobsForTenant(@AuthenticationPrincipal User currentUser) {
-        List<BulkJobDto> jobs = jobRepository.findAllByTenantId(currentUser.getTenant().getId())
-                .stream()
+        // 3. Use the service to fetch the sorted job history
+        List<BulkVerificationJob> jobs = bulkVerificationService.getJobHistoryForTenant(currentUser);
+        List<BulkJobDto> jobDtos = jobs.stream()
                 .map(BulkJobDto::new)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(jobs);
+        return ResponseEntity.ok(jobDtos);
     }
 
     @GetMapping("/{jobId}")

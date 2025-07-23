@@ -1,8 +1,8 @@
 import { Component, OnDestroy, OnInit, ViewChild, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { Subscription, timer, switchMap } from 'rxjs';
-import { TenantService } from '../services/tenant.service';
-import { BulkJob } from '../models/bulk-job.model';
+import { TenantService, BulkVerificationJob } from '../services/tenant.service';
 
 // Import Angular Material Modules
 import { MatCardModule } from '@angular/material/card';
@@ -12,50 +12,65 @@ import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-bulk-verification',
   standalone: true,
   imports: [
     CommonModule,
+    DatePipe, // Added for formatting dates in the template
     MatCardModule,
     MatButtonModule,
     MatTableModule,
-    MatPaginatorModule, // Added
+    MatPaginatorModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSnackBarModule // Added for user feedback
   ],
   templateUrl: './bulk-verification.component.html',
   styleUrls: ['./bulk-verification.component.scss']
 })
 export class BulkVerificationComponent implements OnInit, OnDestroy, AfterViewInit {
-  dataSource = new MatTableDataSource<BulkJob>();
+  // --- UPDATED PROPERTIES FOR DASHBOARD VIEW ---
+  jobHistoryDataSource = new MatTableDataSource<BulkVerificationJob>();
   isLoading = true;
   isPolling = false;
-  displayedColumns: string[] = ['status', 'progress', 'totalRecords', 'createdAt', 'actions'];
+  isStartingJob = false;
+  displayedColumns: string[] = ['initiatedAt', 'totalRecords', 'successfullyVerifiedRecords', 'failedRecords', 'status', 'actions'];
+  totalVerified = 0;
+  totalNotFound = 0;
   private pollingSubscription?: Subscription;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-  constructor(private tenantService: TenantService) { }
+  constructor(
+    private tenantService: TenantService,
+    private router: Router, // Injected Router for navigation
+    private snackBar: MatSnackBar // Injected MatSnackBar for feedback
+  ) {}
 
   ngOnInit(): void {
-    this.loadJobs();
+    this.loadJobHistory();
   }
 
   ngAfterViewInit() {
-    this.dataSource.paginator = this.paginator;
+    this.jobHistoryDataSource.paginator = this.paginator;
   }
 
-  loadJobs(): void {
+  // --- UPDATED TO FETCH FULL HISTORY AND CALCULATE TOTALS ---
+  loadJobHistory(): void {
     this.isLoading = true;
-    this.tenantService.getBulkJobs().subscribe({
+    this.tenantService.getBulkJobHistory().subscribe({
       next: (jobs) => {
-        this.dataSource.data = jobs;
+        this.jobHistoryDataSource.data = jobs;
+        this.calculateTotals(jobs);
         this.isLoading = false;
         if (this.shouldPoll(jobs) && !this.isPolling) {
           this.startPolling();
+        } else if (!this.shouldPoll(jobs) && this.isPolling) {
+          this.stopPolling();
         }
       },
       error: (err) => {
@@ -65,25 +80,39 @@ export class BulkVerificationComponent implements OnInit, OnDestroy, AfterViewIn
     });
   }
 
-  startVerification(): void {
+  // --- NEW METHOD TO CALCULATE OVERALL STATS ---
+  private calculateTotals(jobs: BulkVerificationJob[]): void {
+    this.totalVerified = jobs.reduce((sum, job) => sum + job.successfullyVerifiedRecords, 0);
+    this.totalNotFound = jobs.reduce((sum, job) => sum + job.failedRecords, 0);
+  }
+
+  // --- UPDATED FOR BETTER UX ---
+  startNewJob(): void {
+    this.isStartingJob = true;
     this.tenantService.startBulkVerification().subscribe({
       next: () => {
-        alert('Bulk verification process has been initiated.');
-        this.loadJobs();
+        this.snackBar.open('Bulk verification job has been initiated.', 'Close', { duration: 3000 });
+        // Refresh the list after a short delay to show the new PENDING job
+        setTimeout(() => this.loadJobHistory(), 1500);
+        this.isStartingJob = false;
       },
       error: (err) => {
-        alert('Failed to start bulk verification: ' + err.message);
+        this.snackBar.open('Failed to start bulk verification: ' + err.message, 'Close', { duration: 5000 });
+        this.isStartingJob = false;
       }
     });
   }
 
+  // --- POLLING LOGIC (UNCHANGED CORE, UPDATED SERVICE CALL) ---
   startPolling(): void {
+    if (this.isPolling) return;
     this.isPolling = true;
-    this.pollingSubscription = timer(5000, 10000) // Start after 5s, then every 10s
+    this.pollingSubscription = timer(5000, 10000)
       .pipe(
-        switchMap(() => this.tenantService.getBulkJobs())
+        switchMap(() => this.tenantService.getBulkJobHistory())
       ).subscribe(jobs => {
-        this.dataSource.data = jobs;
+        this.jobHistoryDataSource.data = jobs;
+        this.calculateTotals(jobs);
         if (!this.shouldPoll(jobs)) {
           this.stopPolling();
         }
@@ -95,10 +124,20 @@ export class BulkVerificationComponent implements OnInit, OnDestroy, AfterViewIn
     this.isPolling = false;
   }
 
-  private shouldPoll(jobs: BulkJob[]): boolean {
+  private shouldPoll(jobs: BulkVerificationJob[]): boolean {
     return jobs.some(job => job.status === 'RUNNING' || job.status === 'PENDING');
   }
+
+  // --- NEW NAVIGATION METHODS ---
+  goToValidationQueue(): void {
+    this.router.navigate(['/dashboard/tenant-admin/validation']);
+  }
+
+  goToNotFoundList(): void {
+    this.router.navigate(['/dashboard/tenant-admin/not-found']);
+  }
   
+  // --- HELPER METHODS (UNCHANGED) ---
   getStatusClass(status: string): string {
     return `status-${status.toLowerCase()}`;
   }

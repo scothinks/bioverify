@@ -40,12 +40,31 @@ public class MasterListRecordController {
     private final PayrollExportLogRepository payrollExportLogRepository;
     private final FileStorageService fileStorageService;
 
-    // --- EXISTING ENDPOINTS (UNCHANGED) ---
-
-    @GetMapping("/validation-queue")
+    @GetMapping("/queue/pending-approval")
     @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
-    public ResponseEntity<List<MasterListRecordDto>> getValidationQueue(@AuthenticationPrincipal User currentUser) {
-        List<MasterListRecord> records = recordService.getValidationQueue(currentUser);
+    public ResponseEntity<List<MasterListRecordDto>> getPendingApprovalQueue(@AuthenticationPrincipal User currentUser) {
+        List<MasterListRecord> records = recordService.getPendingApprovalQueue(currentUser);
+        List<MasterListRecordDto> recordDtos = records.stream()
+                .map(MasterListRecordDto::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(recordDtos);
+    }
+
+    @GetMapping("/queue/mismatched")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
+    public ResponseEntity<List<MasterListRecordDto>> getMismatchedQueue(@AuthenticationPrincipal User currentUser) {
+        List<MasterListRecord> records = recordService.getMismatchedQueue(currentUser);
+        List<MasterListRecordDto> recordDtos = records.stream()
+                .map(MasterListRecordDto::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(recordDtos);
+    }
+
+    // --- NEW ENDPOINT FOR "NOT IN SOT" RECORDS ---
+    @GetMapping("/flagged/not-in-sot")
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
+    public ResponseEntity<List<MasterListRecordDto>> getFlaggedNotInSot(@AuthenticationPrincipal User currentUser) {
+        List<MasterListRecord> records = recordService.getFlaggedNotInSotQueue(currentUser);
         List<MasterListRecordDto> recordDtos = records.stream()
                 .map(MasterListRecordDto::new)
                 .collect(Collectors.toList());
@@ -70,6 +89,15 @@ public class MasterListRecordController {
             @AuthenticationPrincipal User currentUser) {
         MasterListRecord validatedRecord = recordService.performValidation(recordId, request, currentUser);
         return ResponseEntity.ok(new MasterListRecordDto(validatedRecord));
+    }
+    
+    @PostMapping("/{recordId}/resolve-mismatch")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
+    public ResponseEntity<MasterListRecordDto> resolveMismatch(
+            @PathVariable UUID recordId,
+            @AuthenticationPrincipal User currentUser) {
+        MasterListRecord resolvedRecord = recordService.resolveMismatchWithSotData(recordId, currentUser);
+        return ResponseEntity.ok(new MasterListRecordDto(resolvedRecord));
     }
 
     @GetMapping
@@ -148,11 +176,9 @@ public class MasterListRecordController {
     @GetMapping("/export-logs/{logId}/download")
     @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<ByteArrayResource> downloadExportedFile(@PathVariable UUID logId, @AuthenticationPrincipal User currentUser) {
-        // --- RENAMED VARIABLE TO AVOID CONFLICT ---
         PayrollExportLog exportLog = payrollExportLogRepository.findById(logId)
                 .orElseThrow(() -> new RuntimeException("Export log not found"));
 
-        // Security check: ensure the log belongs to the admin's tenant
         if (!exportLog.getTenant().getId().equals(currentUser.getTenant().getId())) {
             return ResponseEntity.status(403).build();
         }
@@ -170,7 +196,6 @@ public class MasterListRecordController {
                     .body(resource);
 
         } catch (IOException e) {
-            // This 'log' now correctly refers to the SLF4J logger from the @Slf4j annotation
             log.error("Error loading file for export log {}: {}", logId, e.getMessage());
             return ResponseEntity.internalServerError().build();
         }

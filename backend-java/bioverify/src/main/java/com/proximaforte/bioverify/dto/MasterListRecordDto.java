@@ -18,6 +18,10 @@ public class MasterListRecordDto {
     private Boolean biometricStatus;
     private Instant createdAt;
 
+    // --- ADD THESE FIELDS ---
+    private String originalUploadData;
+    private String sotData;
+
     public MasterListRecordDto(MasterListRecord record) {
         this.id = record.getId();
         this.fullName = record.getFullName();
@@ -28,5 +32,7 @@ public class MasterListRecordDto {
         this.status = record.getStatus();
         this.biometricStatus = record.getBiometricStatus();
         this.createdAt = record.getCreatedAt();
+        this.originalUploadData = record.getOriginalUploadData();
+        this.sotData = record.getSotData();
     }
 }

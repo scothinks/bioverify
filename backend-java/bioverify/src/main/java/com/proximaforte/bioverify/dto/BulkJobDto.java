@@ -10,13 +10,13 @@ import java.util.UUID;
 @Data
 public class BulkJobDto {
     private UUID id;
-    // --- REMOVED: The uploadId field is no longer needed ---
     private JobStatus status;
     private String statusMessage;
     private int totalRecords;
     private int processedRecords;
     private int successfullyVerifiedRecords;
     private int failedRecords;
+    private String initiatedByEmail; // Field added for the dashboard UI
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -30,5 +30,10 @@ public class BulkJobDto {
         this.failedRecords = job.getFailedRecords();
         this.createdAt = job.getCreatedAt();
         this.updatedAt = job.getUpdatedAt();
+        
+        // Map the initiator's email
+        if (job.getInitiatedBy() != null) {
+            this.initiatedByEmail = job.getInitiatedBy().getEmail();
+        }
     }
 }

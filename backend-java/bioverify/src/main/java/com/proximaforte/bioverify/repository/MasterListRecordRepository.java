@@ -35,7 +35,6 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
      * Finds all records for export, eagerly fetching the 'validatedBy' user.
      * This now fetches ALL validated records for a complete snapshot.
      */
-    // REMOVED: "AND r.payrollExportLog IS NULL" to export all validated records every time.
     @Query("SELECT r FROM MasterListRecord r LEFT JOIN FETCH r.validatedBy WHERE r.tenant.id = :tenantId AND r.status = :status")
     List<MasterListRecord> findAllToExport(@Param("tenantId") UUID tenantId, @Param("status") RecordStatus status);
 
@@ -49,4 +48,10 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
             @Param("departments") Set<Department> departments,
             @Param("ministries") Set<Ministry> ministries
     );
+    
+    /**
+     * Finds all records for a tenant with a specific status, ordered by most recently created.
+     * Used to fetch the list of records not found in the Source of Truth.
+     */
+    List<MasterListRecord> findAllByTenantIdAndStatusOrderByCreatedAtDesc(UUID tenantId, RecordStatus status);
 }

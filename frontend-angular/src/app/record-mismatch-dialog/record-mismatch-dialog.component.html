@@ -1,0 +1,32 @@
+<h2 mat-dialog-title>Resolve Data Mismatch</h2>
+<mat-dialog-content>
+  <p>The data from the Source of Truth (SoT) does not match the originally uploaded data. Please review the differences below.</p>
+  
+  <table mat-table [dataSource]="comparisonData" class="mat-elevation-z8">
+    <ng-container matColumnDef="field">
+      <th mat-header-cell *matHeaderCellDef> Field </th>
+      <td mat-cell *matCellDef="let element"> {{element.field}} </td>
+    </ng-container>
+
+    <ng-container matColumnDef="originalValue">
+      <th mat-header-cell *matHeaderCellDef> Original Uploaded Data </th>
+      <td mat-cell *matCellDef="let element" [class.mismatched]="element.isMismatched"> {{element.originalValue}} </td>
+    </ng-container>
+
+    <ng-container matColumnDef="sotValue">
+      <th mat-header-cell *matHeaderCellDef> Source of Truth Data </th>
+      <td mat-cell *matCellDef="let element" [class.mismatched]="element.isMismatched">
+        <strong>{{element.sotValue}}</strong>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-stroked-button color="accent" (click)="onManualEdit()">Edit Manually</button>
+  <button mat-flat-button color="primary" (click)="onAcceptSot()">Accept SoT Data & Validate</button>
+</mat-dialog-actions>
