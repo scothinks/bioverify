@@ -1,29 +1,65 @@
-.full-width {
+// Base container and card styles
+.tenant-form-container {
+  padding: 24px;
+  background: var(--gradient-background, linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%));
+}
+.form-card {
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-glass, 0 8px 32px rgba(0, 0, 0, 0.1)) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 800px;
+  margin: 0 auto;
+}
+.enhanced-header {
+  background: var(--gradient-primary, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+  color: white;
+  padding: 24px !important;
+  .header-content { display: flex; justify-content: space-between; align-items: center; }
+  .title-section { display: flex; align-items: center; gap: 16px; }
+  .header-icon { font-size: 28px; width: 28px; height: 28px; }
+  .mat-mdc-card-title { font-size: 22px !important; font-weight: 600 !important; color: white !important; }
+  .mat-mdc-card-subtitle { font-size: 14px !important; opacity: 0.9 !important; margin-top: 4px !important; color: rgba(255, 255, 255, 0.8) !important; }
+}
+.enhanced-content {
+  padding: 32px !important;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+// Form Grid Layout
+.tenant-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0 24px; // No row gap, rely on form field margin
+}
+.full-width-field {
+  grid-column: 1 / -1;
+}
+mat-form-field {
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: 16px;
 }
 
-mat-card {
-  margin-bottom: 2rem;
-  max-width: 600px;
-}
-
-.form-actions {
+// Actions
+mat-card-actions {
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 16px 24px !important;
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.primary-button {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  .button-content { display: flex; align-items: center; gap: 8px; }
 }
 
-.form-actions button {
-  min-width: 140px;
-}
-
-.error {
-  border-color: #f44336 !important;
-}
-
-mat-spinner {
-  display: inline-block;
-  margin-right: 8px;
+// Responsive adjustments
+@media (max-width: 768px) {
+  .tenant-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }

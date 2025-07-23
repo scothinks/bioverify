@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AsyncValidatorFn } from '@angular/forms';
 import { TenantService } from '../services/tenant.service';
 import { TenantValidators } from '../validators/tenant.validators';
 import { Tenant } from '../models/tenant.model';
@@ -36,7 +36,7 @@ export class TenantFormComponent implements OnInit {
   @Output() tenantSaved = new EventEmitter<Tenant>();
   @Output() cancelled = new EventEmitter<void>();
 
-  tenantForm!: FormGroup; // Use definite assignment assertion
+  tenantForm!: FormGroup;
   isLoading = false;
   isEditMode = false;
 
@@ -48,13 +48,18 @@ export class TenantFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.isEditMode = !!this.tenant;
-    this.createForm(); // Create the form
+    this.createForm();
     if (this.isEditMode) {
       this.populateForm();
     }
   }
 
   private createForm(): void {
+    // Conditionally set the async validator only for create mode
+    const subdomainAsyncValidators: AsyncValidatorFn[] = !this.isEditMode
+      ? [TenantValidators.uniqueSubdomain(this.tenantService)]
+      : [];
+
     this.tenantForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       subdomain: [
@@ -65,22 +70,19 @@ export class TenantFormComponent implements OnInit {
           Validators.maxLength(50),
           TenantValidators.subdomainPattern()
         ],
-        [TenantValidators.uniqueSubdomain(this.tenantService)]
+        subdomainAsyncValidators // Use the conditionally set validators
       ],
       stateCode: ['', [Validators.required, TenantValidators.stateCodePattern()]],
       description: ['', [Validators.maxLength(500)]],
-      // ADDED: New form control for the validation URL
       validationUrl: ['', [Validators.required, Validators.pattern(/^https?:\/\/.+/)]]
     });
   }
 
   private populateForm(): void {
     if (this.tenant) {
-      // Safely parse the config to get the validation URL
       let validationUrl = '';
-      if (this.tenant.identitySourceConfig) { // This field exists on the backend Tenant model
+      if (this.tenant.identitySourceConfig) {
           try {
-              // The backend stores a JSON string, so we parse it
               const config = JSON.parse(this.tenant.identitySourceConfig);
               validationUrl = config.validationUrl || '';
           } catch (e) {
@@ -93,23 +95,20 @@ export class TenantFormComponent implements OnInit {
         subdomain: this.tenant.subdomain,
         stateCode: this.tenant.stateCode,
         description: this.tenant.description || '',
-        validationUrl: validationUrl // Populate the new field
+        validationUrl: validationUrl
       });
-
-      // Disable subdomain field in edit mode
       this.tenantForm.get('subdomain')?.disable();
     }
   }
 
   getErrorMessage(fieldName: string): string {
     const control = this.tenantForm.get(fieldName);
-    if (!control?.errors) return '';
-
+    if (!control?.errors || !control.touched) return '';
     const errors = control.errors;
     
-    if (errors['required']) return `${this.getFieldLabel(fieldName)} is required`;
-    if (errors['minlength']) return `${this.getFieldLabel(fieldName)} must be at least ${errors['minlength'].requiredLength} characters`;
-    if (errors['maxlength']) return `${this.getFieldLabel(fieldName)} must not exceed ${errors['maxlength'].requiredLength} characters`;
+    if (errors['required']) return `This field is required`;
+    if (errors['minlength']) return `Must be at least ${errors['minlength'].requiredLength} characters`;
+    if (errors['maxlength']) return `Cannot exceed ${errors['maxlength'].requiredLength} characters`;
     if (errors['pattern']) return `Please enter a valid URL`;
     if (errors['subdomainPattern']) return errors['subdomainPattern'].message;
     if (errors['stateCodePattern']) return errors['stateCodePattern'].message;
@@ -118,28 +117,14 @@ export class TenantFormComponent implements OnInit {
     return 'Invalid input';
   }
 
-  private getFieldLabel(fieldName: string): string {
-    const labels: { [key: string]: string } = {
-      name: 'Tenant Name',
-      subdomain: 'Subdomain',
-      stateCode: 'State Code',
-      description: 'Description',
-      validationUrl: 'Validation URL'
-    };
-    return labels[fieldName] || fieldName;
-  }
-
   onSubmit(): void {
     if (this.tenantForm.invalid) {
-      this.markAllFieldsAsTouched();
+      this.tenantForm.markAllAsTouched();
       return;
     }
 
     this.isLoading = true;
-    // Use getRawValue() to include the disabled 'subdomain' field during edits
     const formValue = this.tenantForm.getRawValue();
-
-    // CORRECTED: Construct the payload with the identitySourceConfig JSON string
     const payload = {
         name: formValue.name,
         subdomain: formValue.subdomain,
@@ -157,38 +142,21 @@ export class TenantFormComponent implements OnInit {
         this.isLoading = false;
         const action = this.isEditMode ? 'updated' : 'created';
         this.snackBar.open(`Tenant "${tenant.name}" ${action} successfully!`, 'Close', {
-          duration: 3000,
-          panelClass: ['success-snackbar']
+          duration: 3000, panelClass: ['success-snackbar']
         });
-        
         this.tenantSaved.emit(tenant);
-        
-        if (!this.isEditMode) {
-          this.tenantForm.reset();
-        }
       },
       error: (error: Error) => {
         this.isLoading = false;
         const action = this.isEditMode ? 'updating' : 'creating';
         this.snackBar.open(`Error ${action} tenant: ${error.message}`, 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
+          duration: 5000, panelClass: ['error-snackbar']
         });
       }
     });
   }
 
   onCancel(): void {
-    if (this.isEditMode) {
-      this.cancelled.emit();
-    } else {
-      this.tenantForm.reset();
-    }
-  }
-
-  private markAllFieldsAsTouched(): void {
-    Object.keys(this.tenantForm.controls).forEach(key => {
-      this.tenantForm.get(key)?.markAsTouched();
-    });
+    this.cancelled.emit();
   }
 }

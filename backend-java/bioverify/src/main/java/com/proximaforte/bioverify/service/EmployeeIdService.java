@@ -6,8 +6,6 @@ import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigInteger;
-
 /**
  * A service dedicated to generating unique, sequential, and permanent identifiers for employees.
  * This service relies on tenant-specific database sequences to ensure uniqueness and prevent race conditions.
@@ -34,17 +32,19 @@ public class EmployeeIdService {
             throw new IllegalArgumentException("Tenant and stateCode must not be null or blank.");
         }
 
-        // Generate the sequence name based on the tenant's stateCode.
         String tenantStateCode = tenant.getStateCode().toLowerCase();
         String sequenceName = tenantStateCode + "_employee_id_seq";
 
-        // Use a native query to get the next value from the tenant-specific sequence.
-        BigInteger sequenceValue = (BigInteger) entityManager
+        // --- CORRECTED THIS BLOCK ---
+        // The native query returns a Long (or more generically, a Number), not a BigInteger.
+        // We cast to Number and get its long value for robust handling.
+        Number sequenceResult = (Number) entityManager
                 .createNativeQuery("SELECT nextval('" + sequenceName + "')")
                 .getSingleResult();
+        Long sequenceValue = sequenceResult.longValue();
 
-        // Format the final Work ID according to the agreed-upon format.
         // The "%S" specifier converts the state code to uppercase.
-        return String.format("%S-WID-%07d", tenantStateCode, sequenceValue.longValue());
+        // The "%07d" specifier ensures the number is zero-padded to 7 digits.
+        return String.format("%S-WID-%07d", tenantStateCode, sequenceValue);
     }
 }

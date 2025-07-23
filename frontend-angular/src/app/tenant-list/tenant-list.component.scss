@@ -1,0 +1,71 @@
+// Base container and card styles
+.tenant-list-container {
+  padding: 24px;
+  background: var(--gradient-background, linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%));
+}
+.list-card {
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-glass, 0 8px 32px rgba(0, 0, 0, 0.1)) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+.enhanced-header {
+  background: var(--gradient-primary, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+  color: white;
+  padding: 24px !important;
+  .header-content { display: flex; justify-content: space-between; align-items: center; }
+  .title-section { display: flex; align-items: center; gap: 16px; }
+  .header-icon { font-size: 28px; width: 28px; height: 28px; }
+  .mat-mdc-card-title { font-size: 22px !important; font-weight: 600 !important; color: white !important; }
+  .mat-mdc-card-subtitle { font-size: 14px !important; opacity: 0.9 !important; margin-top: 4px !important; color: rgba(255, 255, 255, 0.8) !important; }
+}
+.primary-button {
+  background: var(--gradient-success) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+.enhanced-content {
+  padding: 0 !important;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+// Table styling
+.table-container { display: flex; flex-direction: column; }
+.table-wrapper { overflow: auto; }
+.enhanced-table {
+  width: 100%;
+  .mat-mdc-header-cell { background: #f8fafc; font-weight: 600; padding: 16px; }
+  .mat-mdc-cell { padding: 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  .actions-cell { text-align: right; button { color: #64748b; } }
+  .url-cell a { color: var(--primary-700); text-decoration: none; &:hover { text-decoration: underline; } }
+}
+
+// Header for embedded views
+.view-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  h2 {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+  }
+}
+
+// Paginator, Loading, and Empty States
+.mat-mdc-paginator { background-color: #f8fafc; border-top: 1px solid #e2e8f0; }
+.loading-state, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+  color: #6b7280;
+  .empty-icon { font-size: 64px; width: 64px; height: 64px; color: #d1d5db; }
+  h3 { font-size: 20px; color: #1f2937; }
+}

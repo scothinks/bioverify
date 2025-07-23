@@ -32,9 +32,11 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
     List<MasterListRecord> findByTenantIdAndStatusIn(UUID tenantId, List<RecordStatus> statuses);
 
     /**
-     * Finds all records for export, eagerly fetching the 'validatedBy' user to prevent LazyInitializationException.
+     * Finds all records for export, eagerly fetching the 'validatedBy' user.
+     * This now fetches ALL validated records for a complete snapshot.
      */
-    @Query("SELECT r FROM MasterListRecord r LEFT JOIN FETCH r.validatedBy WHERE r.tenant.id = :tenantId AND r.status = :status AND r.payrollExportLog IS NULL")
+    // REMOVED: "AND r.payrollExportLog IS NULL" to export all validated records every time.
+    @Query("SELECT r FROM MasterListRecord r LEFT JOIN FETCH r.validatedBy WHERE r.tenant.id = :tenantId AND r.status = :status")
     List<MasterListRecord> findAllToExport(@Param("tenantId") UUID tenantId, @Param("status") RecordStatus status);
 
 

@@ -20,15 +20,18 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Async;
 
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -39,30 +42,27 @@ public class ExportService {
     private final PayrollExportLogRepository logRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
-    private final UserRepository userRepository; // Inject UserRepository
+    private final UserRepository userRepository;
     private final ExportService self;
 
     public ExportService(MasterListRecordRepository recordRepository,
                          PayrollExportLogRepository logRepository,
                          FileStorageService fileStorageService,
                          ObjectMapper objectMapper,
-                         UserRepository userRepository, // Add to constructor
+                         UserRepository userRepository,
                          @Lazy ExportService self) {
         this.recordRepository = recordRepository;
         this.logRepository = logRepository;
         this.fileStorageService = fileStorageService;
         this.objectMapper = objectMapper;
-        this.userRepository = userRepository; // Add to constructor
+        this.userRepository = userRepository;
         this.self = self;
     }
 
     @Async
     public void generateExport(User initiator) {
-        // --- ADDED THIS BLOCK TO FIX THE ERROR ---
-        // Re-load the user with their tenant to ensure all data is available in the async thread
         User fullInitiator = userRepository.findByIdWithTenant(initiator.getId())
             .orElseThrow(() -> new EntityNotFoundException("Initiator user not found with ID: " + initiator.getId()));
-        // --- END OF FIX ---
 
         PayrollExportLog exportLog = self.createInitialLogEntry(fullInitiator);
         UUID logId = exportLog.getId();
@@ -72,16 +72,20 @@ public class ExportService {
             List<MasterListRecord> recordsToExport = self.getRecordsToExport(fullInitiator.getTenant().getId());
 
             if (recordsToExport.isEmpty()) {
-                self.updateLogStatus(logId, JobStatus.COMPLETED, "No new records to export.", null);
-                log.info("No new validated records to export for tenant: {}", fullInitiator.getTenant().getId());
+                self.updateLogStatus(logId, JobStatus.COMPLETED, "No validated records to export.", null);
+                log.info("No validated records to export for tenant: {}", fullInitiator.getTenant().getId());
                 return;
             }
 
             log.info("Found {} records to export for tenant: {}", recordsToExport.size(), fullInitiator.getTenant().getId());
 
-            // Use the fully loaded initiator object here
             byte[] csvData = createCsvData(recordsToExport);
-            String fileName = String.format("payroll-export-%s-%s.csv", fullInitiator.getTenant().getStateCode(), logId);
+
+            // --- THIS IS THE CORRECTED FILENAME LOGIC ---
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").withZone(ZoneId.systemDefault());
+            String timestamp = formatter.format(exportLog.getExportTimestamp());
+            String fileName = String.format("payroll-export-%s-%s.csv", fullInitiator.getTenant().getStateCode(), timestamp);
+
             String fileUrl = fileStorageService.save(csvData, fileName);
 
             self.finalizeExport(logId, (long) recordsToExport.size(), fileUrl, recordsToExport);
@@ -113,12 +117,10 @@ public class ExportService {
     public void finalizeExport(UUID logId, Long recordCount, String fileUrl, List<MasterListRecord> recordsToExport) {
         PayrollExportLog finalLog = logRepository.findById(logId)
             .orElseThrow(() -> new EntityNotFoundException("PayrollExportLog not found with ID: " + logId));
-
         finalLog.setRecordCount(recordCount);
         finalLog.setFileUrl(fileUrl);
         finalLog.setStatus(JobStatus.COMPLETED);
         finalLog.setStatusMessage("Export completed successfully.");
-
         for (MasterListRecord record : recordsToExport) {
             record.setPayrollExportLog(finalLog);
         }
@@ -129,7 +131,6 @@ public class ExportService {
     public void updateLogStatus(UUID logId, JobStatus status, String message, String fileUrl) {
         PayrollExportLog failedLog = logRepository.findById(logId)
             .orElseThrow(() -> new EntityNotFoundException("PayrollExportLog not found with ID: " + logId));
-        
         failedLog.setStatus(status);
         failedLog.setStatusMessage(message);
         failedLog.setFileUrl(fileUrl);
@@ -137,38 +138,50 @@ public class ExportService {
     }
 
     private byte[] createCsvData(List<MasterListRecord> records) throws IOException {
-        List<String> verifiedHeaders = List.of("employeeId", "status", "validatedAt", "validatedByEmail");
         List<Map<String, String>> processedRecords = new ArrayList<>();
-        List<String> allHeaders = new ArrayList<>();
+        Set<String> headerSet = new LinkedHashSet<>();
+
+        headerSet.add("employeeId");
+        headerSet.add("ssid");
+        headerSet.add("nin");
+        headerSet.add("status");
+        headerSet.add("validatedByEmail");
+        headerSet.add("validatedAt");
+        
         for (MasterListRecord record : records) {
-            Map<String, String> originalData;
-            try {
-                originalData = objectMapper.readValue(record.getOriginalUploadData(), new TypeReference<>() {});
+             try {
+                Map<String, String> originalData = objectMapper.readValue(record.getOriginalUploadData(), new TypeReference<>() {});
+                headerSet.addAll(originalData.keySet());
             } catch (Exception e) {
-                originalData = new LinkedHashMap<>();
-            }
-            originalData.put("employeeId", record.getEmployeeId());
-            originalData.put("status", record.getStatus().toString());
-            originalData.put("validatedAt", record.getValidatedAt() != null ? record.getValidatedAt().toString() : "");
-            originalData.put("validatedByEmail", record.getValidatedBy() != null ? record.getValidatedBy().getEmail() : "");
-            if (record.getSotData() != null) {}
-            processedRecords.add(originalData);
-            for (String key : originalData.keySet()) {
-                if (!allHeaders.contains(key)) {
-                    allHeaders.add(key);
-                }
+                // Ignore
             }
         }
-        for (String header : verifiedHeaders) {
-            if (!allHeaders.contains(header)) {
-                allHeaders.add(header);
+
+        for (MasterListRecord record : records) {
+            Map<String, String> fusedRecord;
+            try {
+                fusedRecord = objectMapper.readValue(record.getOriginalUploadData(), new TypeReference<>() {});
+            } catch (Exception e) {
+                fusedRecord = new LinkedHashMap<>();
             }
+            
+            fusedRecord.put("employeeId", record.getEmployeeId() != null ? record.getEmployeeId() : "");
+            fusedRecord.put("ssid", record.getSsid() != null ? record.getSsid() : "");
+            fusedRecord.put("nin", record.getNin() != null ? record.getNin() : "");
+            fusedRecord.put("status", record.getStatus().toString());
+            fusedRecord.put("validatedAt", record.getValidatedAt() != null ? record.getValidatedAt().toString() : "");
+            fusedRecord.put("validatedByEmail", record.getValidatedBy() != null ? record.getValidatedBy().getEmail() : "");
+            
+            processedRecords.add(fusedRecord);
         }
+        
+        List<String> finalHeaders = new ArrayList<>(headerSet);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (PrintWriter writer = new PrintWriter(out);
-             CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(allHeaders.toArray(new String[0])))) {
+             CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(finalHeaders.toArray(new String[0])))) {
+
             for (Map<String, String> recordMap : processedRecords) {
-                csvPrinter.printRecord(allHeaders.stream().map(h -> recordMap.getOrDefault(h, "")));
+                csvPrinter.printRecord(finalHeaders.stream().map(h -> recordMap.getOrDefault(h, "")));
             }
         }
         return out.toByteArray();

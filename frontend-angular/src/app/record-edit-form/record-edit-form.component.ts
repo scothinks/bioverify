@@ -5,6 +5,7 @@ import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 // Uncomment if using the date picker
 // import { MatDatepickerModule } from '@angular/material/datepicker';
 // import { MatNativeDateModule } from '@angular/material/core';
@@ -21,6 +22,7 @@ import { TenantService } from '../services/tenant.service';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatIconModule,
     // MatDatepickerModule,
     // MatNativeDateModule
   ],
@@ -64,7 +66,8 @@ export class RecordEditFormComponent implements OnInit {
         },
         error: (err) => {
           console.error('Failed to update record:', err);
-          alert('Error: ' + err.message);
+          // A more user-friendly error display could be implemented here
+          alert('Error: Could not save changes. ' + err.message);
         }
       });
     }

@@ -1,0 +1,158 @@
+// Use global variables for consistency
+:host {
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  --success-color: #16a34a;
+  --success-bg: #f0fdf4;
+  --error-color: #dc2626;
+  --error-bg: #fef2f2;
+}
+
+.registration-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: var(--gradient-background);
+}
+
+.registration-card {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-2xl, 0 25px 50px -12px rgba(0, 0, 0, 0.25)) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.95) !important;
+  overflow: hidden;
+}
+
+.enhanced-header {
+  background: var(--gradient-primary);
+  color: white;
+  text-align: center;
+  padding: 32px 24px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .header-logo mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+  }
+
+  .mat-mdc-card-title {
+    font-size: 24px !important;
+    font-weight: 600 !important;
+    color: white !important;
+  }
+
+  .mat-mdc-card-subtitle {
+    font-size: 16px !important;
+    opacity: 0.9 !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+}
+
+mat-card-content {
+  padding: 32px !important;
+}
+
+.form-step {
+  margin-bottom: 24px;
+  position: relative;
+  padding-left: 40px;
+}
+
+.step-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  .step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    color: white;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: absolute;
+    left: -8px;
+    top: 0;
+  }
+
+  .step-title {
+    h4 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 4px 0;
+    }
+    p {
+      font-size: 14px;
+      color: #64748b;
+      margin: 0;
+    }
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+mat-form-field {
+  margin-bottom: 8px;
+}
+
+.message-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 24px 0;
+  font-weight: 500;
+
+  &.success {
+    background-color: var(--success-bg);
+    color: var(--success-color);
+  }
+  &.error {
+    background-color: var(--error-bg);
+    color: var(--error-color);
+  }
+}
+
+.primary-button {
+  width: 100%;
+  background: var(--gradient-primary) !important;
+  color: white !important;
+  padding: 12px 0 !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+
+  &:hover:not([disabled]) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  &:disabled {
+    background: #e0e0e0 !important;
+  }
+}
+
+.button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}

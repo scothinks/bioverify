@@ -48,7 +48,7 @@ public class BulkVerificationService {
     private final MasterListRecordRepository recordRepository;
     private final BulkVerificationJobRepository jobRepository;
     private final TenantRepository tenantRepository;
-    private final DepartmentRepository departmentRepository; // <-- ADDED
+    private final DepartmentRepository departmentRepository;
     private final ObjectMapper objectMapper;
     private final WebClient.Builder webClientBuilder;
 
@@ -180,6 +180,10 @@ public class BulkVerificationService {
 
                         for (CSVRecord csvRecord : csvParser) {
                             SotProfileDto profile = new SotProfileDto();
+                            // --- FIX 1: PARSE SSID AND NIN FROM THE CSV ---
+                            profile.setSsid(csvRecord.get("ssid"));
+                            profile.setNin(csvRecord.get("nin"));
+
                             profile.setFirstName(csvRecord.get("first_name"));
                             profile.setMiddleName(csvRecord.get("middle_name"));
                             profile.setSurname(csvRecord.get("surname"));
@@ -239,12 +243,15 @@ public class BulkVerificationService {
     
     private void updateRecordWithSotData(MasterListRecord record, SotProfileDto profile) {
         String fullName = (profile.getFirstName() + " " + profile.getMiddleName() + " " + profile.getSurname()).replace("  ", " ").trim();
+        
+        // --- FIX 2: SET THE SSID AND NIN ON THE RECORD ---
+        record.setSsid(profile.getSsid());
+        record.setNin(profile.getNin());
+
         record.setFullName(fullName);
         record.setBvn(profile.getBvn());
         record.setGradeLevel(profile.getGradeLevel());
         
-        // --- UPDATED LOGIC ---
-        // Use the find or create logic for the department from SoT data
         record.setDepartment(findOrCreateDepartment(profile.getStateMinistry(), record.getTenant()));
         
         record.setCadre(profile.getCadre());
@@ -273,7 +280,6 @@ public class BulkVerificationService {
         record.setStatus(RecordStatus.PENDING_GRADE_VALIDATION);
     }
     
-    // --- NEW HELPER METHOD ---
     private Department findOrCreateDepartment(String name, Tenant tenant) {
         if (name == null || name.isBlank()) return null;
         return departmentRepository.findByNameAndTenantId(name, tenant.getId())

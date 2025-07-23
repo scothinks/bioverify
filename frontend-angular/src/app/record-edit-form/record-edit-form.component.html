@@ -1,12 +1,21 @@
-<h1 mat-dialog-title>Edit Record: {{ data.fullName }}</h1>
+<div class="dialog-header">
+  <mat-icon class="header-icon">edit_note</mat-icon>
+  <div class="header-text">
+    <h2 mat-dialog-title>Edit Record</h2>
+    <p>{{ data.fullName }}</p>
+  </div>
+</div>
 
 <div mat-dialog-content>
-  <p>Make the necessary corrections to the record's details below.</p>
-
-  <form [formGroup]="editForm" class="edit-form">
+  <form [formGroup]="editForm" class="edit-form-grid">
     <mat-form-field appearance="outline">
       <mat-label>Full Name</mat-label>
       <input matInput formControlName="fullName">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Grade Level</mat-label>
+      <input matInput formControlName="gradeLevel">
     </mat-form-field>
 
     <mat-form-field appearance="outline">
@@ -18,21 +27,18 @@
       <mat-label>Ministry</mat-label>
       <input matInput formControlName="ministry">
     </mat-form-field>
-    
-    <mat-form-field appearance="outline">
-      <mat-label>Grade Level</mat-label>
-      <input matInput formControlName="gradeLevel">
-    </mat-form-field>
 
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" class="full-width-field">
       <mat-label>Salary Structure</mat-label>
       <input matInput formControlName="salaryStructure">
     </mat-form-field>
-    
   </form>
 </div>
 
 <div mat-dialog-actions align="end">
-  <button mat-button (click)="onCancel()">Cancel</button>
-  <button mat-flat-button color="primary" [disabled]="!editForm.valid" (click)="onSave()">Save Changes</button>
+  <button mat-stroked-button (click)="onCancel()">Cancel</button>
+  <button mat-flat-button class="primary-button" [disabled]="!editForm.valid" (click)="onSave()">
+    <mat-icon>save</mat-icon>
+    Save Changes
+  </button>
 </div>

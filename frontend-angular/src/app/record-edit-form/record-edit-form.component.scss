@@ -1,0 +1,76 @@
+// Note: The main dialog container is styled by the global '.enhanced-dialog' panelClass.
+// These styles apply to the content *inside* the dialog.
+
+:host {
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 24px;
+    background: var(--gradient-primary);
+    color: white;
+    margin: -24px -24px 24px -24px; // Overcome default padding
+
+    .header-icon {
+        font-size: 36px;
+        width: 36px;
+        height: 36px;
+    }
+
+    h2[mat-dialog-title] {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    p {
+        margin: 0;
+        opacity: 0.8;
+        font-size: 14px;
+    }
+}
+
+[mat-dialog-content] {
+    padding-top: 0 !important; // Adjust because header has padding
+}
+
+.edit-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.full-width-field {
+    grid-column: 1 / -1; // Make this field span both columns
+}
+
+[mat-dialog-actions] {
+    padding: 16px 24px !important;
+    gap: 8px;
+}
+
+.primary-button {
+    background: var(--gradient-primary) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 8px 16px !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    &:hover:not([disabled]) {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+}
+
+// Responsive layout for smaller screens
+@media (max-width: 600px) {
+    .edit-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
