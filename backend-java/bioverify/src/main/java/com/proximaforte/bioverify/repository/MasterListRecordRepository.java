@@ -47,7 +47,7 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
     
     List<MasterListRecord> findAllByTenantIdAndStatusOrderByCreatedAtDesc(UUID tenantId, RecordStatus status);
     
-    // --- NEW METHODS FOR DASHBOARD STATS ---
+    // --- METHODS FOR DASHBOARD STATS ---
 
     /**
      * Counts the total number of unique records for a tenant.
@@ -59,4 +59,10 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
      * This will be used for Validated, Mismatched, Not Found, etc.
      */
     long countByTenantIdAndStatus(UUID tenantId, RecordStatus status);
+
+    /**
+     * Counts the number of records for a tenant that have a status within the given list.
+     * This is used for calculating the "Total Verified" metric.
+     */
+    long countByTenantIdAndStatusIn(UUID tenantId, List<RecordStatus> statuses);
 }

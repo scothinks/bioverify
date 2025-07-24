@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -28,19 +29,20 @@ public class DashboardService {
     public DashboardStatsDto getDashboardStats(User currentUser) {
         UUID tenantId = currentUser.getTenant().getId();
 
-        // --- Fetch all counts from the repositories ---
+        // --- CORRECTED CALCULATION FOR 'totalVerified' ---
+        // "Verified" means a record has passed the SoT check. This includes records
+        // that are pending final approval AND those that are fully validated.
+        List<RecordStatus> verifiedStatuses = List.of(RecordStatus.PENDING_GRADE_VALIDATION, RecordStatus.VALIDATED);
+        long totalVerified = recordRepository.countByTenantIdAndStatusIn(tenantId, verifiedStatuses);
+        
+        // --- Fetch other counts from the repositories ---
         long totalUniqueRecords = recordRepository.countByTenantId(tenantId);
-        long totalVerified = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.PENDING_GRADE_VALIDATION);
         long totalValidated = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.VALIDATED);
+        long totalPendingApproval = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.PENDING_GRADE_VALIDATION);
         long totalMismatched = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.FLAGGED_DATA_MISMATCH);
         long totalNotFound = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.FLAGGED_NOT_IN_SOT);
         long totalAwaitingReVerification = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.AWAITING_REVALIDATION);
         
-        // Note: 'totalVerified' above is actually the count of records pending final approval.
-        // The business definition of "Total Verified" might need to be a sum of multiple statuses.
-        // For now, we'll align with the status names.
-        long totalPendingApproval = totalVerified;
-
         long totalReviewers = userRepository.countByTenantIdAndRole(tenantId, Role.REVIEWER);
         long totalSelfServiceUsers = userRepository.countByTenantIdAndRole(tenantId, Role.SELF_SERVICE_USER);
         long totalAgentAccounts = userRepository.countByTenantIdAndRole(tenantId, Role.AGENT);
@@ -48,7 +50,7 @@ public class DashboardService {
         // --- Build and return the DTO ---
         return DashboardStatsDto.builder()
                 .totalUniqueRecords(totalUniqueRecords)
-                .totalVerified(totalVerified) // This is PENDING_GRADE_VALIDATION
+                .totalVerified(totalVerified) // This is now correct
                 .totalValidated(totalValidated)
                 .totalPendingApproval(totalPendingApproval)
                 .totalMismatched(totalMismatched)

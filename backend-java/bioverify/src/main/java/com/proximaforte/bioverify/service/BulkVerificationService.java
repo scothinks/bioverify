@@ -73,7 +73,7 @@ public class BulkVerificationService {
 
         runVerificationJob(job, tenantId, recordsToVerify);
     }
-    
+
     public List<BulkVerificationJob> getJobHistoryForTenant(User currentUser) {
         return jobRepository.findAllByTenantIdOrderByCreatedAtDesc(currentUser.getTenant().getId());
     }
@@ -134,33 +134,33 @@ public class BulkVerificationService {
             if (jobId == null || jobId.isEmpty()) {
                 throw new RuntimeException("Failed to get a valid jobId from Optima's response. Data object: " + dataNode.toString());
             }
-            
+
             logger.info("Bulk job initiated with jobId: {}", jobId);
             job.setExternalJobId(jobId);
             jobRepository.save(job);
-            
+
             String fileUrl = null;
             while (true) {
                 Thread.sleep(Duration.ofSeconds(30).toMillis());
-                
+
                 JsonNode statusResponse = webClient.get()
                         .uri(baseUrl + "/bulk-inquiry/{jobId}/status", jobId)
                         .header("client-id", config.getClientId())
                         .retrieve()
                         .bodyToMono(JsonNode.class)
                         .block();
-                
+
                 JsonNode finalStatusNode = statusResponse.path("data");
                 String status = finalStatusNode.path("status").asText();
 
                 if ("COMPLETED".equalsIgnoreCase(status)) {
                     logger.info("Job {} completed successfully.", jobId);
-                    
+
                     fileUrl = finalStatusNode.path("fileUrl").asText(null);
                     if (fileUrl == null || fileUrl.isBlank()) {
                         throw new RuntimeException("Optima job completed but did not provide a valid file URL.");
                     }
-                    
+
                     byte[] zipBytes = webClient.get().uri(fileUrl).retrieve().bodyToMono(byte[].class).block();
 
                     byte[] encryptedCsvBytes = null;
@@ -175,7 +175,7 @@ public class BulkVerificationService {
                     }
 
                     String decryptedCsv = decrypt(encryptedCsvBytes, config.getAesKey(), config.getIv());
-                    
+
                     List<SotProfileDto> verifiedProfiles = new ArrayList<>();
                     try (Reader reader = new InputStreamReader(new ByteArrayInputStream(decryptedCsv.getBytes(StandardCharsets.UTF_8)))) {
                         CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT
@@ -198,7 +198,7 @@ public class BulkVerificationService {
                             profile.setDateOfFirstAppointment(csvRecord.get("date_of_first_appointment"));
                             profile.setDateOfConfirmation(csvRecord.get("date_of_confirmation"));
                             profile.setBvn(csvRecord.get("bvn"));
-                            
+
                             verifiedProfiles.add(profile);
                         }
                     }
@@ -207,19 +207,20 @@ public class BulkVerificationService {
                         logger.warn("CSV file from ZIP archive was empty or contained no records.");
                     }
                     
-                    Map<String, MasterListRecord> recordsByPsn = recordsToVerify.stream().collect(Collectors.toMap(MasterListRecord::getPsn, Function.identity()));
-
                     // --- UPDATED LOGIC TO PROCESS SUCCESSES AND FAILURES ---
 
-                    // 1. Update records that were successfully verified
+                    // 1. Create a map for efficient lookups
+                    Map<String, MasterListRecord> recordsByPsn = recordsToVerify.stream().collect(Collectors.toMap(MasterListRecord::getPsn, Function.identity()));
+
+                    // 2. Update records that were successfully verified
                     for (SotProfileDto profile : verifiedProfiles) {
                         MasterListRecord recordToUpdate = recordsByPsn.get(profile.getPsn());
                         if (recordToUpdate != null) {
                             updateRecordWithSotData(recordToUpdate, profile);
                         }
                     }
-                    
-                    // 2. Identify records that were NOT found in the verified profiles
+
+                    // 3. Identify records that were NOT found in the verified profiles
                     Set<String> successfulPsns = verifiedProfiles.stream()
                         .map(SotProfileDto::getPsn)
                         .collect(Collectors.toSet());
@@ -227,23 +228,23 @@ public class BulkVerificationService {
                     List<MasterListRecord> failedRecordsList = recordsToVerify.stream()
                         .filter(record -> !successfulPsns.contains(record.getPsn()))
                         .collect(Collectors.toList());
-                    
-                    // 3. Update the status for all "not found" records
+
+                    // 4. Update the status for all "not found" records
                     for (MasterListRecord failedRecord : failedRecordsList) {
                         failedRecord.setStatus(RecordStatus.FLAGGED_NOT_IN_SOT);
                     }
-                    
-                    // 4. Save all modified records (both updated and flagged) in a single batch
+
+                    // 5. Save all modified records (both updated and flagged) in a single batch
                     recordRepository.saveAll(recordsToVerify);
                     logger.info("Updated {} successfully verified records and flagged {} 'not found' records.", verifiedProfiles.size(), failedRecordsList.size());
 
-                    // 5. Update the final job statistics
+                    // 6. Update the final job statistics based on the actual outcome
                     job.setProcessedRecords(recordsToVerify.size());
                     job.setSuccessfullyVerifiedRecords(verifiedProfiles.size());
                     job.setFailedRecords(failedRecordsList.size());
 
                     return;
-                
+
                 } else if ("FAILED".equalsIgnoreCase(status)) {
                     throw new RuntimeException("Optima job failed with message: " + finalStatusNode.path("message").asText());
                 }
@@ -253,7 +254,7 @@ public class BulkVerificationService {
             throw new RuntimeException("Optima API call failed. Status: " + e.getStatusCode() + ", Body: " + e.getResponseBodyAsString());
         }
     }
-    
+
     @SneakyThrows
     private String decrypt(byte[] cipherText, String key, String iv) {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
@@ -263,7 +264,7 @@ public class BulkVerificationService {
         byte[] decryptedBytes = cipher.doFinal(cipherText);
         return new String(decryptedBytes, StandardCharsets.UTF_8);
     }
-    
+
     private void updateRecordWithSotData(MasterListRecord record, SotProfileDto profile) {
         String fullName = (profile.getFirstName() + " " + profile.getMiddleName() + " " + profile.getSurname()).replace("  ", " ").trim();
         record.setSsid(profile.getSsid());
@@ -294,10 +295,10 @@ public class BulkVerificationService {
         } catch (NumberFormatException e) {
             logger.error("Could not parse date timestamp for PSN {}. Error: {}", profile.getPsn(), e.getMessage());
         }
-        
+
         record.setStatus(RecordStatus.PENDING_GRADE_VALIDATION);
     }
-    
+
     private Department findOrCreateDepartment(String name, Tenant tenant) {
         if (name == null || name.isBlank()) return null;
         return departmentRepository.findByNameAndTenantId(name, tenant.getId())
