@@ -13,6 +13,41 @@
     </mat-card-header>
 
     <mat-card-content class="enhanced-content">
+
+      <div class="filter-controls" [formGroup]="filterForm">
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Ministry</mat-label>
+          <mat-select formControlName="ministry" multiple>
+            <mat-option *ngFor="let ministry of ministryList" [value]="ministry">
+              {{ ministry }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+    
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Department</mat-label>
+          <mat-select formControlName="department" multiple>
+            <mat-option *ngFor="let department of departmentList" [value]="department">
+              {{ department }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+    
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Grade</mat-label>
+          <mat-select formControlName="gradeLevel" multiple>
+            <mat-option *ngFor="let grade of gradeList" [value]="grade">
+              {{ grade }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+    
+        <button mat-stroked-button (click)="clearFilters()" class="clear-button">
+          <mat-icon>clear</mat-icon>
+          Clear Filters
+        </button>
+      </div>
+
       <mat-tab-group (selectedIndexChange)="onTabChange($event)" [selectedIndex]="selectedTabIndex" animationDuration="0ms">
         
         <mat-tab>
@@ -33,34 +68,28 @@
                   </div>
                 </td>
               </ng-container>
-
               <ng-container matColumnDef="department">
                 <th mat-header-cell *matHeaderCellDef>Department</th>
                 <td mat-cell *matCellDef="let record">{{record.department}}</td>
               </ng-container>
-
               <ng-container matColumnDef="ministry">
                 <th mat-header-cell *matHeaderCellDef>Ministry</th>
                 <td mat-cell *matCellDef="let record">{{record.ministry}}</td>
               </ng-container>
-
               <ng-container matColumnDef="gradeLevel">
                 <th mat-header-cell *matHeaderCellDef>Grade</th>
                 <td mat-cell *matCellDef="let record"> 
                   <div class="grade-badge">{{record.gradeLevel}}</div>
                 </td>
               </ng-container>
-
               <ng-container matColumnDef="salaryGradeId">
                 <th mat-header-cell *matHeaderCellDef>Salary Grade ID</th>
                 <td mat-cell *matCellDef="let record">{{record.salaryGradeId}}</td>
               </ng-container>
-
               <ng-container matColumnDef="salaryStructure">
                 <th mat-header-cell *matHeaderCellDef>Salary Structure</th>
                 <td mat-cell *matCellDef="let record">{{record.salaryStructure}}</td>
               </ng-container>
-              
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
                 <td mat-cell *matCellDef="let record" class="actions-cell">
@@ -110,34 +139,28 @@
                   </div>
                 </td>
               </ng-container>
-
               <ng-container matColumnDef="department">
                 <th mat-header-cell *matHeaderCellDef>Department</th>
                 <td mat-cell *matCellDef="let record">{{record.department}}</td>
               </ng-container>
-
               <ng-container matColumnDef="ministry">
                 <th mat-header-cell *matHeaderCellDef>Ministry</th>
                 <td mat-cell *matCellDef="let record">{{record.ministry}}</td>
               </ng-container>
-
               <ng-container matColumnDef="gradeLevel">
                 <th mat-header-cell *matHeaderCellDef>Grade</th>
                 <td mat-cell *matCellDef="let record"> 
                   <div class="grade-badge">{{record.gradeLevel}}</div>
                 </td>
               </ng-container>
-
               <ng-container matColumnDef="salaryGradeId">
                 <th mat-header-cell *matHeaderCellDef>Salary Grade ID</th>
                 <td mat-cell *matCellDef="let record">{{record.salaryGradeId}}</td>
               </ng-container>
-
               <ng-container matColumnDef="salaryStructure">
                 <th mat-header-cell *matHeaderCellDef>Salary Structure</th>
                 <td mat-cell *matCellDef="let record">{{record.salaryStructure}}</td>
               </ng-container>
-              
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
                 <td mat-cell *matCellDef="let record" class="actions-cell">

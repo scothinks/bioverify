@@ -87,6 +87,30 @@
   background: rgba(255, 255, 255, 0.95);
 }
 
+// ===================================
+// ==  NEW: Filter Controls Styling ==
+// ===================================
+.filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
+
+  .mat-mdc-form-field {
+    flex: 1 1 200px; // Allows fields to grow but have a base width
+  }
+
+  .clear-button {
+    // Aligns button with the taller outline form fields
+    height: 56px; 
+    color: #64748b;
+  }
+}
+
+
 .table-container {
   background: white;
   border-radius: 12px;
@@ -377,6 +401,18 @@
 
   .enhanced-content {
     padding: 20px !important;
+  }
+
+  // Styles for filters on mobile
+  .filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+
+    .clear-button {
+      height: auto;
+      padding: 12px 16px;
+    }
   }
 
   .table-wrapper {

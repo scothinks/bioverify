@@ -2,17 +2,17 @@ package com.proximaforte.bioverify.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proximaforte.bioverify.domain.MasterListRecord;
-import com.proximaforte.bioverify.domain.enums.RecordStatus;  // Fixed import
-import com.proximaforte.bioverify.dto.SotProfileDto;
-import com.proximaforte.bioverify.dto.VerificationResultDto;
+import com.proximaforte.bioverify.domain.enums.RecordStatus;
+import com.proximaforte.bioverify.dto.*; // Import all DTOs
 import com.proximaforte.bioverify.exception.RecordNotFoundException;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -20,7 +20,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -30,13 +29,66 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class VerificationService {
 
+    private static final Logger logger = LoggerFactory.getLogger(VerificationService.class);
     private final SotLookupService sotLookupService;
     private final MasterListRecordRepository recordRepository;
     private final ObjectMapper objectMapper;
 
     /**
-     * The main entry point for verification. Orchestrates the call to the SoT
-     * and handles the success or failure of that API call.
+     * NEW: Entry point for self-service and agent flows.
+     * Finds a record by identifiers and determines the next step.
+     */
+    @Transactional
+    public InitiateVerificationResponseDto initiateSelfVerification(VerifyIdentityRequest request) {
+        String ssidHash = toSha256(request.getSsid());
+        String ninHash = toSha256(request.getNin());
+
+        MasterListRecord record = recordRepository.findBySsidHashAndNinHash(ssidHash, ninHash)
+                .orElseThrow(() -> new RecordNotFoundException("Record not found with the provided SSID and NIN."));
+
+        if (record.getUser() != null) {
+            throw new IllegalStateException("This record has already been claimed.");
+        }
+
+        // --- CORRECTED LOGIC ---
+        // If record is not already validated, perform external verification first.
+        if (record.getStatus() != RecordStatus.PENDING_GRADE_VALIDATION && record.getStatus() != RecordStatus.VALIDATED) {
+            logger.info("Record {} requires verification. Calling Source of Truth.", record.getId());
+            VerificationResultDto verificationResult = this.initiateVerification(
+                record.getTenant().getId(), record.getId(), request.getSsid(), request.getNin()
+            );
+
+            // If verification failed (e.g., SoT did not find the user), throw an exception.
+            if (verificationResult.getNewStatus() != RecordStatus.PENDING_GRADE_VALIDATION) {
+                 throw new IllegalStateException("Identity could not be verified against the Source of Truth. Status: " + verificationResult.getNewStatus());
+            }
+        }
+        
+        // After any successful check (or if already verified), the next step is ALWAYS the PSN challenge.
+        logger.info("Record {} identity confirmed. Initiating PSN challenge.", record.getId());
+        return new InitiateVerificationResponseDto("CHALLENGE_PSN", record.getId());
+    }
+
+    /**
+     * NEW: Handles the PSN security challenge for pre-verified records.
+     */
+    public boolean resolvePsnChallenge(PsnChallengeRequestDto request) {
+        MasterListRecord record = recordRepository.findById(request.getRecordId())
+                .orElseThrow(() -> new RecordNotFoundException("Record not found during PSN challenge."));
+
+        // Case-insensitive comparison for robustness
+        if (request.getPsn() != null && request.getPsn().equalsIgnoreCase(record.getPsn())) {
+            logger.info("PSN challenge PASSED for recordId: {}", request.getRecordId());
+            return true;
+        } else {
+            logger.warn("PSN challenge FAILED for recordId: {}", request.getRecordId());
+            return false;
+        }
+    }
+
+    /**
+     * The main entry point for verification when the recordId is already known.
+     * Orchestrates the call to the SoT and handles the success or failure of that API call.
      */
     @Transactional
     public VerificationResultDto initiateVerification(UUID tenantId, UUID recordId, String ssid, String nin) {
@@ -70,11 +122,6 @@ public class VerificationService {
         record.setNin(newNin);
         record.setSsidHash(toSha256(newSsid));
         record.setNinHash(toSha256(newNin));
-        
-        // This assumes SotProfileDto has nested objects as designed.
-        // You would expand this with actual getters from your final DTO.
-        // record.setFullName(sotProfile.getIdentity().getFirstName() + " " + sotProfile.getIdentity().getSurname());
-        // record.setGradeLevel(sotProfile.getCivilServiceProfile().getGradeLevel());
         record.setVerifiedAt(Instant.now());
 
         boolean isMatch = performReconciliation(record.getOriginalUploadData(), sotProfile);
@@ -106,10 +153,6 @@ public class VerificationService {
         Map<String, String> originalData = objectMapper.readValue(originalUploadJson, Map.class);
         String originalPsn = originalData.getOrDefault("PSN", "");
         
-        // Assuming SotProfileDto has a nested object for civilServiceProfile
-        // String sotPsn = sotProfile.getCivilServiceProfile().getPsn();
-
-        // return Objects.equals(originalPsn, sotPsn);
         return true; // Placeholder until SotProfileDto is fully fleshed out
     }
 

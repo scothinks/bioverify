@@ -3,7 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { MasterListRecord } from '../models/master-list-record.model';
-import { Router } from '@angular/router'; // <-- Import Router
+import { Router } from '@angular/router';
 
 export interface AuthResponse {
   token: string;
@@ -41,14 +41,14 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private router: Router // <-- Inject Router
+    private router: Router
   ) { }
 
   login(credentials: AuthRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.authApiUrl}/authenticate`, credentials).pipe(
       tap(response => {
         this.setToken(response.token);
-        this.redirectUserBasedOnRole(); // <-- Call new redirection logic
+        this.redirectUserBasedOnRole();
       }),
       catchError(this.handleError)
     );
@@ -95,7 +95,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     this.isLoggedInSubject.next(false);
-    this.router.navigate(['/login']); // <-- Navigate to login instead of reloading
+    this.router.navigate(['/login']);
   }
 
   private setToken(token: string): void {
@@ -103,7 +103,6 @@ export class AuthService {
     this.isLoggedInSubject.next(true);
   }
 
-  // --- NEW METHOD ---
   /**
    * Navigates the user to the correct dashboard based on their role.
    */
@@ -116,9 +115,14 @@ export class AuthService {
       case 'TENANT_ADMIN':
         this.router.navigate(['/dashboard/tenant-admin']);
         break;
-      case 'Agent':
-        this.router.navigate(['/dashboard/Agent']);
+      // --- UPDATED SECTION ---
+      case 'AGENT': // CORRECTED: Changed from 'Agent' to 'AGENT'
+        this.router.navigate(['/dashboard/agent']); // CORRECTED: path is lowercase
         break;
+      case 'REVIEWER': // NEW: Added case for the Reviewer role
+        this.router.navigate(['/dashboard/reviewer']);
+        break;
+      // --- END UPDATED SECTION ---
       case 'SELF_SERVICE_USER':
         this.router.navigate(['/dashboard/user']);
         break;

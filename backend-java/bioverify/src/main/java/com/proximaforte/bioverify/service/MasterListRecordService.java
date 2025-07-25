@@ -14,6 +14,7 @@ import com.proximaforte.bioverify.dto.ValidateRecordRequestDto;
 import com.proximaforte.bioverify.repository.DepartmentRepository;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
 import com.proximaforte.bioverify.repository.MinistryRepository;
+import com.proximaforte.bioverify.repository.UserRepository; // NEW: Import UserRepository
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -39,6 +40,7 @@ public class MasterListRecordService {
     private final MinistryRepository ministryRepository;
     private final EmployeeIdService employeeIdService;
     private final ObjectMapper objectMapper;
+    private final UserRepository userRepository; // NEW: Inject UserRepository
 
     public List<MasterListRecord> getPendingApprovalQueue(User currentUser) {
         UUID tenantId = currentUser.getTenant().getId();
@@ -49,8 +51,11 @@ public class MasterListRecordService {
         }
 
         if (currentUser.getRole() == Role.REVIEWER) {
-            Set<Department> depts = currentUser.getAssignedDepartments();
-            Set<Ministry> mins = currentUser.getAssignedMinistries();
+            // NEW: Re-fetch the reviewer with their assignments to prevent LazyInitializationException
+            User reviewer = userRepository.findUserWithAssignments(currentUser.getId()).orElse(currentUser);
+            
+            Set<Department> depts = reviewer.getAssignedDepartments();
+            Set<Ministry> mins = reviewer.getAssignedMinistries();
             if ((depts == null || depts.isEmpty()) && (mins == null || mins.isEmpty())) {
                 return Collections.emptyList();
             }
@@ -68,8 +73,11 @@ public class MasterListRecordService {
         }
 
         if (currentUser.getRole() == Role.REVIEWER) {
-            Set<Department> depts = currentUser.getAssignedDepartments();
-            Set<Ministry> mins = currentUser.getAssignedMinistries();
+            // NEW: Re-fetch the reviewer with their assignments to prevent LazyInitializationException
+            User reviewer = userRepository.findUserWithAssignments(currentUser.getId()).orElse(currentUser);
+
+            Set<Department> depts = reviewer.getAssignedDepartments();
+            Set<Ministry> mins = reviewer.getAssignedMinistries();
             if ((depts == null || depts.isEmpty()) && (mins == null || mins.isEmpty())) {
                 return Collections.emptyList();
             }
@@ -78,14 +86,8 @@ public class MasterListRecordService {
         return Collections.emptyList();
     }
 
-    // --- NEW METHOD FOR "NOT IN SOT" RECORDS ---
-    /**
-     * Fetches records that were flagged because they could not be found in the Source of Truth.
-     */
     public List<MasterListRecord> getFlaggedNotInSotQueue(User currentUser) {
         UUID tenantId = currentUser.getTenant().getId();
-        // This query is simple and doesn't need role-based filtering for now,
-        // as it's intended for tenant admins.
         return recordRepository.findAllByTenantIdAndStatusOrderByCreatedAtDesc(
             tenantId, 
             RecordStatus.FLAGGED_NOT_IN_SOT
@@ -127,7 +129,6 @@ public class MasterListRecordService {
         if (decision == RecordStatus.VALIDATED && record.getEmployeeId() == null) {
             String newWorkId = employeeIdService.generateNewWorkId(record.getTenant());
             record.setEmployeeId(newWorkId);
-            record = recordRepository.save(record);
         }
 
         record.setStatus(decision);

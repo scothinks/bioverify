@@ -1,0 +1,92 @@
+<div class="reviewer-management-container">
+  <mat-card class="list-card">
+    <mat-card-header class="enhanced-header">
+      <div class="header-content">
+        <div class="title-section">
+          <mat-icon class="header-icon">manage_accounts</mat-icon>
+          <div class="title-text">
+            <mat-card-title>Reviewer Management</mat-card-title>
+            <mat-card-subtitle>Manage assignments for users with the Reviewer role</mat-card-subtitle>
+          </div>
+        </div>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content class="enhanced-content">
+      <div *ngIf="isLoading; else content" class="loading-state">
+        <mat-progress-spinner mode="indeterminate" diameter="50"></mat-progress-spinner>
+        <p>Loading Reviewers...</p>
+      </div>
+
+      <ng-template #content>
+        <div *ngIf="dataSource.data.length > 0; else noReviewers" class="table-container">
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="dataSource" class="enhanced-table">
+
+              <ng-container matColumnDef="fullName">
+                <th mat-header-cell *matHeaderCellDef>Reviewer</th>
+                <td mat-cell *matCellDef="let reviewer">
+                  <div class="reviewer-info">
+                    <div class="reviewer-avatar">{{getInitials(reviewer.fullName)}}</div>
+                    <div class="reviewer-details">
+                      <span class="reviewer-name">{{reviewer.fullName}}</span>
+                      <span class="reviewer-email">{{reviewer.email}}</span>
+                    </div>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="pendingValidationCount">
+                <th mat-header-cell *matHeaderCellDef>Pending Items</th>
+                <td mat-cell *matCellDef="let reviewer">
+                  <span class="pending-count-badge">{{reviewer.pendingValidationCount}}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="assignedMinistries">
+                <th mat-header-cell *matHeaderCellDef>Assigned Ministries</th>
+                <td mat-cell *matCellDef="let reviewer">
+                  <mat-chip-listbox *ngIf="reviewer.assignedMinistries.length > 0">
+                    <mat-chip *ngFor="let ministry of reviewer.assignedMinistries">{{ministry.name}}</mat-chip>
+                  </mat-chip-listbox>
+                  <span *ngIf="reviewer.assignedMinistries.length === 0" class="no-assignment">-</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="assignedDepartments">
+                <th mat-header-cell *matHeaderCellDef>Assigned Departments</th>
+                <td mat-cell *matCellDef="let reviewer">
+                  <mat-chip-listbox *ngIf="reviewer.assignedDepartments.length > 0">
+                    <mat-chip *ngFor="let dept of reviewer.assignedDepartments">{{dept.name}}</mat-chip>
+                  </mat-chip-listbox>
+                  <span *ngIf="reviewer.assignedDepartments.length === 0" class="no-assignment">-</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let reviewer">
+                  <button mat-icon-button (click)="openEditDialog(reviewer)" matTooltip="Edit Assignments">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+          </div>
+          <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+        </div>
+
+        <ng-template #noReviewers>
+          <div class="empty-state">
+            <mat-icon class="empty-icon">person_search</mat-icon>
+            <h3>No Reviewers Found</h3>
+            <p>Assign the 'Reviewer' role to users in the User Management section.</p>
+          </div>
+        </ng-template>
+      </ng-template>
+    </mat-card-content>
+  </mat-card>
+</div>

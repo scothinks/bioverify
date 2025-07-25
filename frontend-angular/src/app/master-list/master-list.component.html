@@ -12,23 +12,61 @@
         <div class="header-actions">
            <div class="stat-chip" *ngIf="!isLoading">
             <mat-icon>people</mat-icon>
-            <span>{{dataSource.data.length}} / {{allRecords.length}} records</span>
+            <span>{{dataSource.filteredData.length}} / {{dataSource.data.length}} records</span>
           </div>
-          <button mat-flat-button class="header-button" (click)="clearFilters()" *ngIf="dataSource.data.length !== allRecords.length">
-            <mat-icon>clear_all</mat-icon>
-            Clear Filter
-          </button>
-        </div>
+          </div>
       </div>
     </mat-card-header>
 
     <mat-card-content class="enhanced-content">
+      
+      <div class="filter-controls" [formGroup]="filterForm">
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Ministry</mat-label>
+          <mat-select formControlName="ministry" multiple>
+            <mat-option *ngFor="let ministry of ministryList" [value]="ministry">
+              {{ ministry }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Department</mat-label>
+          <mat-select formControlName="department" multiple>
+            <mat-option *ngFor="let department of departmentList" [value]="department">
+              {{ department }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Grade</mat-label>
+          <mat-select formControlName="gradeLevel" multiple>
+            <mat-option *ngFor="let grade of gradeList" [value]="grade">
+              {{ grade }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Status</mat-label>
+          <mat-select formControlName="status" multiple>
+            <mat-option *ngFor="let status of statusList" [value]="status">
+              {{ status | titlecase }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      
+        <button mat-stroked-button (click)="clearFilters()" class="clear-button">
+          <mat-icon>clear</mat-icon>
+          Clear Filters
+        </button>
+      </div>
+
       <div *ngIf="!isLoading; else loading">
-        <div class="table-container" *ngIf="dataSource.data.length > 0; else noRecords">
+        <div class="table-container" *ngIf="dataSource.filteredData.length > 0; else noRecords">
           <div class="table-wrapper">
             <table mat-table [dataSource]="dataSource" class="enhanced-table">
-
-              <!-- FIXED: Removed the 'id' column definition -->
 
               <ng-container matColumnDef="fullName">
                 <th mat-header-cell *matHeaderCellDef>Employee</th>

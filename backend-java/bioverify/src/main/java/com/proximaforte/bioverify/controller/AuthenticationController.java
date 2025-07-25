@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map; // Import Map
+
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -26,6 +28,6 @@ public class AuthenticationController {
     @PostMapping("/create-account")
     public ResponseEntity<?> createAccount(@RequestBody CreateAccountRequest request) {
         service.createAccount(request);
-        return ResponseEntity.ok("Account created successfully. You can now log in.");
+        return ResponseEntity.ok(Map.of("message", "Account created successfully. You can now log in."));
     }
 }

@@ -5,10 +5,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.core.GrantedAuthorityDefaults; // NEW: Import
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -28,6 +30,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
@@ -38,6 +41,13 @@ public class SecurityConfig {
 
     @Value("${app.cors.max-age:3600}")
     private long corsMaxAge;
+    
+    // NEW: Bean to remove the default 'ROLE_' prefix from authority checks.
+    // This makes @PreAuthorize("hasRole('TENANT_ADMIN')") look for 'TENANT_ADMIN' instead of 'ROLE_TENANT_ADMIN'.
+    @Bean
+    public GrantedAuthorityDefaults grantedAuthorityDefaults() {
+        return new GrantedAuthorityDefaults(""); // Use an empty string to remove the prefix
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -47,6 +57,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/verification/**").permitAll()
                         .requestMatchers("/api/v1/health", "/actuator/health").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/error", "/error/**").permitAll()
@@ -83,22 +94,18 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Use externalized configuration for allowed origins
         configuration.setAllowedOrigins(allowedOrigins);
         
-        // Specify allowed HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
             "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
         ));
         
-        // Specify allowed headers (only necessary custom headers)
         configuration.setAllowedHeaders(Arrays.asList(
             "Authorization",
             "Content-Type",
             "X-Requested-With"
         ));
         
-        // Headers that can be exposed to the client
         configuration.setExposedHeaders(Arrays.asList(
             "Authorization",
             "X-Total-Count"

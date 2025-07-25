@@ -1,64 +1,69 @@
+// src/app/services/verification.service.ts
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-// Define interfaces for the verification flow
-export interface VerificationRequest {
+// --- Interfaces for Public Self-Service Flow ---
+
+export interface VerifyIdentityRequest {
   ssid: string;
   nin: string;
 }
 
-// Updated to match the backend's VerificationResultDto
-export interface VerificationResponse {
+export interface InitiateVerificationResponse {
+  nextStep: 'CHALLENGE_PSN' | 'CREATE_ACCOUNT';
   recordId: string;
-  newStatus: string; // e.g., 'PENDING_GRADE_VALIDATION', 'FLAGGED_DATA_MISMATCH'
+}
+
+export interface PsnChallengeRequest {
+  recordId: string;
+  psn: string;
+}
+
+export interface PsnChallengeResponse {
+  success: boolean;
   message: string;
 }
 
-// Interface for Agent onboarding
-export interface OnboardRequest {
-  ssid: string;
-  nin: string;
-  email: string;
+// --- Interface for Authenticated Re-Verification Flow ---
+
+export interface VerificationResult {
+  recordId: string;
+  newStatus: string;
+  message: string;
 }
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class VerificationService {
-  // Define a new base URL for the records API
-  private recordsApiUrl = 'http://localhost:8080/api/v1/records';
-  private AgentApiUrl = 'http://localhost:8080/api/v1/Agent';
+  private publicVerificationApiUrl = 'http://localhost:8080/api/v1/verification';
+  // Use the agent endpoint for authenticated re-verification
+  private agentApiUrl = 'http://localhost:8080/api/v1/agent';
 
   constructor(private http: HttpClient) { }
 
-  // --- Methods for Self-Service Users ---
+  // --- Methods for Public Self-Service Flow ---
 
-  /**
-   * Submits SSID and NIN to the new verification endpoint for a specific record.
-   * @param recordId The ID of the master list record to verify.
-   * @param data The verification data containing SSID and NIN.
-   */
-  verifyIdentity(recordId: string, data: VerificationRequest): Observable<VerificationResponse> {
-    // Calls the new, more RESTful endpoint: POST /api/v1/records/{recordId}/verify
-    return this.http.post<VerificationResponse>(`${this.recordsApiUrl}/${recordId}/verify`, data);
+  initiateVerification(data: VerifyIdentityRequest): Observable<InitiateVerificationResponse> {
+    return this.http.post<InitiateVerificationResponse>(`${this.publicVerificationApiUrl}/initiate`, data);
   }
 
-  // The confirmVerification method has been removed as it's obsolete in the new workflow.
-
-  // --- Methods for Agents (Unchanged) ---
-
-  /**
-   * Submits the full onboarding and verification package for an employee.
-   */
-  onboardUserByAgent(onboardRequest: OnboardRequest): Observable<any> {
-    return this.http.post<any>(`${this.AgentApiUrl}/onboard-user`, onboardRequest);
+  resolvePsnChallenge(data: PsnChallengeRequest): Observable<PsnChallengeResponse> {
+    return this.http.post<PsnChallengeResponse>(`${this.publicVerificationApiUrl}/challenge`, data);
   }
 
+  // --- Method for Authenticated Users (e.g., User Dashboard) ---
+
   /**
-   * Submits a liveness check for a given record.
+   * For an authenticated user to re-verify their identity against a known record.
+   * This calls the same kind of endpoint an Agent would use.
    */
-  performLivenessCheck(recordId: string): Observable<any> {
-    return this.http.post<any>(`${this.AgentApiUrl}/liveness-check`, { recordId });
+  reverifyByIdentity(recordId: string, data: VerifyIdentityRequest): Observable<VerificationResult> {
+    // This assumes the backend's AgentController has an endpoint like this.
+    // We will fix this on the backend after the frontend is corrected.
+    return this.http.post<VerificationResult>(`${this.agentApiUrl}/records/${recordId}/verify`, data);
   }
 }

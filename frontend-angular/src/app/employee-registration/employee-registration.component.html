@@ -8,10 +8,9 @@
       <mat-card-subtitle>Claim Your Secure Account</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
-      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <form [formGroup]="registerForm">
 
-        <!-- Step 1: Verification -->
-        <div class="form-step">
+        <div *ngIf="currentStep === 'initial'" class="form-step">
           <div class="step-header">
             <div class="step-number">1</div>
             <div class="step-title">
@@ -21,18 +20,33 @@
           </div>
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>SSID</mat-label>
-            <input matInput formControlName="ssid" placeholder="Enter your SSID" required>
+            <input matInput formControlName="ssid" required>
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>NIN</mat-label>
-            <input matInput formControlName="nin" placeholder="Enter your National Identification Number" required>
+            <input matInput formControlName="nin" required>
           </mat-form-field>
         </div>
 
-        <!-- Step 2: Credentials -->
-        <div class="form-step">
+        <div *ngIf="currentStep === 'challenge'" class="form-step">
+            <div class="step-header">
+              <div class="step-number">2</div>
+              <div class="step-title">
+                <h4>Security Confirmation</h4>
+                <p>Please provide your Employee Number (PSN) to continue.</p>
+              </div>
+            </div>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>PSN</mat-label>
+              <input matInput formControlName="psn" placeholder="Enter your PSN" required>
+            </mat-form-field>
+        </div>
+
+        <div *ngIf="currentStep === 'create'" class="form-step">
           <div class="step-header">
-            <div class="step-number">2</div>
+            <div class="step-number">
+                <mat-icon>lock</mat-icon>
+            </div>
             <div class="step-title">
               <h4>Create Your Credentials</h4>
               <p>Set up your email and password for login.</p>
@@ -40,28 +54,55 @@
           </div>
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Email</mat-label>
-            <input matInput formControlName="email" type="email" placeholder="Enter your email" required>
+            <input matInput formControlName="email" type="email" required>
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Password</mat-label>
-            <input matInput formControlName="password" type="password" placeholder="Create a password (min. 8 characters)" required>
+            <input matInput formControlName="password" type="password" required>
           </mat-form-field>
         </div>
         
-        <!-- Messages -->
         <div *ngIf="errorMessage || successMessage" class="message-container" [ngClass]="{'success': successMessage, 'error': errorMessage}">
           <mat-icon>{{ successMessage ? 'check_circle' : 'warning' }}</mat-icon>
           <span>{{ successMessage || errorMessage }}</span>
         </div>
 
-        <!-- Action Button -->
-        <button mat-flat-button class="primary-button" type="submit" [disabled]="registerForm.invalid || isLoading">
-          <div class="button-content">
-            <mat-spinner *ngIf="isLoading" diameter="24"></mat-spinner>
-            <span *ngIf="!isLoading">Verify & Create Account</span>
-          </div>
-        </button>
+        <div class="button-container">
+            <div *ngIf="currentStep === 'initial'">
+              <button mat-flat-button class="primary-button" (click)="onInitiateVerification()" [disabled]="registerForm.get('ssid')?.invalid || registerForm.get('nin')?.invalid || isLoading">
+                <div class="button-content">
+                  <mat-spinner *ngIf="isLoading" diameter="24"></mat-spinner>
+                  <span *ngIf="!isLoading">Next</span>
+                </div>
+              </button>
+            </div>
+    
+            <div *ngIf="currentStep === 'challenge'">
+                <button mat-flat-button class="primary-button" (click)="onChallenge()" [disabled]="registerForm.get('psn')?.invalid || isLoading">
+                  <div class="button-content">
+                    <mat-spinner *ngIf="isLoading" diameter="24"></mat-spinner>
+                    <span *ngIf="!isLoading">Confirm & Continue</span>
+                  </div>
+                </button>
+            </div>
+    
+            <div *ngIf="currentStep === 'create'">
+                <button mat-flat-button class="primary-button" (click)="onCreateAccount()" [disabled]="registerForm.get('email')?.invalid || registerForm.get('password')?.invalid || isLoading">
+                  <div class="button-content">
+                    <mat-spinner *ngIf="isLoading" diameter="24"></mat-spinner>
+                    <span *ngIf="!isLoading">Create Account</span>
+                  </div>
+                </button>
+            </div>
+        </div>
       </form>
+
+      <div *ngIf="!isLoggedIn" class="login-link-container">
+        <a mat-button routerLink="/login">
+            <mat-icon>arrow_back</mat-icon>
+            Back to Login
+        </a>
+      </div>
     </mat-card-content>
   </mat-card>
 </div>

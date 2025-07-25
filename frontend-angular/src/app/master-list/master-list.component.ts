@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -7,40 +8,50 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Subscription } from 'rxjs';
 import { MasterListRecord } from '../models/master-list-record.model';
 import { TenantService } from '../services/tenant.service';
+
+// Add new modules for filter controls
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatInputModule } from '@angular/material/input';
 
 @Component({
   selector: 'app-master-list',
   standalone: true,
   imports: [
     CommonModule,
+    ReactiveFormsModule, // Add ReactiveFormsModule
     MatCardModule,
     MatTableModule,
     MatPaginatorModule,
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatFormFieldModule, // Add Material Form Field Module
+    MatSelectModule,    // Add Material Select Module
+    MatInputModule      // Add Material Input Module
   ],
   templateUrl: './master-list.component.html',
   styleUrls: ['./master-list.component.scss']
 })
-export class MasterListComponent implements OnInit, OnDestroy { // Removed AfterViewInit
+export class MasterListComponent implements OnInit {
   
   public displayedColumns: string[] = [
     'fullName', 'department', 'ministry', 'gradeLevel', 'status'
   ];
   
   dataSource = new MatTableDataSource<MasterListRecord>();
-  public allRecords: MasterListRecord[] = [];
-  private filterSubscription!: Subscription;
   public isLoading = true;
 
-  // --- UPDATED PAGINATOR LOGIC ---
-  // Use a setter to ensure the paginator is assigned to the datasource
-  // as soon as it becomes available in the view, fixing timing issues with *ngIf.
+  // --- NEW PROPERTIES FOR FILTERING ---
+  public filterForm: FormGroup;
+  public ministryList: string[] = [];
+  public departmentList: string[] = [];
+  public gradeList: string[] = [];
+  public statusList: string[] = [];
+
   @ViewChild(MatPaginator) set paginator(paginator: MatPaginator) {
     if (paginator) {
       this.dataSource.paginator = paginator;
@@ -49,34 +60,41 @@ export class MasterListComponent implements OnInit, OnDestroy { // Removed After
 
   constructor(
     private tenantService: TenantService,
-    private snackBar: MatSnackBar
-  ) {}
+    private snackBar: MatSnackBar,
+    private fb: FormBuilder // Inject FormBuilder
+  ) {
+    // Initialize the filter form for multi-select
+    this.filterForm = this.fb.group({
+      ministry: [[]],
+      department: [[]],
+      gradeLevel: [[]],
+      status: [[]]
+    });
+  }
 
   ngOnInit(): void {
     this.loadRecords();
-    this.setupFilterSubscription();
+    this.setupFiltering();
   }
   
-  // The ngAfterViewInit hook is no longer needed and has been removed.
+  // --- UPDATED FILTERING LOGIC ---
 
-  ngOnDestroy(): void {
-    if (this.filterSubscription) {
-      this.filterSubscription.unsubscribe();
-    }
-  }
+  private setupFiltering(): void {
+    // Custom predicate for multi-select filtering
+    this.dataSource.filterPredicate = (data: MasterListRecord, filter: string): boolean => {
+      const searchTerms = JSON.parse(filter);
+      
+      const ministryMatch = searchTerms.ministry.length > 0 ? data.ministry && searchTerms.ministry.includes(data.ministry) : true;
+      const departmentMatch = searchTerms.department.length > 0 ? data.department && searchTerms.department.includes(data.department) : true;
+      const gradeLevelMatch = searchTerms.gradeLevel.length > 0 ? data.gradeLevel && searchTerms.gradeLevel.includes(data.gradeLevel) : true;
+      const statusMatch = searchTerms.status.length > 0 ? data.status && searchTerms.status.includes(data.status) : true;
+      
+      return ministryMatch && departmentMatch && gradeLevelMatch && statusMatch;
+    };
 
-  private setupFilterSubscription(): void {
-    this.filterSubscription = this.tenantService.recordsFilter$.subscribe({
-      next: (recordIds) => {
-        let filteredData: MasterListRecord[];
-        if (recordIds && recordIds.length > 0) {
-          filteredData = this.allRecords.filter(record => recordIds.includes(record.id));
-          this.showSnackBar(`Filtered to ${filteredData.length} records`, 'info');
-        } else {
-          filteredData = this.allRecords;
-        }
-        this.dataSource.data = filteredData;
-      }
+    // Subscribe to form changes to apply the filter
+    this.filterForm.valueChanges.subscribe(() => {
+      this.dataSource.filter = JSON.stringify(this.filterForm.value);
     });
   }
 
@@ -84,19 +102,28 @@ export class MasterListComponent implements OnInit, OnDestroy { // Removed After
     this.isLoading = true;
     this.tenantService.getRecordsForTenant().subscribe({
       next: (data) => {
-        this.allRecords = data;
         this.dataSource.data = data;
+        this.populateFilterLists(data); // Populate dropdowns
         this.showSnackBar(`Loaded ${data.length} records successfully`, 'success');
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading records:', error);
         this.showSnackBar('Failed to load records', 'error');
-        this.allRecords = [];
         this.dataSource.data = [];
         this.isLoading = false;
       }
     });
+  }
+
+  private populateFilterLists(records: MasterListRecord[]): void {
+    if (records.length > 0) {
+      this.ministryList = [...new Set(records.map(r => r.ministry).filter((v): v is string => !!v))].sort();
+      this.departmentList = [...new Set(records.map(r => r.department).filter((v): v is string => !!v))].sort();
+      this.gradeList = [...new Set(records.map(r => r.gradeLevel).filter((v): v is string => !!v))].sort();
+      // FIXED: Removed the invalid type guard for the 'status' property.
+      this.statusList = [...new Set(records.map(r => r.status).filter(v => !!v))].sort();
+    }
   }
 
   getInitials(fullName: string): string {
@@ -119,7 +146,7 @@ export class MasterListComponent implements OnInit, OnDestroy { // Removed After
   }
 
   clearFilters(): void {
-    this.dataSource.data = this.allRecords;
+    this.filterForm.reset({ ministry: [], department: [], gradeLevel: [], status: [] });
     this.showSnackBar('Filters cleared', 'info');
   }
   

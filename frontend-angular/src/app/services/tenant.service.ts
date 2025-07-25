@@ -44,6 +44,15 @@ export interface DashboardStats {
   totalAgentAccounts: number;
 }
 
+export interface ReviewerData {
+  id: string;
+  fullName: string;
+  email: string;
+  pendingValidationCount: number;
+  assignedMinistries: Ministry[];
+  assignedDepartments: Department[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -100,6 +109,25 @@ export class TenantService {
     );
   }
 
+  checkEmailExists(email: string): Observable<boolean> {
+    return this.http.post<boolean>(`${this.tenantAdminApiUrl}/users/check-email`, { email }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getReviewers(): Observable<ReviewerData[]> {
+    // CORRECTED: Changed the URL to match the existing backend endpoint
+    return this.http.get<ReviewerData[]>(`${this.v1ApiUrl}/users/reviewers`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  updateReviewerAssignments(reviewerId: string, assignments: { ministryIds: string[]; departmentIds: string[]; }): Observable<ReviewerData> {
+    return this.http.put<ReviewerData>(`${this.tenantAdminApiUrl}/reviewers/${reviewerId}/assignments`, assignments).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   getTenants(): Observable<Tenant[]> {
     return this.http.get<Tenant[]>(this.globalAdminApiUrl).pipe(
       tap(tenants => this.tenantsSubject.next(tenants)),
@@ -148,7 +176,6 @@ export class TenantService {
     );
   }
   
-  // --- RESTORED THIS METHOD ---
   getRecordsForTenant(): Observable<MasterListRecord[]> {
     return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records`).pipe(
       catchError(this.handleError)

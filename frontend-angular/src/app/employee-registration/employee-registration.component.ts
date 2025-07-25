@@ -1,9 +1,11 @@
-import { Component } from '@angular/core';
+// src/app/employee-registration/employee-registration.component.ts
+
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService, AuthRequest } from '../services/auth.service';
-import { VerificationService, VerificationRequest, VerificationResponse } from '../services/verification.service';
+import { VerificationService, VerifyIdentityRequest, PsnChallengeRequest } from '../services/verification.service';
 
 // Import Angular Material Modules
 import { MatCardModule } from '@angular/material/card';
@@ -17,75 +19,121 @@ import { MatIconModule } from '@angular/material/icon';
   selector: 'app-employee-registration',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule,
-    MatInputModule, MatButtonModule, MatProgressSpinnerModule, MatIconModule
+    CommonModule,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    MatIconModule,
+    RouterModule
   ],
   templateUrl: './employee-registration.component.html',
   styleUrls: ['./employee-registration.component.scss']
 })
-export class EmployeeRegistrationComponent {
+export class EmployeeRegistrationComponent implements OnInit {
   registerForm: FormGroup;
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  currentStep: 'initial' | 'challenge' | 'create' = 'initial';
+  isLoggedIn = false; // Property to track login state for the view
+  
   private recordId: string | null = null;
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private verificationService: VerificationService,
-    private router: Router,
-    private route: ActivatedRoute
+    private router: Router
   ) {
     this.registerForm = this.fb.group({
       ssid: ['', Validators.required],
       nin: ['', Validators.required],
+      psn: ['', Validators.required], // Added for the challenge step
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]]
     });
-
-    this.recordId = this.route.snapshot.queryParams['recordId'];
   }
 
-  onSubmit(): void {
-    if (this.registerForm.invalid) return;
-    if (!this.recordId) {
-        this.errorMessage = 'Error: No record identifier found. Please use the link provided in your email.';
-        return;
-    }
+  ngOnInit(): void {
+    // Check auth status when the component loads
+    this.isLoggedIn = this.authService.isLoggedIn();
+  }
+
+  // Step 1: Initiate the verification process
+  onInitiateVerification(): void {
+    if (this.registerForm.get('ssid')?.invalid || this.registerForm.get('nin')?.invalid) return;
+    
     this.isLoading = true;
     this.errorMessage = '';
-    this.successMessage = '';
-
-    const formValues = this.registerForm.value;
-    const verificationRequest: VerificationRequest = {
-      ssid: formValues.ssid,
-      nin: formValues.nin
+    
+    const request: VerifyIdentityRequest = {
+      ssid: this.registerForm.value.ssid,
+      nin: this.registerForm.value.nin
     };
 
-    this.verificationService.verifyIdentity(this.recordId, verificationRequest).subscribe({
-      next: (verificationResponse) => {
-        if (verificationResponse.newStatus === 'PENDING_GRADE_VALIDATION') {
-          this.createAccount(formValues.email, formValues.password);
-        } else {
-          this.isLoading = false;
-          this.errorMessage = 'Identity verified, but your record requires review. Please contact support.';
+    this.verificationService.initiateVerification(request).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        this.recordId = response.recordId; // Store the recordId for subsequent steps
+
+        if (response.nextStep === 'CHALLENGE_PSN') {
+          this.currentStep = 'challenge';
+        } else if (response.nextStep === 'CREATE_ACCOUNT') {
+          this.currentStep = 'create';
         }
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.message || 'Identity Verification Failed. Please check your SSID and NIN.';
+        this.errorMessage = err.message || 'Verification failed. Please check your SSID and NIN.';
       }
     });
   }
 
-  private createAccount(email: string, password: string): void {
+  // Step 2 (Conditional): Handle the PSN challenge
+  onChallenge(): void {
+    if (this.registerForm.get('psn')?.invalid || !this.recordId) return;
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    
+    const request: PsnChallengeRequest = {
+      recordId: this.recordId,
+      psn: this.registerForm.value.psn
+    };
+
+    this.verificationService.resolvePsnChallenge(request).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        if (response.success) {
+          this.currentStep = 'create'; // Move to the final step
+        } else {
+          this.errorMessage = response.message || 'An unexpected error occurred.';
+        }
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.errorMessage = err.message || 'The provided PSN is incorrect.';
+      }
+    });
+  }
+
+  // Step 3: Handle Account Creation
+  onCreateAccount(): void {
+    if (this.registerForm.get('email')?.invalid || this.registerForm.get('password')?.invalid) return;
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
     const accountData: AuthRequest = {
-        email,
-        password,
-        // The '!' tells TypeScript that we guarantee recordId is not null here.
+        email: this.registerForm.value.email,
+        password: this.registerForm.value.password,
         recordId: this.recordId! 
     };
+
     this.authService.createAccount(accountData).subscribe({
         next: () => {
             this.isLoading = false;

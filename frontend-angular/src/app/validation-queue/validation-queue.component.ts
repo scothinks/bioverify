@@ -1,5 +1,12 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { TenantService } from '../services/tenant.service';
+import { MasterListRecord } from '../models/master-list-record.model';
+import { RecordEditFormComponent } from '../record-edit-form/record-edit-form.component';
+import { RecordMismatchDialogComponent } from '../record-mismatch-dialog/record-mismatch-dialog.component';
+
+// Import necessary Angular Material modules
 import { MatCardModule } from '@angular/material/card';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -8,17 +15,17 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { TenantService } from '../services/tenant.service';
-import { MasterListRecord } from '../models/master-list-record.model';
-import { RecordEditFormComponent } from '../record-edit-form/record-edit-form.component';
-import { RecordMismatchDialogComponent } from '../record-mismatch-dialog/record-mismatch-dialog.component';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatInputModule } from '@angular/material/input';
 
 @Component({
   selector: 'app-validation-queue',
   standalone: true,
   imports: [
     CommonModule,
+    ReactiveFormsModule,
     MatCardModule,
     MatTableModule,
     MatIconModule,
@@ -27,7 +34,10 @@ import { MatTabsModule } from '@angular/material/tabs';
     MatDialogModule,
     MatSnackBarModule,
     MatTabsModule,
-    MatPaginatorModule
+    MatPaginatorModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatInputModule
   ],
   templateUrl: './validation-queue.component.html',
   styleUrl: './validation-queue.component.scss'
@@ -37,22 +47,22 @@ export class ValidationQueueComponent implements OnInit {
   public pendingRecords = new MatTableDataSource<MasterListRecord>();
   public mismatchedRecords = new MatTableDataSource<MasterListRecord>();
   
+  // UPDATED: 'salaryGradeId' has been removed from this array
   public displayedColumns: string[] = [
     'fullName', 
     'department', 
     'ministry', 
     'gradeLevel',
-    'salaryGradeId',
     'salaryStructure', 
     'actions'
   ];
   public selectedTabIndex = 0;
 
-  // 1. REMOVE the old @ViewChild properties
-  // @ViewChild('pendingPaginator') pendingPaginator!: MatPaginator;
-  // @ViewChild('mismatchedPaginator') mismatchedPaginator!: MatPaginator;
+  public filterForm: FormGroup;
+  public ministryList: string[] = [];
+  public departmentList: string[] = [];
+  public gradeList: string[] = [];
 
-  // 2. REPLACE with these setters. This is the key change.
   @ViewChild('pendingPaginator') set pendingPaginator(paginator: MatPaginator) {
     if (paginator) {
       this.pendingRecords.paginator = paginator;
@@ -68,37 +78,77 @@ export class ValidationQueueComponent implements OnInit {
   constructor(
     private tenantService: TenantService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
-  ) {}
+    private snackBar: MatSnackBar,
+    private fb: FormBuilder
+  ) {
+    this.filterForm = this.fb.group({
+      ministry: [[]],
+      department: [[]],
+      gradeLevel: [[]]
+    });
+  }
 
   ngOnInit(): void {
     this.loadDataForCurrentTab();
+    this.setupFiltering();
   }
 
   loadDataForCurrentTab(): void {
-    if (this.selectedTabIndex === 0) {
-      this.tenantService.getPendingApprovalQueue().subscribe({
-        next: (data) => {
-          // 3. Assign data. The setter will handle the paginator automatically.
-          this.pendingRecords.data = data;
-        },
-        error: (error) => this.showSnackBar('Failed to load pending queue', 'error')
-      });
-    } else {
-      this.tenantService.getMismatchedQueue().subscribe({
-        next: (data) => {
-          // 4. Assign data. The setter will handle the paginator automatically.
-          this.mismatchedRecords.data = data;
-        },
-        error: (error) => this.showSnackBar('Failed to load mismatched queue', 'error')
-      });
-    }
+    const serviceCall = this.selectedTabIndex === 0 
+      ? this.tenantService.getPendingApprovalQueue() 
+      : this.tenantService.getMismatchedQueue();
+
+    serviceCall.subscribe({
+      next: (data) => {
+        const dataSource = this.selectedTabIndex === 0 ? this.pendingRecords : this.mismatchedRecords;
+        dataSource.data = data;
+        this.populateFilterLists(data);
+        this.applyFilter();
+      },
+      error: (error) => this.showSnackBar(`Failed to load queue`, 'error')
+    });
+  }
+
+  private setupFiltering(): void {
+    const customFilterPredicate = (data: MasterListRecord, filter: string): boolean => {
+      const searchTerms = JSON.parse(filter);
+      
+      const ministryMatch = searchTerms.ministry.length > 0 ? data.ministry && searchTerms.ministry.includes(data.ministry) : true;
+      const departmentMatch = searchTerms.department.length > 0 ? data.department && searchTerms.department.includes(data.department) : true;
+      const gradeLevelMatch = searchTerms.gradeLevel.length > 0 ? data.gradeLevel && searchTerms.gradeLevel.includes(data.gradeLevel) : true;
+      
+      return ministryMatch && departmentMatch && gradeLevelMatch;
+    };
+
+    this.pendingRecords.filterPredicate = customFilterPredicate;
+    this.mismatchedRecords.filterPredicate = customFilterPredicate;
+
+    this.filterForm.valueChanges.subscribe(() => {
+      this.applyFilter();
+    });
   }
   
-  // ... All other methods remain the same ...
+  private applyFilter(): void {
+    const filterValue = JSON.stringify(this.filterForm.value);
+    const dataSource = this.selectedTabIndex === 0 ? this.pendingRecords : this.mismatchedRecords;
+    dataSource.filter = filterValue;
+  }
+
+  private populateFilterLists(records: MasterListRecord[]): void {
+    if (records.length > 0) {
+      this.ministryList = [...new Set(records.map(r => r.ministry).filter((v): v is string => !!v))].sort();
+      this.departmentList = [...new Set(records.map(r => r.department).filter((v): v is string => !!v))].sort();
+      this.gradeList = [...new Set(records.map(r => r.gradeLevel).filter((v): v is string => !!v))].sort();
+    }
+  }
+
+  public clearFilters(): void {
+    this.filterForm.reset({ ministry: [], department: [], gradeLevel: [] });
+  }
 
   onTabChange(index: number): void {
     this.selectedTabIndex = index;
+    this.clearFilters();
     this.loadDataForCurrentTab();
   }
 

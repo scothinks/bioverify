@@ -74,6 +74,22 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  .suffix-buttons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  // NEW: Styles for the conditional reviewer fields
+  .reviewer-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 16px;
+    margin-top: 8px;
+    border-top: 1px solid #e2e8f0; // Visually separates the section
+  }
 }
 
 // Primary button style from global enhancements

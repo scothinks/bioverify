@@ -24,6 +24,13 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
     Optional<MasterListRecord> findByUserId(UUID userId);
 
     Optional<MasterListRecord> findByIdAndTenantId(UUID id, UUID tenantId);
+    
+    // NEW: Add query to fetch record with its department and ministry
+    @Query("SELECT r FROM MasterListRecord r " +
+           "LEFT JOIN FETCH r.department " +
+           "LEFT JOIN FETCH r.ministry " +
+           "WHERE r.id = :id")
+    Optional<MasterListRecord> findByIdWithDetails(@Param("id") UUID id);
 
     Optional<MasterListRecord> findByPsnHashAndTenantId(String psnHash, UUID tenantId);
 

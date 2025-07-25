@@ -27,7 +27,10 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -179,9 +182,9 @@ public class BulkVerificationService {
                     List<SotProfileDto> verifiedProfiles = new ArrayList<>();
                     try (Reader reader = new InputStreamReader(new ByteArrayInputStream(decryptedCsv.getBytes(StandardCharsets.UTF_8)))) {
                         CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT
-                            .withFirstRecordAsHeader()
-                            .withIgnoreHeaderCase()
-                            .withTrim());
+                                .withFirstRecordAsHeader()
+                                .withIgnoreHeaderCase()
+                                .withTrim());
 
                         for (CSVRecord csvRecord : csvParser) {
                             SotProfileDto profile = new SotProfileDto();
@@ -206,42 +209,43 @@ public class BulkVerificationService {
                     if (verifiedProfiles.isEmpty()) {
                         logger.warn("CSV file from ZIP archive was empty or contained no records.");
                     }
-                    
-                    // --- UPDATED LOGIC TO PROCESS SUCCESSES AND FAILURES ---
 
-                    // 1. Create a map for efficient lookups
-                    Map<String, MasterListRecord> recordsByPsn = recordsToVerify.stream().collect(Collectors.toMap(MasterListRecord::getPsn, Function.identity()));
+                    Map<String, MasterListRecord> recordsByPsn = recordsToVerify.stream()
+                            .collect(Collectors.toMap(MasterListRecord::getPsn, Function.identity()));
 
-                    // 2. Update records that were successfully verified
+                    List<MasterListRecord> successfullyVerifiedRecords = new ArrayList<>();
+
                     for (SotProfileDto profile : verifiedProfiles) {
                         MasterListRecord recordToUpdate = recordsByPsn.get(profile.getPsn());
+
                         if (recordToUpdate != null) {
                             updateRecordWithSotData(recordToUpdate, profile);
+                            successfullyVerifiedRecords.add(recordToUpdate);
                         }
                     }
 
-                    // 3. Identify records that were NOT found in the verified profiles
-                    Set<String> successfulPsns = verifiedProfiles.stream()
-                        .map(SotProfileDto::getPsn)
-                        .collect(Collectors.toSet());
+                    Set<String> successfulPsns = successfullyVerifiedRecords.stream()
+                            .map(MasterListRecord::getPsn)
+                            .collect(Collectors.toSet());
 
-                    List<MasterListRecord> failedRecordsList = recordsToVerify.stream()
-                        .filter(record -> !successfulPsns.contains(record.getPsn()))
-                        .collect(Collectors.toList());
+                    List<MasterListRecord> notFoundRecords = recordsToVerify.stream()
+                            .filter(record -> !successfulPsns.contains(record.getPsn()))
+                            .collect(Collectors.toList());
 
-                    // 4. Update the status for all "not found" records
-                    for (MasterListRecord failedRecord : failedRecordsList) {
-                        failedRecord.setStatus(RecordStatus.FLAGGED_NOT_IN_SOT);
+                    for (MasterListRecord notFoundRecord : notFoundRecords) {
+                        notFoundRecord.setStatus(RecordStatus.FLAGGED_NOT_IN_SOT);
                     }
 
-                    // 5. Save all modified records (both updated and flagged) in a single batch
                     recordRepository.saveAll(recordsToVerify);
-                    logger.info("Updated {} successfully verified records and flagged {} 'not found' records.", verifiedProfiles.size(), failedRecordsList.size());
 
-                    // 6. Update the final job statistics based on the actual outcome
+                    int verifiedCount = successfullyVerifiedRecords.size();
+                    int notFoundCount = notFoundRecords.size();
+
+                    logger.info("Updated {} successfully verified records and flagged {} 'not found' records.", verifiedCount, notFoundCount);
+
                     job.setProcessedRecords(recordsToVerify.size());
-                    job.setSuccessfullyVerifiedRecords(verifiedProfiles.size());
-                    job.setFailedRecords(failedRecordsList.size());
+                    job.setSuccessfullyVerifiedRecords(verifiedCount);
+                    job.setFailedRecords(notFoundCount);
 
                     return;
 
@@ -269,6 +273,11 @@ public class BulkVerificationService {
         String fullName = (profile.getFirstName() + " " + profile.getMiddleName() + " " + profile.getSurname()).replace("  ", " ").trim();
         record.setSsid(profile.getSsid());
         record.setNin(profile.getNin());
+
+        // NEW: Hash the verified SSID and NIN and save them to the record
+        record.setSsidHash(toSha256(profile.getSsid()));
+        record.setNinHash(toSha256(profile.getNin()));
+
         record.setFullName(fullName);
         record.setBvn(profile.getBvn());
         record.setGradeLevel(profile.getGradeLevel());
@@ -281,7 +290,7 @@ public class BulkVerificationService {
             if (firstAppointmentStr != null && !firstAppointmentStr.isBlank()) {
                 long firstAppointmentMillis = Long.parseLong(firstAppointmentStr);
                 record.setDateOfFirstAppointment(
-                    Instant.ofEpochMilli(firstAppointmentMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+                        Instant.ofEpochMilli(firstAppointmentMillis).atZone(ZoneId.systemDefault()).toLocalDate()
                 );
             }
 
@@ -289,7 +298,7 @@ public class BulkVerificationService {
             if (confirmationStr != null && !confirmationStr.isBlank()) {
                 long confirmationMillis = Long.parseLong(confirmationStr);
                 record.setDateOfConfirmation(
-                    Instant.ofEpochMilli(confirmationMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+                        Instant.ofEpochMilli(confirmationMillis).atZone(ZoneId.systemDefault()).toLocalDate()
                 );
             }
         } catch (NumberFormatException e) {
@@ -308,5 +317,22 @@ public class BulkVerificationService {
                     newDept.setTenant(tenant);
                     return departmentRepository.save(newDept);
                 });
+    }
+
+    // NEW: Add the hashing utility method to this service
+    private String toSha256(String input) {
+        if (input == null) return null;
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
+            BigInteger number = new BigInteger(1, hash);
+            StringBuilder hexString = new StringBuilder(number.toString(16));
+            while (hexString.length() < 64) {
+                hexString.insert(0, '0');
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Could not find SHA-256 algorithm", e);
+        }
     }
 }

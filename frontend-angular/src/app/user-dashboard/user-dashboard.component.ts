@@ -1,7 +1,9 @@
+// src/app/user-dashboard/user-dashboard.component.ts
+
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { VerificationService, VerificationRequest, VerificationResponse } from '../services/verification.service';
+import { VerificationService, VerifyIdentityRequest, VerificationResult } from '../services/verification.service';
 import { AuthService } from '../services/auth.service';
 import { MasterListRecord } from '../models/master-list-record.model';
 
@@ -45,13 +47,12 @@ export class UserDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.isLoading = true;
-    // Fetch the full record for the currently logged-in user.
     this.authService.getCurrentUserRecord().subscribe({
       next: (record) => {
         this.userRecord = record;
         this.isLoading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         this.statusMessage = 'Could not load your record. Please try again later.';
         this.isLoading = false;
       }
@@ -64,19 +65,18 @@ export class UserDashboardComponent implements OnInit {
     this.isLoading = true;
     this.statusMessage = '';
 
-    const request: VerificationRequest = this.reverifyForm.value;
+    const request: VerifyIdentityRequest = this.reverifyForm.value;
 
-    this.verificationService.verifyIdentity(this.userRecord.id, request).subscribe({
-      next: (response: VerificationResponse) => {
+    this.verificationService.reverifyByIdentity(this.userRecord.id, request).subscribe({
+      next: (response: VerificationResult) => {
         this.isLoading = false;
-        // Update the status locally for immediate feedback
         if (this.userRecord) {
           this.userRecord.status = response.newStatus as RecordStatus;
         }
         this.statusMessage = 'Re-verification successful! Your record is now pending final review.';
-        this.reverifyForm.disable(); // Disable form after successful submission
+        this.reverifyForm.disable();
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isLoading = false;
         this.statusMessage = 'Re-verification failed. Please check your details and try again.';
       }

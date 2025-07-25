@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './login/login.component';
 import { EmployeeRegistrationComponent } from './employee-registration/employee-registration.component';
-import { VerificationComponent } from './verification/verification.component';
+// import { VerificationComponent } from './verification/verification.component'; // REMOVED: No longer needed
 import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
 
@@ -10,6 +10,7 @@ import { GlobalAdminDashboardComponent } from './dashboards/global-admin-dashboa
 import { TenantAdminDashboardComponent } from './dashboards/tenant-admin-dashboard/tenant-admin-dashboard.component';
 import { AgentDashboardComponent } from './dashboards/agent-dashboard/agent-dashboard.component';
 import { SelfServiceUserDashboardComponent } from './dashboards/self-service-user-dashboard/self-service-user-dashboard.component';
+
 
 // Import the child components that will now be routed as screens
 import { TenantListComponent } from './tenant-list/tenant-list.component';
@@ -21,13 +22,14 @@ import { UserDashboardComponent } from './user-dashboard/user-dashboard.componen
 import { ValidationQueueComponent } from './validation-queue/validation-queue.component';
 import { PayrollExportComponent } from './payroll-export/payroll-export.component';
 import { NotFoundRecordsComponent } from './not-found-records/not-found-records.component';
-import { TenantOverviewComponent } from './tenant-overview/tenant-overview.component'; 
+import { TenantOverviewComponent } from './tenant-overview/tenant-overview.component';
+import { ReviewerDashboardComponent } from './dashboards/reviewer-dashboard/reviewer-dashboard.component';
 
 export const routes: Routes = [
   // Public routes
   { path: 'login', component: LoginComponent },
   { path: 'register-employee', component: EmployeeRegistrationComponent },
-  { path: 'verification', component: VerificationComponent },
+  // { path: 'verification', component: VerificationComponent }, // REMOVED: This route is obsolete
 
   // Main dashboard parent route, protected by the auth guard
   {
@@ -50,7 +52,7 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { expectedRole: 'TENANT_ADMIN' },
         children: [
-          { path: 'overview', component: TenantOverviewComponent }, // 2. Add the new overview route
+          { path: 'overview', component: TenantOverviewComponent },
           { path: 'users', component: UserListComponent },
           { path: 'uploads', component: FileUploadComponent },
           { path: 'records', component: MasterListComponent },
@@ -58,7 +60,7 @@ export const routes: Routes = [
           { path: 'validation', component: ValidationQueueComponent },
           { path: 'export', component: PayrollExportComponent },
           { path: 'not-found', component: NotFoundRecordsComponent },
-          { path: '', redirectTo: 'overview', pathMatch: 'full' } // 3. Set overview as the default
+          { path: '', redirectTo: 'overview', pathMatch: 'full' }
         ]
       },
       {
@@ -67,8 +69,20 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { expectedRole: 'AGENT' },
         children: [
-          { path: 'tasks', component: AgentDashboardComponent },
-          { path: '', redirectTo: 'tasks', pathMatch: 'full' }
+          // This can be expanded with agent-specific tasks
+          { path: 'verify', component: EmployeeRegistrationComponent }, // Agents can use the same component
+          { path: '', redirectTo: 'verify', pathMatch: 'full' }
+        ]
+      },
+      // NEW: Add dashboard for the Reviewer role
+      {
+        path: 'reviewer',
+        component: ReviewerDashboardComponent, // This is a new shell component
+        canActivate: [roleGuard],
+        data: { expectedRole: 'REVIEWER' },
+        children: [
+          { path: 'queue', component: ValidationQueueComponent },
+          { path: '', redirectTo: 'queue', pathMatch: 'full' }
         ]
       },
       {

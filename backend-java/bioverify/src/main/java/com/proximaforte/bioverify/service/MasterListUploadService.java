@@ -33,27 +33,31 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Map.entry; // Import for Map.entry()
+
 @Service
 @RequiredArgsConstructor
 public class MasterListUploadService {
 
     private final MasterListRecordRepository recordRepository;
     private final TenantRepository tenantRepository;
-    private final MinistryRepository ministryRepository; // <-- ADDED
-    private final DepartmentRepository departmentRepository; // <-- ADDED
+    private final MinistryRepository ministryRepository;
+    private final DepartmentRepository departmentRepository;
     private final ObjectMapper objectMapper;
 
-    // --- UPDATED HEADER ALIASES ---
-    private static final Map<String, List<String>> HEADER_ALIASES = Map.of(
-        "psn", List.of("psn", "publicservicenumber"),
-        "fullName", List.of("fullname", "full name", "employeename"),
-        "surname", List.of("surname"),
-        "firstName", List.of("firstname", "first name"),
-        "middleName", List.of("middlename", "middle name"),
-        "department", List.of("department", "businessunit", "mda", "agency"),
-        "ministry", List.of("ministry"),
-        "gradeLevel", List.of("gradelevel", "grade"),
-        "salaryStructure", List.of("salarystructure", "salary structure")
+    // CORRECTED: Use Map.ofEntries() for more than 10 entries
+    private static final Map<String, List<String>> HEADER_ALIASES = Map.ofEntries(
+        entry("psn", List.of("psn", "publicservicenumber")),
+        entry("ssid", List.of("ssid", "statestaffid")),
+        entry("nin", List.of("nin", "nationalidnumber")),
+        entry("fullName", List.of("fullname", "full name", "employeename")),
+        entry("surname", List.of("surname")),
+        entry("firstName", List.of("firstname", "first name")),
+        entry("middleName", List.of("middlename", "middle name")),
+        entry("department", List.of("department", "businessunit", "mda", "agency")),
+        entry("ministry", List.of("ministry")),
+        entry("gradeLevel", List.of("gradelevel", "grade")),
+        entry("salaryStructure", List.of("salarystructure", "salary structure"))
     );
 
     @Transactional
@@ -140,6 +144,9 @@ public class MasterListUploadService {
                 continue;
             }
 
+            String ssid = discoveredHeaders.containsKey("ssid") ? rowMap.get(discoveredHeaders.get("ssid")) : null;
+            String nin = discoveredHeaders.containsKey("nin") ? rowMap.get(discoveredHeaders.get("nin")) : null;
+
             String psnHash = toSha256(psn);
             Optional<MasterListRecord> existingRecordOpt = recordRepository.findByPsnHashAndTenantId(psnHash, tenant.getId());
             
@@ -152,6 +159,16 @@ public class MasterListUploadService {
                 updatedRecordsCount++;
                 MasterListRecord existingRecord = existingRecordOpt.get();
                 existingRecord.setOriginalUploadData(originalUploadDataJson);
+                
+                if (ssid != null && !ssid.isBlank()) {
+                    existingRecord.setSsid(ssid);
+                    existingRecord.setSsidHash(toSha256(ssid));
+                }
+                if (nin != null && !nin.isBlank()) {
+                    existingRecord.setNin(nin);
+                    existingRecord.setNinHash(toSha256(nin));
+                }
+
                 boolean isCriticalChange = !Objects.equals(existingRecord.getGradeLevel(), gradeLevel);
                 if (isCriticalChange && existingRecord.getStatus() == RecordStatus.VALIDATED) {
                     existingRecord.setStatus(RecordStatus.AWAITING_REVALIDATION);
@@ -166,6 +183,15 @@ public class MasterListUploadService {
                 
                 newRecord.setPsn(psn);
                 newRecord.setPsnHash(psnHash);
+
+                if (ssid != null && !ssid.isBlank()) {
+                    newRecord.setSsid(ssid);
+                    newRecord.setSsidHash(toSha256(ssid));
+                }
+                if (nin != null && !nin.isBlank()) {
+                    newRecord.setNin(nin);
+                    newRecord.setNinHash(toSha256(nin));
+                }
                 
                 String fullName = discoveredHeaders.containsKey("fullName") 
                     ? rowMap.get(discoveredHeaders.get("fullName"))
@@ -173,9 +199,6 @@ public class MasterListUploadService {
                             .filter(Objects::nonNull).map(String::trim).collect(Collectors.joining(" "));
 
                 newRecord.setFullName(fullName);
-                
-                // --- UPDATED LOGIC ---
-                // Find or create Department and Ministry entities from the string names
                 newRecord.setDepartment(findOrCreateDepartment(departmentName, tenant));
                 newRecord.setMinistry(findOrCreateMinistry(ministryName, tenant));
                 
@@ -232,10 +255,8 @@ public class MasterListUploadService {
         }
     }
 
-    // --- NEW HELPER METHODS ---
     private Department findOrCreateDepartment(String name, Tenant tenant) {
         if (name == null || name.isBlank()) return null;
-        // Find by name and tenant to ensure uniqueness within a tenant
         return departmentRepository.findByNameAndTenantId(name, tenant.getId())
                 .orElseGet(() -> {
                     Department newDept = new Department();
@@ -247,7 +268,6 @@ public class MasterListUploadService {
 
     private Ministry findOrCreateMinistry(String name, Tenant tenant) {
         if (name == null || name.isBlank()) return null;
-        // Find by name and tenant to ensure uniqueness within a tenant
         return ministryRepository.findByNameAndTenantId(name, tenant.getId())
                 .orElseGet(() -> {
                     Ministry newMin = new Ministry();

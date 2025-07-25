@@ -23,11 +23,23 @@
           <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
             <input matInput formControlName="email" placeholder="jane.doe@example.com">
+            <mat-spinner *ngIf="userForm.get('email')?.pending" matSuffix diameter="20"></mat-spinner>
+            <mat-error *ngIf="userForm.get('email')?.hasError('required')">Email is required</mat-error>
+            <mat-error *ngIf="userForm.get('email')?.hasError('email')">Please enter a valid email</mat-error>
+            <mat-error *ngIf="userForm.get('email')?.hasError('emailExists')">This email is already taken</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Password</mat-label>
-            <input matInput formControlName="password" type="password" placeholder="Enter initial password">
+            <input matInput formControlName="password" [type]="hidePassword ? 'password' : 'text'" placeholder="Enter initial password">
+            <div matSuffix class="suffix-buttons">
+              <button mat-icon-button type="button" (click)="generatePassword()" matTooltip="Generate Password">
+                <mat-icon>vpn_key</mat-icon>
+              </button>
+              <button mat-icon-button type="button" (click)="hidePassword = !hidePassword" [matTooltip]="hidePassword ? 'Show password' : 'Hide password'">
+                <mat-icon>{{hidePassword ? 'visibility' : 'visibility_off'}}</mat-icon>
+              </button>
+            </div>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -150,4 +162,9 @@
     </mat-card>
 
   </div>
+  
+  <div class="reviewer-management-section">
+    <app-reviewer-management></app-reviewer-management>
+  </div>
+
 </div>

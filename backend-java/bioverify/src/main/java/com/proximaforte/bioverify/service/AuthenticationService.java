@@ -27,8 +27,8 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
     private final MasterListRecordRepository recordRepository;
-    private final MinistryRepository ministryRepository; // <-- ADDED
-    private final DepartmentRepository departmentRepository; // <-- ADDED
+    private final MinistryRepository ministryRepository;
+    private final DepartmentRepository departmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -45,8 +45,6 @@ public class AuthenticationService {
         user.setRole(request.getRole());
         user.setTenant(tenant);
 
-        // --- NEW LOGIC FOR ASSIGNING REVIEWERS ---
-        // If the new user is a reviewer and assignments are provided, link them.
         if (request.getRole() == Role.REVIEWER) {
             if (request.getAssignedMinistryIds() != null && !request.getAssignedMinistryIds().isEmpty()) {
                 Set<Ministry> ministries = new HashSet<>(ministryRepository.findAllById(request.getAssignedMinistryIds()));
@@ -66,7 +64,8 @@ public class AuthenticationService {
         MasterListRecord record = recordRepository.findById(request.getRecordId())
                 .orElseThrow(() -> new RecordNotFoundException("Cannot create account: Master record not found."));
 
-        if (record.getStatus() != RecordStatus.PENDING_GRADE_VALIDATION) {
+        // CORRECTED: Allow account creation for both pending and fully validated records
+        if (record.getStatus() != RecordStatus.PENDING_GRADE_VALIDATION && record.getStatus() != RecordStatus.VALIDATED) {
             throw new IllegalStateException("Cannot create account: Record is not in a valid state for account creation.");
         }
         if (record.getUser() != null) {

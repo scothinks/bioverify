@@ -1,9 +1,10 @@
-import { Component, OnInit, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TenantService } from '../services/tenant.service';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatCardModule } from '@angular/material/card';
+// REMOVED: Unused imports for async validation
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -16,6 +17,8 @@ import { Ministry } from '../models/ministry.model';
 import { Department } from '../models/department.model';
 import { Observable, Subscription } from 'rxjs';
 import { startWith } from 'rxjs/operators';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { ReviewerManagementComponent } from '../reviewer-management/reviewer-management.component';
 
 @Component({
   selector: 'app-user-list',
@@ -31,12 +34,14 @@ import { startWith } from 'rxjs/operators';
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+    ReviewerManagementComponent
   ],
   templateUrl: './user-list.component.html',
   styleUrls: ['./user-list.component.scss']
 })
-export class UserListComponent implements OnInit, AfterViewInit, OnDestroy {
+export class UserListComponent implements OnInit, OnDestroy {
 
   displayedColumns: string[] = ['fullName', 'email', 'role', 'actions'];
   dataSource = new MatTableDataSource<User>();
@@ -45,12 +50,18 @@ export class UserListComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading = true;
   showReviewerFields = false;
   
+  public hidePassword = true;
+  
   ministries$: Observable<Ministry[]>;
   departments$: Observable<Department[]>;
 
   private roleChangesSub!: Subscription;
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatPaginator) set paginator(paginator: MatPaginator) {
+    if (paginator) {
+      this.dataSource.paginator = paginator;
+    }
+  }
 
   constructor(
     private tenantService: TenantService,
@@ -58,6 +69,7 @@ export class UserListComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {
     this.userForm = this.fb.group({
       fullName: ['', Validators.required],
+      // REMOVED: The async validator (third argument) has been removed.
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]],
       role: ['', Validators.required],
@@ -85,10 +97,6 @@ export class UserListComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  ngAfterViewInit() {
-    this.dataSource.paginator = this.paginator;
-  }
-
   loadUsers(): void {
     this.isLoading = true;
     this.tenantService.getUsers().subscribe({
@@ -103,12 +111,24 @@ export class UserListComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  // REMOVED: The validateEmailNotTaken method is no longer needed.
+
+  generatePassword(): void {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:?><,./-=";
+    let password = "";
+    for (let i = 0, n = charset.length; i < length; ++i) {
+      password += charset.charAt(Math.floor(Math.random() * n));
+    }
+    this.userForm.get('password')?.setValue(password);
+  }
+
   onSubmit(): void {
     if (!this.userForm.valid) return;
 
     this.tenantService.createUser(this.userForm.value).subscribe({
         next: () => {
-            this.loadUsers(); // Refresh user list
+            this.loadUsers();
             this.userForm.reset();
             Object.keys(this.userForm.controls).forEach(key => {
                 this.userForm.get(key)?.setErrors(null);
@@ -118,7 +138,6 @@ export class UserListComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         error: (err) => {
             console.error("Failed to create user", err);
-            // Optionally show an error message to the user
         }
     });
   }
