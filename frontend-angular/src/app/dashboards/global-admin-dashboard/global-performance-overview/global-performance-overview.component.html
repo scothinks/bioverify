@@ -1,0 +1,97 @@
+<div class="overview-container">
+  <h2 class="section-title">System Health & Performance</h2>
+  <mat-grid-list cols="4" rowHeight="140px" gutterSize="24px">
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-icon-container green">
+            <mat-icon>cloud_done</mat-icon>
+          </div>
+          <mat-card-title class="stat-value">{{ systemStatus }}</mat-card-title>
+          <mat-card-subtitle class="stat-label">Overall Status</mat-card-subtitle>
+        </mat-card-header>
+      </mat-card>
+    </mat-grid-tile>
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-icon-container">
+            <mat-icon>timer</mat-icon>
+          </div>
+          <mat-card-title class="stat-value">{{ apiUptime }}</mat-card-title>
+          <mat-card-subtitle class="stat-label">API Uptime (7 Days)</mat-card-subtitle>
+        </mat-card-header>
+      </mat-card>
+    </mat-grid-tile>
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-icon-container">
+            <mat-icon>speed</mat-icon>
+          </div>
+          <mat-card-title class="stat-value">{{ avgResponseTime }}</mat-card-title>
+          <mat-card-subtitle class="stat-label">Avg. Response Time</mat-card-subtitle>
+        </mat-card-header>
+      </mat-card>
+    </mat-grid-tile>
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-icon-container red">
+            <mat-icon>error_outline</mat-icon>
+          </div>
+          <mat-card-title class="stat-value">{{ errorRate }}</mat-card-title>
+          <mat-card-subtitle class="stat-label">Error Rate (24h)</mat-card-subtitle>
+        </mat-card-header>
+      </mat-card>
+    </mat-grid-tile>
+  </mat-grid-list>
+
+  <h2 class="section-title">Platform Metrics (All Tenants)</h2>
+  <mat-grid-list cols="4" rowHeight="140px" gutterSize="24px">
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-icon-container">
+            <mat-icon>corporate_fare</mat-icon>
+          </div>
+          <mat-card-title class="stat-value">{{ activeTenants }}</mat-card-title>
+          <mat-card-subtitle class="stat-label">Active Tenants</mat-card-subtitle>
+        </mat-card-header>
+      </mat-card>
+    </mat-grid-tile>
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-icon-container">
+            <mat-icon>verified_user</mat-icon>
+          </div>
+          <mat-card-title class="stat-value">{{ totalVerifications }}</mat-card-title>
+          <mat-card-subtitle class="stat-label">Verifications (30 Days)</mat-card-subtitle>
+        </mat-card-header>
+      </mat-card>
+    </mat-grid-tile>
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-icon-container">
+            <mat-icon>group</mat-icon>
+          </div>
+          <mat-card-title class="stat-value">{{ totalUsers }}</mat-card-title>
+          <mat-card-subtitle class="stat-label">Total Registered Users</mat-card-subtitle>
+        </mat-card-header>
+      </mat-card>
+    </mat-grid-tile>
+    <mat-grid-tile>
+      <mat-card class="stat-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-icon-container">
+            <mat-icon>subscriptions</mat-icon>
+          </div>
+          <mat-card-title class="stat-value">{{ subscriptionStatus }}</mat-card-title>
+          <mat-card-subtitle class="stat-label">Subscription Status</mat-card-subtitle>
+        </mat-card-header>
+      </mat-card>
+    </mat-grid-tile>
+  </mat-grid-list>
+</div>
