@@ -40,30 +40,36 @@ export interface VerificationResult {
 })
 export class VerificationService {
   private publicVerificationApiUrl = 'http://localhost:8080/api/v1/verification';
-  // Use the agent endpoint for authenticated re-verification
   private agentApiUrl = 'http://localhost:8080/api/v1/agent';
 
   constructor(private http: HttpClient) { }
 
   // --- Methods for Public Self-Service Flow ---
 
-  initiateVerification(data: VerifyIdentityRequest): Observable<InitiateVerificationResponse> {
+  initiatePublicVerification(data: VerifyIdentityRequest): Observable<InitiateVerificationResponse> {
     return this.http.post<InitiateVerificationResponse>(`${this.publicVerificationApiUrl}/initiate`, data);
   }
 
-  resolvePsnChallenge(data: PsnChallengeRequest): Observable<PsnChallengeResponse> {
+  resolvePublicPsnChallenge(data: PsnChallengeRequest): Observable<PsnChallengeResponse> {
     return this.http.post<PsnChallengeResponse>(`${this.publicVerificationApiUrl}/challenge`, data);
   }
 
+  // --- NEW: Methods for Authenticated Agent Flow ---
+
+  initiateAgentVerification(data: VerifyIdentityRequest): Observable<InitiateVerificationResponse> {
+    // Calls the secure agent endpoint
+    return this.http.post<InitiateVerificationResponse>(`${this.agentApiUrl}/verify`, data);
+  }
+
+  resolveAgentPsnChallenge(data: PsnChallengeRequest): Observable<PsnChallengeResponse> {
+    // Calls the secure agent endpoint
+    return this.http.post<PsnChallengeResponse>(`${this.agentApiUrl}/challenge`, data);
+  }
+
+
   // --- Method for Authenticated Users (e.g., User Dashboard) ---
 
-  /**
-   * For an authenticated user to re-verify their identity against a known record.
-   * This calls the same kind of endpoint an Agent would use.
-   */
   reverifyByIdentity(recordId: string, data: VerifyIdentityRequest): Observable<VerificationResult> {
-    // This assumes the backend's AgentController has an endpoint like this.
-    // We will fix this on the backend after the frontend is corrected.
     return this.http.post<VerificationResult>(`${this.agentApiUrl}/records/${recordId}/verify`, data);
   }
 }

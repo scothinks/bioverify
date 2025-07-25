@@ -14,6 +14,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-employee-registration',
@@ -27,7 +28,8 @@ import { MatIconModule } from '@angular/material/icon';
     MatButtonModule,
     MatProgressSpinnerModule,
     MatIconModule,
-    RouterModule
+    RouterModule,
+    MatSnackBarModule
   ],
   templateUrl: './employee-registration.component.html',
   styleUrls: ['./employee-registration.component.scss']
@@ -38,7 +40,8 @@ export class EmployeeRegistrationComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
   currentStep: 'initial' | 'challenge' | 'create' = 'initial';
-  isLoggedIn = false; // Property to track login state for the view
+  isAgent = false;
+  isLoggedIn = false; // CORRECTED: Added missing property
   
   private recordId: string | null = null;
 
@@ -46,23 +49,24 @@ export class EmployeeRegistrationComponent implements OnInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private verificationService: VerificationService,
-    private router: Router
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {
     this.registerForm = this.fb.group({
       ssid: ['', Validators.required],
       nin: ['', Validators.required],
-      psn: ['', Validators.required], // Added for the challenge step
+      psn: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]]
     });
   }
 
   ngOnInit(): void {
-    // Check auth status when the component loads
-    this.isLoggedIn = this.authService.isLoggedIn();
+    const userRole = this.authService.getUserRole();
+    this.isAgent = userRole === 'AGENT';
+    this.isLoggedIn = this.authService.isLoggedIn(); // CORRECTED: Set property value
   }
 
-  // Step 1: Initiate the verification process
   onInitiateVerification(): void {
     if (this.registerForm.get('ssid')?.invalid || this.registerForm.get('nin')?.invalid) return;
     
@@ -74,10 +78,14 @@ export class EmployeeRegistrationComponent implements OnInit {
       nin: this.registerForm.value.nin
     };
 
-    this.verificationService.initiateVerification(request).subscribe({
+    const verificationObservable = this.isAgent 
+      ? this.verificationService.initiateAgentVerification(request)
+      : this.verificationService.initiatePublicVerification(request);
+
+    verificationObservable.subscribe({
       next: (response) => {
         this.isLoading = false;
-        this.recordId = response.recordId; // Store the recordId for subsequent steps
+        this.recordId = response.recordId;
 
         if (response.nextStep === 'CHALLENGE_PSN') {
           this.currentStep = 'challenge';
@@ -92,7 +100,6 @@ export class EmployeeRegistrationComponent implements OnInit {
     });
   }
 
-  // Step 2 (Conditional): Handle the PSN challenge
   onChallenge(): void {
     if (this.registerForm.get('psn')?.invalid || !this.recordId) return;
 
@@ -103,12 +110,16 @@ export class EmployeeRegistrationComponent implements OnInit {
       recordId: this.recordId,
       psn: this.registerForm.value.psn
     };
+    
+    const challengeObservable = this.isAgent
+      ? this.verificationService.resolveAgentPsnChallenge(request)
+      : this.verificationService.resolvePublicPsnChallenge(request);
 
-    this.verificationService.resolvePsnChallenge(request).subscribe({
+    challengeObservable.subscribe({
       next: (response) => {
         this.isLoading = false;
         if (response.success) {
-          this.currentStep = 'create'; // Move to the final step
+          this.currentStep = 'create';
         } else {
           this.errorMessage = response.message || 'An unexpected error occurred.';
         }
@@ -120,7 +131,6 @@ export class EmployeeRegistrationComponent implements OnInit {
     });
   }
 
-  // Step 3: Handle Account Creation
   onCreateAccount(): void {
     if (this.registerForm.get('email')?.invalid || this.registerForm.get('password')?.invalid) return;
 
@@ -137,13 +147,27 @@ export class EmployeeRegistrationComponent implements OnInit {
     this.authService.createAccount(accountData).subscribe({
         next: () => {
             this.isLoading = false;
-            this.successMessage = 'Success! Your account has been created. Redirecting to login...';
-            setTimeout(() => this.router.navigate(['/login']), 2000);
+            if (this.isAgent) {
+              this.showSnackBar('Account created successfully for the user!');
+              this.registerForm.reset();
+              this.currentStep = 'initial';
+            } else {
+              this.successMessage = 'Success! Your account has been created. Redirecting to your dashboard...';
+              setTimeout(() => this.authService.redirectUserBasedOnRole(), 2000);
+            }
         },
         error: (err) => {
             this.isLoading = false;
             this.errorMessage = err.message || 'Account creation failed. Please try again or contact support.';
         }
+    });
+  }
+
+  private showSnackBar(message: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 3000,
+      horizontalPosition: 'center',
+      verticalPosition: 'top',
     });
   }
 }

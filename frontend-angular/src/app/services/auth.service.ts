@@ -1,3 +1,5 @@
+// src/app/services/auth.service.ts
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
@@ -54,10 +56,6 @@ export class AuthService {
     );
   }
 
-  /**
-   * For an ADMIN to create a new administrative user (e.g., Tenant Manager, Focal Officer).
-   * Does NOT log in as the created user.
-   */
   register(userData: AuthRequest): Observable<any> {
     return this.http.post<any>(`${this.authApiUrl}/register`, userData).pipe(
       catchError(this.handleError)
@@ -66,9 +64,12 @@ export class AuthService {
 
   /**
    * For an EMPLOYEE to create their own account after their identity has been successfully verified.
+   * This now returns an AuthResponse with a token and automatically logs the user in.
    */
-  createAccount(accountData: AuthRequest): Observable<any> {
-    return this.http.post<any>(`${this.authApiUrl}/create-account`, accountData).pipe(
+  createAccount(accountData: AuthRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.authApiUrl}/create-account`, accountData).pipe(
+      // CORRECTED: Automatically handle the token upon successful account creation
+      tap(response => this.setToken(response.token)),
       catchError(this.handleError)
     );
   }
@@ -83,9 +84,6 @@ export class AuthService {
     );
   }
 
-  /**
-   * Fetches the full MasterListRecord for the currently logged-in user.
-   */
   getCurrentUserRecord(): Observable<MasterListRecord> {
     return this.http.get<MasterListRecord>(`${this.v1ApiUrl}/users/me/record`).pipe(
         catchError(this.handleError)
@@ -98,14 +96,11 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
-  private setToken(token: string): void {
+  public setToken(token: string): void { // Made public to be accessible from createAccount
     localStorage.setItem(this.TOKEN_KEY, token);
     this.isLoggedInSubject.next(true);
   }
 
-  /**
-   * Navigates the user to the correct dashboard based on their role.
-   */
   public redirectUserBasedOnRole(): void {
     const role = this.getUserRole();
     switch (role) {
@@ -115,19 +110,16 @@ export class AuthService {
       case 'TENANT_ADMIN':
         this.router.navigate(['/dashboard/tenant-admin']);
         break;
-      // --- UPDATED SECTION ---
-      case 'AGENT': // CORRECTED: Changed from 'Agent' to 'AGENT'
-        this.router.navigate(['/dashboard/agent']); // CORRECTED: path is lowercase
+      case 'AGENT':
+        this.router.navigate(['/dashboard/agent']);
         break;
-      case 'REVIEWER': // NEW: Added case for the Reviewer role
+      case 'REVIEWER':
         this.router.navigate(['/dashboard/reviewer']);
         break;
-      // --- END UPDATED SECTION ---
       case 'SELF_SERVICE_USER':
         this.router.navigate(['/dashboard/user']);
         break;
       default:
-        // Fallback to login if role is unknown or null
         this.router.navigate(['/login']);
         break;
     }

@@ -3820,3 +3820,10 @@ org.hibernate.LazyInitializationException: failed to lazily initialize a collect
 2025-07-25 06:36:09,256 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
 2025-07-25 06:36:09,259 [restartedMain] INFO  c.p.bioverify.BioverifyApplication - Started BioverifyApplication in 1.366 seconds (process running for 27313.442)
 2025-07-25 06:36:09,260 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged
+2025-07-25 07:04:10,291 [http-nio-8080-exec-2] INFO  o.a.c.c.C.[Tomcat-4].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-07-25 07:04:10,300 [http-nio-8080-exec-2] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-07-25 07:04:10,429 [http-nio-8080-exec-2] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 125 ms
+2025-07-25 07:05:32,532 [http-nio-8080-exec-1] INFO  c.p.b.controller.AgentController - Received AGENT verification request for SSID: KW9092781593
+2025-07-25 07:05:32,591 [http-nio-8080-exec-1] INFO  c.p.b.service.VerificationService - Record 22b23d9b-4c44-4c6b-9e32-6b69ab361cb3 identity confirmed. Initiating PSN challenge.
+2025-07-25 07:06:24,786 [http-nio-8080-exec-3] INFO  c.p.b.controller.AgentController - Received AGENT PSN challenge for recordId: 22b23d9b-4c44-4c6b-9e32-6b69ab361cb3
+2025-07-25 07:06:24,848 [http-nio-8080-exec-3] INFO  c.p.b.service.VerificationService - PSN challenge PASSED for recordId: 22b23d9b-4c44-4c6b-9e32-6b69ab361cb3
