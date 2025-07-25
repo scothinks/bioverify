@@ -110,7 +110,7 @@ A key RBAC feature is that Tenant Admins can assign Reviewers to specific Minist
 
 - **Performance Overview Dashboard**: For Tenant Admins. Displays high-level KPIs: total records, a funnel showing the count of records at each stage (uploaded -> verified -> validated), and user counts by role.
 - **Bulk Verification Dashboard**: Displays the history and status of all bulk verification jobs, showing verified vs. not-found counts.
-- **ValidationQueueComponent (Refactored)**: Presents a tabbed interface for a cleaner workflow:
+- **ValidationQueueComponent**: Presents a tabbed interface for a cleaner workflow:
   - **"Pending Approval" Tab**: Shows records that have been successfully verified by users and are awaiting final validation.
   - **"Mismatched Data" Tab**: A dedicated view for reviewers to handle records flagged with `FLAGGED_DATA_MISMATCH`.
 - **Mismatch Resolution Component**: A UI for reviewers that shows a side-by-side comparison of the originally uploaded data versus the data received from the SoT, allowing for one-click resolution.
@@ -129,7 +129,7 @@ A key RBAC feature is that Tenant Admins can assign Reviewers to specific Minist
 
 #### Bulk Verification Workflow (Admin-Driven)
 
-1. **Prerequisite**: Uploaded master list must have `SSID` and `NIN`.
+1. **Prerequisite**: Uploaded master list must have PSN.
 2. **Initiation**: Admin selects upload and starts bulk verification.
 3. **Execution**: Background job triggers, processing each record via SoT.
 4. **Status Updates**:
