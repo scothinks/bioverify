@@ -94,7 +94,8 @@ public class BulkVerificationService {
             Tenant tenant = tenantRepository.findById(tenantId)
                     .orElseThrow(() -> new IllegalStateException("Tenant not found for ID: " + tenantId));
 
-            IdentitySourceConfigDto config = objectMapper.readValue(tenant.getidentitySourceConfig(), IdentitySourceConfigDto.class);
+            // CORRECTED: Use the standard Java naming convention for the getter
+            IdentitySourceConfigDto config = objectMapper.readValue(tenant.getIdentitySourceConfig(), IdentitySourceConfigDto.class);
 
             if ("OPTIMA".equalsIgnoreCase(config.getProviderName())) {
                 runOptimaBulkVerification(job, config, recordsToVerify);
@@ -273,11 +274,8 @@ public class BulkVerificationService {
         String fullName = (profile.getFirstName() + " " + profile.getMiddleName() + " " + profile.getSurname()).replace("  ", " ").trim();
         record.setSsid(profile.getSsid());
         record.setNin(profile.getNin());
-
-        // NEW: Hash the verified SSID and NIN and save them to the record
         record.setSsidHash(toSha256(profile.getSsid()));
         record.setNinHash(toSha256(profile.getNin()));
-
         record.setFullName(fullName);
         record.setBvn(profile.getBvn());
         record.setGradeLevel(profile.getGradeLevel());
@@ -319,7 +317,6 @@ public class BulkVerificationService {
                 });
     }
 
-    // NEW: Add the hashing utility method to this service
     private String toSha256(String input) {
         if (input == null) return null;
         try {

@@ -13,6 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
   selector: 'app-tenant-form',
@@ -26,13 +27,14 @@ import { MatIconModule } from '@angular/material/icon';
     MatButtonModule,
     MatSnackBarModule,
     MatProgressSpinnerModule,
-    MatIconModule
+    MatIconModule,
+    MatDividerModule
   ],
   templateUrl: './tenant-form.component.html',
   styleUrls: ['./tenant-form.component.scss']
 })
 export class TenantFormComponent implements OnInit {
-  @Input() tenant: Tenant | null = null; // For edit mode
+  @Input() tenant: Tenant | null = null;
   @Output() tenantSaved = new EventEmitter<Tenant>();
   @Output() cancelled = new EventEmitter<void>();
 
@@ -55,39 +57,35 @@ export class TenantFormComponent implements OnInit {
   }
 
   private createForm(): void {
-    // Conditionally set the async validator only for create mode
     const subdomainAsyncValidators: AsyncValidatorFn[] = !this.isEditMode
       ? [TenantValidators.uniqueSubdomain(this.tenantService)]
       : [];
 
     this.tenantForm = this.fb.group({
+      // Basic Info
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-      subdomain: [
-        '',
-        [
-          Validators.required,
-          Validators.minLength(2),
-          Validators.maxLength(50),
-          TenantValidators.subdomainPattern()
-        ],
-        subdomainAsyncValidators // Use the conditionally set validators
-      ],
+      subdomain: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50), TenantValidators.subdomainPattern()], subdomainAsyncValidators],
       stateCode: ['', [Validators.required, TenantValidators.stateCodePattern()]],
       description: ['', [Validators.maxLength(500)]],
-      validationUrl: ['', [Validators.required, Validators.pattern(/^https?:\/\/.+/)]]
+      
+      // Identity Source Config Fields
+      providerName: ['OPTIMA', [Validators.required]],
+      apiBaseUrl: ['', [Validators.required, Validators.pattern(/^https?:\/\/.+/)]],
+      clientId: ['', [Validators.required]],
+      // CORRECTED: Removed the required validator from this field
+      clientSecretEncrypted: [''], 
+      aesKey: ['', [Validators.required]],
+      iv: ['', [Validators.required]]
     });
   }
 
   private populateForm(): void {
     if (this.tenant) {
-      let validationUrl = '';
+      let config: any = { providerName: 'OPTIMA' }; // Default
       if (this.tenant.identitySourceConfig) {
           try {
-              const config = JSON.parse(this.tenant.identitySourceConfig);
-              validationUrl = config.validationUrl || '';
-          } catch (e) {
-              console.error("Could not parse tenant config", e);
-          }
+              config = JSON.parse(this.tenant.identitySourceConfig);
+          } catch (e) { console.error("Could not parse tenant config", e); }
       }
 
       this.tenantForm.patchValue({
@@ -95,7 +93,7 @@ export class TenantFormComponent implements OnInit {
         subdomain: this.tenant.subdomain,
         stateCode: this.tenant.stateCode,
         description: this.tenant.description || '',
-        validationUrl: validationUrl
+        ...config
       });
       this.tenantForm.get('subdomain')?.disable();
     }
@@ -125,12 +123,18 @@ export class TenantFormComponent implements OnInit {
 
     this.isLoading = true;
     const formValue = this.tenantForm.getRawValue();
+
     const payload = {
         name: formValue.name,
         subdomain: formValue.subdomain,
         stateCode: formValue.stateCode,
         description: formValue.description,
-        identitySourceConfig: JSON.stringify({ validationUrl: formValue.validationUrl })
+        providerName: formValue.providerName,
+        apiBaseUrl: formValue.apiBaseUrl,
+        clientId: formValue.clientId,
+        clientSecretEncrypted: formValue.clientSecretEncrypted,
+        aesKey: formValue.aesKey,
+        iv: formValue.iv
     };
 
     const operation = this.isEditMode

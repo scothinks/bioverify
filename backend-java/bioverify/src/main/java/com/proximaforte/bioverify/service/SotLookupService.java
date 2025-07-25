@@ -38,7 +38,7 @@ public class SotLookupService {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new TenantNotFoundException("Configuration for tenant " + tenantId + " not found."));
 
-        String jsonConfig = tenant.getidentitySourceConfig();
+        String jsonConfig = tenant.getIdentitySourceConfig();
         if (jsonConfig == null || jsonConfig.isBlank()) {
             throw new TenantConfigurationException("SoT API configuration is missing for tenant " + tenantId);
         }

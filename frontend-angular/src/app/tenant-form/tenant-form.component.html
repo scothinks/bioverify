@@ -15,6 +15,10 @@
     <mat-card-content class="enhanced-content">
       <form [formGroup]="tenantForm" (ngSubmit)="onSubmit()" class="tenant-form-grid">
         
+        <!-- Basic Information Section -->
+        <h3 class="section-title">Basic Information</h3>
+        <mat-divider></mat-divider>
+
         <mat-form-field appearance="outline">
           <mat-label>Tenant Name</mat-label>
           <input matInput formControlName="name" placeholder="e.g., Osun State Government">
@@ -36,17 +40,51 @@
         </mat-form-field>
   
         <mat-form-field appearance="outline" class="full-width-field">
-          <mat-label>Identity Source Validation URL</mat-label>
-          <input matInput formControlName="validationUrl" placeholder="https://api.registry.gov/validate">
-          <mat-hint>The full API endpoint for this tenant's source of truth.</mat-hint>
-          <mat-error>{{ getErrorMessage('validationUrl') }}</mat-error>
-        </mat-form-field>
-  
-        <mat-form-field appearance="outline" class="full-width-field">
           <mat-label>Description (Optional)</mat-label>
-          <textarea matInput formControlName="description" placeholder="Brief description of the tenant..." rows="4"></textarea>
+          <textarea matInput formControlName="description" placeholder="Brief description of the tenant..." rows="2"></textarea>
           <mat-error>{{ getErrorMessage('description') }}</mat-error>
         </mat-form-field>
+
+        <!-- Identity Source Configuration Section -->
+        <h3 class="section-title">Identity Source Configuration</h3>
+        <mat-divider></mat-divider>
+        
+        <mat-form-field appearance="outline">
+            <mat-label>Provider Name</mat-label>
+            <input matInput formControlName="providerName" placeholder="e.g., OPTIMA">
+            <mat-error>{{ getErrorMessage('providerName') }}</mat-error>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline">
+            <mat-label>API Base URL</mat-label>
+            <input matInput formControlName="apiBaseUrl" placeholder="https://api.provider.com/v1">
+            <mat-error>{{ getErrorMessage('apiBaseUrl') }}</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width-field">
+            <mat-label>Client ID</mat-label>
+            <input matInput formControlName="clientId">
+            <mat-error>{{ getErrorMessage('clientId') }}</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width-field">
+            <mat-label>Encrypted Client Secret</mat-label>
+            <input matInput formControlName="clientSecretEncrypted">
+            <mat-error>{{ getErrorMessage('clientSecretEncrypted') }}</mat-error>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline">
+            <mat-label>AES Key</mat-label>
+            <input matInput formControlName="aesKey">
+            <mat-error>{{ getErrorMessage('aesKey') }}</mat-error>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline">
+            <mat-label>Initialization Vector (IV)</mat-label>
+            <input matInput formControlName="iv">
+            <mat-error>{{ getErrorMessage('iv') }}</mat-error>
+        </mat-form-field>
+
       </form>
     </mat-card-content>
 

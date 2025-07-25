@@ -43,6 +43,12 @@ public class Tenant {
      */
     @Column(nullable = false)
     private String stateCode;
+    
+    /**
+     * NEW: A brief description of the tenant.
+     */
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     /**
      * Stores the tenant-specific configuration for the Optima registry as a JSON string.
@@ -106,11 +112,20 @@ public class Tenant {
         this.stateCode = stateCode;
     }
 
-    public String getidentitySourceConfig() {
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getIdentitySourceConfig() {
         return identitySourceConfig;
     }
 
-    public void setidentitySourceConfig(String identitySourceConfig) {
+    public void setIdentitySourceConfig(String identitySourceConfig) {
+        // CORRECTED: Fixed 'thisis' typo
         this.identitySourceConfig = identitySourceConfig;
     }
 
