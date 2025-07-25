@@ -1,0 +1,115 @@
+// src/app/user-dashboard/user-dashboard.component.scss
+
+:host {
+  display: block;
+  padding: 24px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.profile-card, .action-card {
+  width: 100%;
+}
+
+.action-card {
+  margin-bottom: 24px;
+}
+
+.profile-header {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+
+  .user-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: #3f51b5; // Or your primary color
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 500;
+    margin-right: 20px;
+  }
+
+  .header-text {
+    mat-card-title {
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    mat-card-subtitle {
+      font-size: 14px;
+      color: rgba(0,0,0,0.54);
+    }
+  }
+}
+
+.profile-content {
+  padding: 16px 24px;
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    font-size: 15px;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .detail-label {
+      color: rgba(0,0,0,0.6);
+    }
+
+    .detail-value {
+      font-weight: 500;
+      text-align: right;
+    }
+  }
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: white;
+
+  &.VALIDATED { background-color: #4caf50; }
+  &.PENDING_GRADE_VALIDATION { background-color: #ff9800; }
+  &.AWAITING_REVALIDATION { background-color: #f44336; }
+  &.REJECTED { background-color: #e53935; }
+  // Add other statuses as needed
+}
+
+.verification-required-card {
+  border-left: 4px solid #f44336; // Warning color
+  mat-card-header {
+    padding-bottom: 0;
+  }
+  form {
+    margin-top: 16px;
+  }
+  .primary-button {
+    width: 100%;
+    margin-top: 8px;
+  }
+}
+
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: rgba(0,0,0,0.6);
+}

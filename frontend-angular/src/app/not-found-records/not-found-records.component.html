@@ -1,31 +1,89 @@
-<mat-card>
-  <mat-card-header>
-    <mat-card-title>Records Not Found in SoT</mat-card-title>
-    <mat-card-subtitle>These records could not be found in the Source of Truth and may require manual investigation.</mat-card-subtitle>
-  </mat-card-header>
-  <mat-card-content>
-    <div *ngIf="isLoading" style="display: flex; justify-content: center; padding: 2rem;">
-      <mat-spinner></mat-spinner>
-    </div>
-    <table mat-table [dataSource]="records" *ngIf="!isLoading">
-      <ng-container matColumnDef="fullName">
-        <th mat-header-cell *matHeaderCellDef> Full Name </th>
-        <td mat-cell *matCellDef="let element"> {{element.fullName}} </td>
-      </ng-container>
-      <ng-container matColumnDef="psn">
-        <th mat-header-cell *matHeaderCellDef> PSN </th>
-        <td mat-cell *matCellDef="let element"> {{element.psn}} </td>
-      </ng-container>
-      <ng-container matColumnDef="department">
-        <th mat-header-cell *matHeaderCellDef> Department </th>
-        <td mat-cell *matCellDef="let element"> {{element.department}} </td>
-      </ng-container>
-      <ng-container matColumnDef="ministry">
-        <th mat-header-cell *matHeaderCellDef> Ministry </th>
-        <td mat-cell *matCellDef="let element"> {{element.ministry}} </td>
-      </ng-container>
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    </table>
-  </mat-card-content>
-</mat-card>
+<div class="validation-queue-container">
+  <mat-card class="queue-card">
+    <mat-card-header class="enhanced-header">
+      <div class="header-content">
+        <div class="title-section">
+          <div class="header-icon">
+            <mat-icon>find_in_page</mat-icon>
+          </div>
+          <div class="title-text">
+            <mat-card-title>Records Without BioMetrics</mat-card-title>
+            <mat-card-subtitle>These records may require manual investigation</mat-card-subtitle>
+          </div>
+        </div>
+        <div class="header-stats" *ngIf="!isLoading">
+          <div class="stat-chip">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ dataSource.data.length }} Total Records</span>
+          </div>
+        </div>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content class="enhanced-content">
+      <div class="table-container">
+        <div *ngIf="isLoading" class="empty-state">
+          <mat-spinner diameter="50"></mat-spinner>
+        </div>
+
+        <div class="table-wrapper" *ngIf="!isLoading && dataSource.data.length > 0">
+          <table mat-table [dataSource]="dataSource" class="enhanced-table">
+            
+            <ng-container matColumnDef="fullName">
+              <th mat-header-cell *matHeaderCellDef>
+                <div class="header-cell"><mat-icon>person</mat-icon> Full Name</div>
+              </th>
+              <td mat-cell *matCellDef="let element" class="name-cell">
+                <div class="employee-info">
+                  <div class="employee-avatar">{{ getInitials(element.fullName) }}</div>
+                  <span class="employee-name">{{ element.fullName }}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="psn">
+              <th mat-header-cell *matHeaderCellDef>
+                <div class="header-cell"><mat-icon>fingerprint</mat-icon> PSN</div>
+              </th>
+              <td mat-cell *matCellDef="let element" class="psn-cell"> {{element.psn}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="department">
+              <th mat-header-cell *matHeaderCellDef>
+                 <div class="header-cell"><mat-icon>corporate_fare</mat-icon> Department</div>
+              </th>
+              <td mat-cell *matCellDef="let element" class="department-cell"> {{element.department}} </td>
+            </ng-container>
+            
+             <ng-container matColumnDef="ministry">
+              <th mat-header-cell *matHeaderCellDef>
+                 <div class="header-cell"><mat-icon>account_balance</mat-icon> Ministry</div>
+              </th>
+              <td mat-cell *matCellDef="let element" class="ministry-cell"> {{element.ministry}} </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+          </table>
+        </div>
+
+        <div *ngIf="!isLoading && dataSource.data.length === 0" class="empty-state">
+          <div class="empty-icon">
+            <mat-icon>task_alt</mat-icon>
+          </div>
+          <div class="empty-content">
+            <h3>All Clear!</h3>
+            <p>No records were flagged as "not found" in the Source of Truth.</p>
+          </div>
+        </div>
+
+        <mat-paginator class="enhanced-paginator"
+            *ngIf="!isLoading && dataSource.data.length > 0"
+            [pageSizeOptions]="[10, 25, 50]"
+            showFirstLastButtons
+            aria-label="Select page of records">
+        </mat-paginator>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

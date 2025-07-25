@@ -250,3 +250,53 @@
     grid-row: auto;
   }
 }
+
+/* =======================================
+   ==  NEW: Dropdown Menu Item Styling  ==
+   ======================================= */
+
+/*
+ * Note: These styles target Angular Material's overlay panel.
+ * For them to apply correctly from a component's stylesheet,
+ * you might need to use ::ng-deep or place them in a global styles.scss file.
+ */
+
+/* Style the main dropdown panel container */
+.mat-mdc-select-panel.mat-mdc-select-panel {
+  padding: 8px !important;
+  border-radius: 12px !important;
+  background: white !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 5px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  margin-top: 8px; /* Adds a small gap between the field and the panel */
+}
+
+/* Style each individual dropdown option */
+.mat-mdc-option {
+  min-height: 44px !important;
+  padding: 0 16px !important;
+  margin: 2px 0;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #475569;
+  border-radius: 8px !important; /* Rounded corners for each item */
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Style for option on hover or when active (keyboard navigation) */
+.mat-mdc-option:hover:not(.mdc-list-item--disabled),
+.mat-mdc-option.mat-mdc-option-active:not(.mdc-list-item--disabled) {
+  background-color: #f8fafc !important; /* A very light grey for hover */
+  color: #1e293b !important;
+}
+
+/* Style for the currently selected option */
+.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+  background: rgba(102, 126, 234, 0.1) !important; /* Use a light shade of your primary color */
+  color: #667eea !important;
+  font-weight: 600 !important;
+}
+
+/* Style the checkmark icon on a selected item */
+.mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text::before {
+  color: #667eea !important;
+}
