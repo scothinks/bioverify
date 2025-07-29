@@ -72,8 +72,8 @@ public class ExportService {
             List<MasterListRecord> recordsToExport = self.getRecordsToExport(fullInitiator.getTenant().getId());
 
             if (recordsToExport.isEmpty()) {
-                self.updateLogStatus(logId, JobStatus.COMPLETED, "No validated records to export.", null);
-                log.info("No validated records to export for tenant: {}", fullInitiator.getTenant().getId());
+                self.updateLogStatus(logId, JobStatus.COMPLETED, "No active records to export.", null);
+                log.info("No active records to export for tenant: {}", fullInitiator.getTenant().getId());
                 return;
             }
 
@@ -81,7 +81,6 @@ public class ExportService {
 
             byte[] csvData = createCsvData(recordsToExport);
 
-            // --- THIS IS THE CORRECTED FILENAME LOGIC ---
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").withZone(ZoneId.systemDefault());
             String timestamp = formatter.format(exportLog.getExportTimestamp());
             String fileName = String.format("payroll-export-%s-%s.csv", fullInitiator.getTenant().getStateCode(), timestamp);
@@ -110,7 +109,9 @@ public class ExportService {
     
     @Transactional(readOnly = true)
     public List<MasterListRecord> getRecordsToExport(UUID tenantId) {
-        return recordRepository.findAllToExport(tenantId, RecordStatus.VALIDATED);
+        // --- CORRECTED LOGIC ---
+        // Changed RecordStatus.VALIDATED to RecordStatus.ACTIVE
+        return recordRepository.findAllToExport(tenantId, RecordStatus.ACTIVE);
     }
     
     @Transactional(propagation = Propagation.REQUIRES_NEW)

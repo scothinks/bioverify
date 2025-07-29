@@ -134,8 +134,8 @@ export class BulkVerificationComponent implements OnInit, OnDestroy {
     return jobs.some(job => job.status === 'RUNNING' || job.status === 'PENDING');
   }
 
-  goToValidationQueue(): void {
-    this.router.navigate(['/dashboard/tenant-admin/validation']);
+  goToReviewQueue(): void {
+    this.router.navigate(['/dashboard/tenant-admin/review-queue']);
   }
 
   goToNotFoundList(): void {

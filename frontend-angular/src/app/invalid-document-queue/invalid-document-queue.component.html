@@ -1,0 +1,22 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Invalid Document Review</mat-card-title>
+    <mat-card-subtitle>Review records that failed automated document validation.</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <table mat-table [dataSource]="flaggedRecords">
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let record">
+          <button mat-flat-button color="primary" (click)="onReview(record)">
+            <mat-icon>rate_review</mat-icon>
+            Review Documents
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+    </mat-card-content>
+</mat-card>

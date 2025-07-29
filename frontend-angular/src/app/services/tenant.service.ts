@@ -1,13 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpEvent, HttpRequest } from '@angular/common/http';
-import { Observable, BehaviorSubject, throwError, Subject } from 'rxjs';
+import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { Tenant, UpdateTenantRequest } from '../models/tenant.model';
-import { MasterListRecord } from '../models/master-list-record.model';
 import { User } from '../models/user.model';
-import { RecordStatus } from '../models/record-status.enum';
 import { Ministry } from '../models/ministry.model';
 import { Department } from '../models/department.model';
+import { MasterListRecordDto } from './pol.service'; // IMPORT THE DTO
 
 export interface BulkVerificationJob {
   id: string;
@@ -34,11 +33,10 @@ export interface PayrollExportLog {
 export interface DashboardStats {
   totalUniqueRecords: number;
   totalVerified: number;
-  totalValidated: number;
-  totalPendingApproval: number;
+  totalActive: number;
+  totalAwaitingReview: number;
   totalMismatched: number;
   totalNotFound: number;
-  totalAwaitingReVerification: number;
   totalReviewers: number;
   totalSelfServiceUsers: number;
   totalAgentAccounts: number;
@@ -48,7 +46,7 @@ export interface ReviewerData {
   id: string;
   fullName: string;
   email: string;
-  pendingValidationCount: number;
+  pendingReviewCount: number;
   assignedMinistries: Ministry[];
   assignedDepartments: Department[];
 }
@@ -116,7 +114,6 @@ export class TenantService {
   }
 
   getReviewers(): Observable<ReviewerData[]> {
-    // CORRECTED: Changed the URL to match the existing backend endpoint
     return this.http.get<ReviewerData[]>(`${this.v1ApiUrl}/users/reviewers`).pipe(
       catchError(this.handleError)
     );
@@ -176,14 +173,20 @@ export class TenantService {
     );
   }
   
-  getRecordsForTenant(): Observable<MasterListRecord[]> {
-    return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records`).pipe(
+  getRecordsForTenant(): Observable<MasterListRecordDto[]> {
+    return this.http.get<MasterListRecordDto[]>(`${this.v1ApiUrl}/records`).pipe(
       catchError(this.handleError)
     );
   }
 
-  getFlaggedNotInSot(): Observable<MasterListRecord[]> {
-    return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records/flagged/not-in-sot`).pipe(
+  getFlaggedNotInSot(): Observable<MasterListRecordDto[]> {
+    return this.http.get<MasterListRecordDto[]>(`${this.v1ApiUrl}/records/flagged/not-in-sot`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getInvalidDocumentQueue(): Observable<MasterListRecordDto[]> {
+    return this.http.get<MasterListRecordDto[]>(`${this.v1ApiUrl}/records/queue/invalid-documents`).pipe(
       catchError(this.handleError)
     );
   }
@@ -198,33 +201,33 @@ export class TenantService {
     return this.http.request(req);
   }
 
-  getPendingApprovalQueue(): Observable<MasterListRecord[]> {
-    return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records/queue/pending-approval`).pipe(
+  getAwaitingReviewQueue(): Observable<MasterListRecordDto[]> {
+    return this.http.get<MasterListRecordDto[]>(`${this.v1ApiUrl}/records/queue/awaiting-review`).pipe(
       catchError(this.handleError)
     );
   }
 
-  getMismatchedQueue(): Observable<MasterListRecord[]> {
-    return this.http.get<MasterListRecord[]>(`${this.v1ApiUrl}/records/queue/mismatched`).pipe(
+  getMismatchedQueue(): Observable<MasterListRecordDto[]> {
+    return this.http.get<MasterListRecordDto[]>(`${this.v1ApiUrl}/records/queue/mismatched`).pipe(
       catchError(this.handleError)
     );
   }
 
-  updateRecord(recordId: string, recordData: Partial<MasterListRecord>): Observable<MasterListRecord> {
-    return this.http.put<MasterListRecord>(`${this.v1ApiUrl}/records/${recordId}`, recordData).pipe(
+  updateRecord(recordId: string, recordData: Partial<MasterListRecordDto>): Observable<MasterListRecordDto> {
+    return this.http.put<MasterListRecordDto>(`${this.v1ApiUrl}/records/${recordId}`, recordData).pipe(
       catchError(this.handleError)
     );
   }
 
-  validateRecord(recordId: string, decision: 'VALIDATED' | 'REJECTED', comments: string): Observable<MasterListRecord> {
+  validateRecord(recordId: string, decision: 'REVIEWED' | 'REJECTED', comments: string): Observable<MasterListRecordDto> {
     const payload = { decision, comments };
-    return this.http.post<MasterListRecord>(`${this.v1ApiUrl}/records/${recordId}/validate`, payload).pipe(
+    return this.http.post<MasterListRecordDto>(`${this.v1ApiUrl}/records/${recordId}/validate`, payload).pipe(
       catchError(this.handleError)
     );
   }
 
-  resolveMismatch(recordId: string): Observable<MasterListRecord> {
-    return this.http.post<MasterListRecord>(`${this.v1ApiUrl}/records/${recordId}/resolve-mismatch`, {}).pipe(
+  resolveMismatch(recordId: string): Observable<MasterListRecordDto> {
+    return this.http.post<MasterListRecordDto>(`${this.v1ApiUrl}/records/${recordId}/resolve-mismatch`, {}).pipe(
       catchError(this.handleError)
     );
   }

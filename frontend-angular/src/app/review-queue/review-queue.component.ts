@@ -21,40 +21,25 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 
 @Component({
-  selector: 'app-validation-queue',
+  selector: 'app-review-queue',
   standalone: true,
   imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatCardModule,
-    MatTableModule,
-    MatIconModule,
-    MatButtonModule,
-    MatTooltipModule,
-    MatDialogModule,
-    MatSnackBarModule,
-    MatTabsModule,
-    MatPaginatorModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    MatInputModule
+    CommonModule, ReactiveFormsModule, MatCardModule, MatTableModule,
+    MatIconModule, MatButtonModule, MatTooltipModule, MatDialogModule,
+    MatSnackBarModule, MatTabsModule, MatPaginatorModule, MatFormFieldModule,
+    MatSelectModule, MatInputModule
   ],
-  templateUrl: './validation-queue.component.html',
-  styleUrl: './validation-queue.component.scss'
+  templateUrl: './review-queue.component.html',
+  styleUrl: './review-queue.component.scss'
 })
-export class ValidationQueueComponent implements OnInit {
+export class ReviewQueueComponent implements OnInit {
   
-  public pendingRecords = new MatTableDataSource<MasterListRecord>();
+  public awaitingReviewRecords = new MatTableDataSource<MasterListRecord>();
   public mismatchedRecords = new MatTableDataSource<MasterListRecord>();
   
-  // UPDATED: 'salaryGradeId' has been removed from this array
   public displayedColumns: string[] = [
-    'fullName', 
-    'department', 
-    'ministry', 
-    'gradeLevel',
-    'salaryStructure', 
-    'actions'
+    'fullName', 'department', 'ministry', 'gradeLevel',
+    'salaryStructure', 'actions'
   ];
   public selectedTabIndex = 0;
 
@@ -63,9 +48,9 @@ export class ValidationQueueComponent implements OnInit {
   public departmentList: string[] = [];
   public gradeList: string[] = [];
 
-  @ViewChild('pendingPaginator') set pendingPaginator(paginator: MatPaginator) {
+  @ViewChild('awaitingReviewPaginator') set awaitingReviewPaginator(paginator: MatPaginator) {
     if (paginator) {
-      this.pendingRecords.paginator = paginator;
+      this.awaitingReviewRecords.paginator = paginator;
     }
   }
 
@@ -95,12 +80,12 @@ export class ValidationQueueComponent implements OnInit {
 
   loadDataForCurrentTab(): void {
     const serviceCall = this.selectedTabIndex === 0 
-      ? this.tenantService.getPendingApprovalQueue() 
+      ? this.tenantService.getAwaitingReviewQueue() 
       : this.tenantService.getMismatchedQueue();
 
     serviceCall.subscribe({
       next: (data) => {
-        const dataSource = this.selectedTabIndex === 0 ? this.pendingRecords : this.mismatchedRecords;
+        const dataSource = this.selectedTabIndex === 0 ? this.awaitingReviewRecords : this.mismatchedRecords;
         dataSource.data = data;
         this.populateFilterLists(data);
         this.applyFilter();
@@ -120,7 +105,7 @@ export class ValidationQueueComponent implements OnInit {
       return ministryMatch && departmentMatch && gradeLevelMatch;
     };
 
-    this.pendingRecords.filterPredicate = customFilterPredicate;
+    this.awaitingReviewRecords.filterPredicate = customFilterPredicate;
     this.mismatchedRecords.filterPredicate = customFilterPredicate;
 
     this.filterForm.valueChanges.subscribe(() => {
@@ -130,7 +115,7 @@ export class ValidationQueueComponent implements OnInit {
   
   private applyFilter(): void {
     const filterValue = JSON.stringify(this.filterForm.value);
-    const dataSource = this.selectedTabIndex === 0 ? this.pendingRecords : this.mismatchedRecords;
+    const dataSource = this.selectedTabIndex === 0 ? this.awaitingReviewRecords : this.mismatchedRecords;
     dataSource.filter = filterValue;
   }
 
@@ -153,7 +138,7 @@ export class ValidationQueueComponent implements OnInit {
   }
 
   onApprove(recordId: string): void {
-    this.tenantService.validateRecord(recordId, 'VALIDATED', 'Approved by reviewer.').subscribe({
+    this.tenantService.validateRecord(recordId, 'REVIEWED', 'Approved by reviewer.').subscribe({
       next: () => {
         this.showSnackBar('Record approved successfully!', 'success');
         this.loadDataForCurrentTab();
@@ -200,7 +185,7 @@ export class ValidationQueueComponent implements OnInit {
       if (result === 'accept') {
         this.tenantService.resolveMismatch(record.id).subscribe({
           next: () => {
-            this.showSnackBar('Record resolved and validated successfully!', 'success');
+            this.showSnackBar('Record resolved and sent for review!', 'success');
             this.loadDataForCurrentTab();
           },
           error: (err) => this.showSnackBar('Failed to resolve record.', 'error')
@@ -211,6 +196,7 @@ export class ValidationQueueComponent implements OnInit {
     });
   }
 
+  // ADDED: The missing helper function
   getInitials(fullName: string): string {
     if (!fullName) return '?';
     const names = fullName.trim().split(' ');

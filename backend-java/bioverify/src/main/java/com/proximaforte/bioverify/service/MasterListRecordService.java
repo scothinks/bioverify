@@ -8,13 +8,15 @@ import com.proximaforte.bioverify.domain.Tenant;
 import com.proximaforte.bioverify.domain.User;
 import com.proximaforte.bioverify.domain.enums.RecordStatus;
 import com.proximaforte.bioverify.domain.enums.Role;
+import com.proximaforte.bioverify.dto.FindRecordRequestDto;
 import com.proximaforte.bioverify.dto.SotProfileDto;
 import com.proximaforte.bioverify.dto.UpdateRecordRequestDto;
 import com.proximaforte.bioverify.dto.ValidateRecordRequestDto;
+import com.proximaforte.bioverify.exception.RecordNotFoundException;
 import com.proximaforte.bioverify.repository.DepartmentRepository;
 import com.proximaforte.bioverify.repository.MasterListRecordRepository;
 import com.proximaforte.bioverify.repository.MinistryRepository;
-import com.proximaforte.bioverify.repository.UserRepository; // NEW: Import UserRepository
+import com.proximaforte.bioverify.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -38,20 +40,38 @@ public class MasterListRecordService {
     private final MasterListRecordRepository recordRepository;
     private final DepartmentRepository departmentRepository;
     private final MinistryRepository ministryRepository;
-    private final EmployeeIdService employeeIdService;
     private final ObjectMapper objectMapper;
-    private final UserRepository userRepository; // NEW: Inject UserRepository
+    private final UserRepository userRepository;
 
-    public List<MasterListRecord> getPendingApprovalQueue(User currentUser) {
+    @Transactional(readOnly = true)
+    public MasterListRecord findRecordForPol(FindRecordRequestDto request, User agent) {
+        if (request.getSsid() == null || request.getNin() == null) {
+            throw new IllegalArgumentException("SSID and NIN must not be null.");
+        }
+
+        String ssidHash = toSha256(request.getSsid());
+        String ninHash = toSha256(request.getNin());
+
+        MasterListRecord record = recordRepository
+                .findByTenantIdAndSsidHashAndNinHash(agent.getTenant().getId(), ssidHash, ninHash)
+                .orElseThrow(() -> new RecordNotFoundException("No record found with the provided identifiers."));
+
+        if (record.getStatus() != RecordStatus.REVIEWED) {
+            throw new IllegalStateException("This employee is not currently ready for Proof of Life.");
+        }
+
+        return record;
+    }
+
+    public List<MasterListRecord> getAwaitingReviewQueue(User currentUser) {
         UUID tenantId = currentUser.getTenant().getId();
-        List<RecordStatus> statuses = List.of(RecordStatus.PENDING_GRADE_VALIDATION);
+        List<RecordStatus> statuses = List.of(RecordStatus.AWAITING_REVIEW);
 
         if (currentUser.getRole() == Role.TENANT_ADMIN) {
             return recordRepository.findByTenantIdAndStatusIn(tenantId, statuses);
         }
 
         if (currentUser.getRole() == Role.REVIEWER) {
-            // NEW: Re-fetch the reviewer with their assignments to prevent LazyInitializationException
             User reviewer = userRepository.findUserWithAssignments(currentUser.getId()).orElse(currentUser);
             
             Set<Department> depts = reviewer.getAssignedDepartments();
@@ -73,7 +93,6 @@ public class MasterListRecordService {
         }
 
         if (currentUser.getRole() == Role.REVIEWER) {
-            // NEW: Re-fetch the reviewer with their assignments to prevent LazyInitializationException
             User reviewer = userRepository.findUserWithAssignments(currentUser.getId()).orElse(currentUser);
 
             Set<Department> depts = reviewer.getAssignedDepartments();
@@ -83,6 +102,30 @@ public class MasterListRecordService {
             }
             return recordRepository.findRecordsByReviewerAssignments(tenantId, statuses, depts, mins);
         }
+        return Collections.emptyList();
+    }
+
+    public List<MasterListRecord> getInvalidDocumentQueue(User currentUser) {
+        UUID tenantId = currentUser.getTenant().getId();
+        List<RecordStatus> statuses = List.of(RecordStatus.FLAGGED_INVALID_DOCUMENT);
+
+        // Tenant Admin sees all flagged documents for the tenant
+        if (currentUser.getRole() == Role.TENANT_ADMIN) {
+            return recordRepository.findByTenantIdAndStatusIn(tenantId, statuses);
+        }
+
+        // Reviewer sees only flagged documents from their assigned areas
+        if (currentUser.getRole() == Role.REVIEWER) {
+            User reviewer = userRepository.findUserWithAssignments(currentUser.getId()).orElse(currentUser);
+            
+            Set<Department> depts = reviewer.getAssignedDepartments();
+            Set<Ministry> mins = reviewer.getAssignedMinistries();
+            if ((depts == null || depts.isEmpty()) && (mins == null || mins.isEmpty())) {
+                return Collections.emptyList();
+            }
+            return recordRepository.findRecordsByReviewerAssignments(tenantId, statuses, depts, mins);
+        }
+
         return Collections.emptyList();
     }
 
@@ -121,17 +164,12 @@ public class MasterListRecordService {
         MasterListRecord record = recordRepository.findById(recordId)
                 .orElseThrow(() -> new EntityNotFoundException("Record not found with ID: " + recordId));
 
-        RecordStatus decision = request.getDecision();
-        if (decision != RecordStatus.VALIDATED && decision != RecordStatus.REJECTED) {
-            throw new IllegalArgumentException("Decision must be either VALIDATED or REJECTED.");
+        if (request.getDecision() == RecordStatus.REJECTED) {
+            record.setStatus(RecordStatus.REJECTED);
+        } else {
+            record.setStatus(RecordStatus.REVIEWED);
         }
 
-        if (decision == RecordStatus.VALIDATED && record.getEmployeeId() == null) {
-            String newWorkId = employeeIdService.generateNewWorkId(record.getTenant());
-            record.setEmployeeId(newWorkId);
-        }
-
-        record.setStatus(decision);
         record.setValidatedBy(reviewer);
         record.setValidatedAt(Instant.now());
 
@@ -153,13 +191,8 @@ public class MasterListRecordService {
 
         SotProfileDto sotProfile = objectMapper.readValue(record.getSotData(), SotProfileDto.class);
         updateRecordWithSotData(record, sotProfile);
-
-        if (record.getEmployeeId() == null) {
-            String newWorkId = employeeIdService.generateNewWorkId(record.getTenant());
-            record.setEmployeeId(newWorkId);
-        }
-
-        record.setStatus(RecordStatus.VALIDATED);
+        
+        record.setStatus(RecordStatus.AWAITING_REVIEW);
         record.setValidatedBy(reviewer);
         record.setValidatedAt(Instant.now());
 

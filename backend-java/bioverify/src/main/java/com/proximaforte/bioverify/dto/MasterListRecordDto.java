@@ -4,10 +4,12 @@ import com.proximaforte.bioverify.domain.MasterListRecord;
 import com.proximaforte.bioverify.domain.enums.RecordStatus;
 import lombok.Getter;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
 public class MasterListRecordDto {
+    // Existing fields
     private UUID id;
     private String employeeId; // WID
     private String fullName;
@@ -24,7 +26,16 @@ public class MasterListRecordDto {
     private String validatedByEmail;
     private Instant createdAt;
 
+    // --- NEWLY ADDED FIELDS ---
+    private String bvn;
+    private LocalDate dateOfBirth;
+    private String gender;
+    private String phoneNumber;
+    private String email;
+
+
     public MasterListRecordDto(MasterListRecord record) {
+        // Existing mappings
         this.id = record.getId();
         this.employeeId = record.getEmployeeId();
         this.fullName = record.getFullName();
@@ -40,5 +51,12 @@ public class MasterListRecordDto {
         this.validatedAt = record.getValidatedAt();
         this.validatedByEmail = record.getValidatedBy() != null ? record.getValidatedBy().getEmail() : null;
         this.createdAt = record.getCreatedAt();
+        
+        // --- MAPPINGS FOR NEW FIELDS ---
+        this.bvn = record.getBvn();
+        this.dateOfBirth = record.getDateOfBirth();
+        this.gender = record.getGender();
+        this.phoneNumber = record.getPhoneNumber();
+        this.email = record.getEmail();
     }
 }

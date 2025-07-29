@@ -44,7 +44,9 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<ReviewerDataDto> getReviewersForTenant(UUID tenantId) {
         List<User> reviewers = userRepository.findByTenantIdAndRole(tenantId, Role.REVIEWER);
-        List<RecordStatus> statusesToCount = List.of(RecordStatus.PENDING_GRADE_VALIDATION, RecordStatus.FLAGGED_DATA_MISMATCH);
+        
+        // UPDATED: Use the new 'AWAITING_REVIEW' status for counting
+        List<RecordStatus> statusesToCount = List.of(RecordStatus.AWAITING_REVIEW, RecordStatus.FLAGGED_DATA_MISMATCH);
 
         return reviewers.stream().map(reviewer -> {
             long count = 0;
@@ -59,7 +61,6 @@ public class UserService {
                 ).size();
             }
             
-            // CORRECTED: Map entities to DTOs to prevent serialization errors
             Set<MinistryDto> ministryDtos = reviewerWithAssignments.getAssignedMinistries().stream()
                     .map(MinistryDto::new)
                     .collect(Collectors.toSet());

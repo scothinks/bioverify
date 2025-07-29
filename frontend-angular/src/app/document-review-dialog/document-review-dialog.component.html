@@ -1,0 +1,41 @@
+<div class.dialog-container>
+  <div mat-dialog-title class="dialog-header">
+    <mat-icon>visibility</mat-icon>
+    <span>Review Flagged Documents</span>
+    <button mat-icon-button (click)="close()" class="close-button" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div mat-dialog-content>
+    <div *ngIf="isLoading" class="spinner-overlay">
+      <mat-spinner></mat-spinner>
+    </div>
+
+    <h3>Employee: {{ record.fullName }}</h3>
+    <p>This record was flagged because the documents submitted during the Proof of Life check failed automated validation. Please review the documents and manually approve or reject the record.</p>
+
+    <mat-divider></mat-divider>
+
+    <div class="document-viewer-placeholder">
+      <h4>Uploaded Documents</h4>
+      <p><em>(Document viewer/links would appear here)</em></p>
+      <ul>
+        <li>Live Photo: <a>photo_capture.jpg</a></li>
+        <li>Letter of Employment: <a>letter.pdf</a></li>
+        <li>Work ID: <a>work_id.png</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div mat-dialog-actions align="end">
+    <button mat-stroked-button color="warn" (click)="reject()" [disabled]="isLoading">
+      <mat-icon>cancel</mat-icon>
+      Reject
+    </button>
+    <button mat-flat-button color="primary" (click)="approve()" [disabled]="isLoading">
+      <mat-icon>check_circle</mat-icon>
+      Approve Submission
+    </button>
+  </div>
+</div>

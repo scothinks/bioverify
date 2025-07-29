@@ -37,7 +37,7 @@ public class AuthenticationService {
     public User register(RegisterRequest request) {
         Tenant tenant = tenantRepository.findById(request.getTenantId())
                 .orElseThrow(() -> new IllegalStateException("Tenant not found"));
-        
+
         User user = new User();
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
@@ -64,8 +64,7 @@ public class AuthenticationService {
         MasterListRecord record = recordRepository.findById(request.getRecordId())
                 .orElseThrow(() -> new RecordNotFoundException("Cannot create account: Master record not found."));
 
-        // CORRECTED: Allow account creation for both pending and fully validated records
-        if (record.getStatus() != RecordStatus.PENDING_GRADE_VALIDATION && record.getStatus() != RecordStatus.VALIDATED) {
+        if (record.getStatus() != RecordStatus.AWAITING_REVIEW && record.getStatus() != RecordStatus.REVIEWED) {
             throw new IllegalStateException("Cannot create account: Record is not in a valid state for account creation.");
         }
         if (record.getUser() != null) {
@@ -83,6 +82,36 @@ public class AuthenticationService {
         record.setUser(savedUser);
         recordRepository.save(record);
         return savedUser;
+    }
+
+    /**
+     * UPDATED: Creates a self-service user account using a verified email.
+     * This is called systemically after a successful Proof of Life check.
+     */
+    @Transactional
+    public User createSelfServiceAccountForRecord(MasterListRecord record, String verifiedEmail) {
+        if (record.getUser() != null) {
+            throw new IllegalStateException("An account has already been created for this employee record.");
+        }
+        if (verifiedEmail == null || verifiedEmail.isBlank()) {
+            throw new IllegalStateException("Cannot create account: A valid email address provided by the agent is required.");
+        }
+
+        // Generate a random, secure temporary password.
+        // This will be discarded when the user sets their own password via the activation link.
+        String temporaryPassword = UUID.randomUUID().toString();
+
+        User user = new User();
+        user.setFullName(record.getFullName());
+        user.setEmail(verifiedEmail); // Use the agent-provided email
+        user.setPassword(passwordEncoder.encode(temporaryPassword));
+        user.setRole(Role.SELF_SERVICE_USER);
+        user.setTenant(record.getTenant());
+        
+        // NOTE: The logic to generate an activation token and call an EmailService
+        // to send the activation link would be added here.
+
+        return userRepository.save(user);
     }
 
     public AuthResponse authenticate(AuthenticationRequest request) {

@@ -4,8 +4,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import { MasterListRecord } from '../models/master-list-record.model';
 import { Router } from '@angular/router';
+import { MasterListRecordDto } from './pol.service'; // IMPORT THE CORRECT DTO
 
 export interface AuthResponse {
   token: string;
@@ -62,13 +62,8 @@ export class AuthService {
     );
   }
 
-  /**
-   * For an EMPLOYEE to create their own account after their identity has been successfully verified.
-   * This now returns an AuthResponse with a token and automatically logs the user in.
-   */
   createAccount(accountData: AuthRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.authApiUrl}/create-account`, accountData).pipe(
-      // CORRECTED: Automatically handle the token upon successful account creation
       tap(response => this.setToken(response.token)),
       catchError(this.handleError)
     );
@@ -84,8 +79,12 @@ export class AuthService {
     );
   }
 
-  getCurrentUserRecord(): Observable<MasterListRecord> {
-    return this.http.get<MasterListRecord>(`${this.v1ApiUrl}/users/me/record`).pipe(
+  /**
+   * CORRECTED: This method now fetches the MasterListRecordDto.
+   * This requires a new backend endpoint: GET /api/v1/users/me/record
+   */
+  getCurrentUserRecord(): Observable<MasterListRecordDto> {
+    return this.http.get<MasterListRecordDto>(`${this.v1ApiUrl}/users/me/record`).pipe(
         catchError(this.handleError)
     );
   }
@@ -96,7 +95,7 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
-  public setToken(token: string): void { // Made public to be accessible from createAccount
+  public setToken(token: string): void {
     localStorage.setItem(this.TOKEN_KEY, token);
     this.isLoggedInSubject.next(true);
   }

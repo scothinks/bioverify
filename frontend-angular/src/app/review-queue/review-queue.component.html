@@ -1,11 +1,11 @@
-<div class="validation-queue-container">
+<div class="review-queue-container">
   <mat-card class="queue-card">
     <mat-card-header class="enhanced-header">
       <div class="header-content">
         <div class="title-section">
           <mat-icon class="header-icon">fact_check</mat-icon>
           <div class="title-text">
-            <mat-card-title>Validation Queues</mat-card-title>
+            <mat-card-title>Review Queues</mat-card-title>
             <mat-card-subtitle>Review records pending approval or resolve data mismatches</mat-card-subtitle>
           </div>
         </div>
@@ -53,12 +53,16 @@
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon>pending_actions</mat-icon>
-            Pending Approval
-            <span *ngIf="pendingRecords.data.length > 0" class="tab-badge">{{pendingRecords.data.length}}</span>
+            <!-- UPDATED: Tab label -->
+            Awaiting Review
+            <!-- UPDATED: Data source for badge count -->
+            <span *ngIf="awaitingReviewRecords.data.length > 0" class="tab-badge">{{awaitingReviewRecords.data.length}}</span>
           </ng-template>
 
-          <div *ngIf="pendingRecords.data.length > 0; else noPendingRecords" class="table-container">
-            <table mat-table [dataSource]="pendingRecords" class="enhanced-table">
+          <!-- UPDATED: Data source for table and empty state -->
+          <div *ngIf="awaitingReviewRecords.data.length > 0; else noAwaitingReviewRecords" class="table-container">
+            <!-- UPDATED: Data source for table -->
+            <table mat-table [dataSource]="awaitingReviewRecords" class="enhanced-table">
               <ng-container matColumnDef="fullName">
                 <th mat-header-cell *matHeaderCellDef>Employee</th>
                 <td mat-cell *matCellDef="let record" class="name-cell"> 
@@ -81,10 +85,6 @@
                 <td mat-cell *matCellDef="let record"> 
                   <div class="grade-badge">{{record.gradeLevel}}</div>
                 </td>
-              </ng-container>
-              <ng-container matColumnDef="salaryGradeId">
-                <th mat-header-cell *matHeaderCellDef>Salary Grade ID</th>
-                <td mat-cell *matCellDef="let record">{{record.salaryGradeId}}</td>
               </ng-container>
               <ng-container matColumnDef="salaryStructure">
                 <th mat-header-cell *matHeaderCellDef>Salary Structure</th>
@@ -110,13 +110,15 @@
               <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
               <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
             </table>
-            <mat-paginator #pendingPaginator [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons></mat-paginator>
+            <!-- UPDATED: Paginator reference -->
+            <mat-paginator #awaitingReviewPaginator [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons></mat-paginator>
           </div>
-          <ng-template #noPendingRecords>
+          <!-- UPDATED: Empty state template reference and text -->
+          <ng-template #noAwaitingReviewRecords>
             <div class="empty-state">
               <mat-icon>playlist_add_check</mat-icon>
               <h3>Queue is Clear</h3>
-              <p>No records are currently pending approval.</p>
+              <p>No records are currently awaiting review.</p>
             </div>
           </ng-template>
         </mat-tab>
@@ -152,10 +154,6 @@
                 <td mat-cell *matCellDef="let record"> 
                   <div class="grade-badge">{{record.gradeLevel}}</div>
                 </td>
-              </ng-container>
-              <ng-container matColumnDef="salaryGradeId">
-                <th mat-header-cell *matHeaderCellDef>Salary Grade ID</th>
-                <td mat-cell *matCellDef="let record">{{record.salaryGradeId}}</td>
               </ng-container>
               <ng-container matColumnDef="salaryStructure">
                 <th mat-header-cell *matHeaderCellDef>Salary Structure</th>

@@ -1,0 +1,128 @@
+<div class="agent-dashboard-container">
+
+  <mat-card class="tool-card" *ngIf="!selectedRecord; else captureView">
+    <mat-card-header>
+      <mat-card-title>Agent Proof of Life Station</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+
+      <form [formGroup]="searchForm" (ngSubmit)="onSearchSubmit()">
+        <p>Enter employee details to begin the Proof of Life process.</p>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Employee SSID</mat-label>
+          <input matInput formControlName="ssid" placeholder="Enter employee's SSID">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Employee NIN</mat-label>
+          <input matInput formControlName="nin" placeholder="Enter employee's NIN">
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="submit" [disabled]="searchForm.invalid || isLoading" class="full-width">
+          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          <span *ngIf="!isLoading">Find Employee</span>
+        </button>
+      </form>
+
+      <div *ngIf="errorMessage" class="message-container error">{{ errorMessage }}</div>
+      <div *ngIf="isLoading" class="spinner-container"><mat-spinner diameter="50"></mat-spinner></div>
+
+    </mat-card-content>
+  </mat-card>
+
+  <ng-template #captureView>
+    <mat-card class="tool-card">
+      <mat-card-header>
+        <button mat-icon-button (click)="resetToSearch()" class="back-button" aria-label="Back to search">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <mat-card-title>Process PoL for: {{ selectedRecord?.fullName }}</mat-card-title>
+        <mat-card-subtitle>Employee ID: {{ selectedRecord?.employeeId || 'N/A' }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+
+        <form [formGroup]="polForm">
+          <h3>1. Confirm Employee Email</h3>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Employee Email Address</mat-label>
+            <input matInput formControlName="email" type="email" placeholder="Enter employee's email">
+            <mat-error *ngIf="polForm.get('email')?.hasError('required')">Email is required.</mat-error>
+            <mat-error *ngIf="polForm.get('email')?.hasError('email')">Please enter a valid email.</mat-error>
+          </mat-form-field>
+        </form>
+        <mat-divider></mat-divider>
+
+        <div>
+          <h3>2. Capture Photo</h3>
+          <button mat-stroked-button color="primary" (click)="toggleWebcam()">
+            <mat-icon>photo_camera</mat-icon>
+            Capture Live Photo
+          </button>
+          
+          <div *ngIf="webcamImage" class="photo-preview">
+            <img [src]="webcamImage.imageAsDataUrl" alt="Captured Photo"/>
+          </div>
+          <div *ngIf="capturedPhoto && !webcamImage" class="file-list">
+            <mat-icon>check_circle</mat-icon> Photo selected.
+          </div>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div>
+          <h3>3. Upload Documents</h3>
+          
+          <div class="document-upload">
+            <button mat-stroked-button (click)="loeInput.click()">
+              <mat-icon>attach_file</mat-icon>
+              Upload Letter of Employment
+            </button>
+            <input type="file" hidden #loeInput (change)="onLetterOfEmploymentSelected($event)">
+            <div *ngIf="letterOfEmploymentFile" class="file-list">
+              <mat-icon color="primary">check_circle</mat-icon> {{ letterOfEmploymentFile.name }}
+            </div>
+          </div>
+
+          <div class="document-upload">
+            <button mat-stroked-button (click)="workIdInput.click()">
+              <mat-icon>badge</mat-icon>
+              Upload Work ID
+            </button>
+            <input type="file" hidden #workIdInput (change)="onWorkIdSelected($event)">
+            <div *ngIf="workIdFile" class="file-list">
+              <mat-icon color="primary">check_circle</mat-icon> {{ workIdFile.name }}
+            </div>
+          </div>
+        </div>
+
+        <mat-divider></mat-divider>
+        
+        <button mat-raised-button color="primary" 
+                (click)="onPoLSubmit()" 
+                [disabled]="polForm.invalid || !capturedPhoto || !letterOfEmploymentFile || !workIdFile || isLoading" 
+                class="full-width submit-button">
+          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          <span *ngIf="!isLoading">Complete & Activate Account</span>
+        </button>
+        <div *ngIf="errorMessage" class="message-container error">{{ errorMessage }}</div>
+
+      </mat-card-content>
+    </mat-card>
+  </ng-template>
+</div>
+
+<div class="webcam-modal" *ngIf="showWebcam">
+  <div class="webcam-content">
+    <webcam
+      [trigger]="trigger$"
+      (imageCapture)="handleImage($event)"
+      [width]="500"
+      [height]="375"
+    ></webcam>
+    <div class="webcam-controls">
+      <button mat-raised-button color="primary" (click)="triggerSnapshot()">Snap Photo</button>
+      <button mat-button (click)="toggleWebcam()">Close Camera</button>
+    </div>
+  </div>
+</div>

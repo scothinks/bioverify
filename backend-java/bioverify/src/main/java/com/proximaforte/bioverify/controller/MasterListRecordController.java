@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 public class MasterListRecordController {
 
     private final MasterListUploadService uploadService;
-    private final VerificationService verificationService;
     private final MasterListRecordRepository recordRepository;
     private final BulkVerificationService bulkVerificationService;
     private final MasterListRecordService recordService;
@@ -40,10 +39,19 @@ public class MasterListRecordController {
     private final PayrollExportLogRepository payrollExportLogRepository;
     private final FileStorageService fileStorageService;
 
-    @GetMapping("/queue/pending-approval")
+    @PostMapping("/find-for-pol")
+    @PreAuthorize("hasAuthority('AGENT')")
+    public ResponseEntity<MasterListRecordDto> findRecordForPol(
+            @RequestBody FindRecordRequestDto request,
+            @AuthenticationPrincipal User currentUser) {
+        MasterListRecord record = recordService.findRecordForPol(request, currentUser);
+        return ResponseEntity.ok(new MasterListRecordDto(record));
+    }
+
+    @GetMapping("/queue/awaiting-review")
     @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
-    public ResponseEntity<List<MasterListRecordDto>> getPendingApprovalQueue(@AuthenticationPrincipal User currentUser) {
-        List<MasterListRecord> records = recordService.getPendingApprovalQueue(currentUser);
+    public ResponseEntity<List<MasterListRecordDto>> getAwaitingReviewQueue(@AuthenticationPrincipal User currentUser) {
+        List<MasterListRecord> records = recordService.getAwaitingReviewQueue(currentUser);
         List<MasterListRecordDto> recordDtos = records.stream()
                 .map(MasterListRecordDto::new)
                 .collect(Collectors.toList());
@@ -59,8 +67,18 @@ public class MasterListRecordController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(recordDtos);
     }
+    
+    // NEW: Endpoint for the admin review queue for invalid documents
+    @GetMapping("/queue/invalid-documents")
+    @PreAuthorize("hasAuthority('TENANT_ADMIN')")
+    public ResponseEntity<List<MasterListRecordDto>> getInvalidDocumentQueue(@AuthenticationPrincipal User currentUser) {
+        List<MasterListRecord> records = recordService.getInvalidDocumentQueue(currentUser);
+        List<MasterListRecordDto> recordDtos = records.stream()
+                .map(MasterListRecordDto::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(recordDtos);
+    }
 
-    // --- NEW ENDPOINT FOR "NOT IN SOT" RECORDS ---
     @GetMapping("/flagged/not-in-sot")
     @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<List<MasterListRecordDto>> getFlaggedNotInSot(@AuthenticationPrincipal User currentUser) {
@@ -119,18 +137,6 @@ public class MasterListRecordController {
         return ResponseEntity.ok(summary);
     }
 
-    @PostMapping("/{recordId}/verify")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<VerificationResultDto> verifyRecord(
-            @PathVariable UUID recordId,
-            @RequestBody VerifyIdentityRequest request,
-            @AuthenticationPrincipal User currentUser) {
-        VerificationResultDto result = verificationService.initiateVerification(
-                currentUser.getTenant().getId(), recordId, request.getSsid(), request.getNin()
-        );
-        return ResponseEntity.ok(result);
-    }
-
     @PostMapping("/bulk-verify")
     @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<?> bulkVerify(@AuthenticationPrincipal User currentUser) {
@@ -157,7 +163,6 @@ public class MasterListRecordController {
     }
 
     // --- PAYROLL EXPORT ENDPOINTS ---
-
     @PostMapping("/export")
     @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<?> initiateExport(@AuthenticationPrincipal User currentUser) {

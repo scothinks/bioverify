@@ -1,12 +1,12 @@
 <div class="payroll-export-container">
   <mat-card class="list-card">
     <mat-card-header class="enhanced-header">
-      <div class="header-content">
+      <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
         <div class="title-section">
           <mat-icon class="header-icon">paid</mat-icon>
           <div class="title-text">
             <mat-card-title>Payroll Exports</mat-card-title>
-            <mat-card-subtitle>Generate and download payroll files</mat-card-subtitle>
+            <mat-card-subtitle>Generate and download payroll files for active employees</mat-card-subtitle>
           </div>
         </div>
         <div class="header-actions">
@@ -24,6 +24,8 @@
     <mat-card-content class="enhanced-content">
       <div *ngIf="!isLoading; else loading">
         <div class="table-container" *ngIf="dataSource.data.length > 0; else noExports">
+          <div class="table-header-actions">
+          </div>
           <div class="table-wrapper">
             <table mat-table [dataSource]="dataSource" class="enhanced-table">
 
@@ -31,7 +33,7 @@
                 <th mat-header-cell *matHeaderCellDef>Status</th>
                 <td mat-cell *matCellDef="let log">
                   <div class="status-badge" [ngClass]="getStatusClass(log.status)">
-                    <mat-icon [class.spinner-icon]="log.status === 'PROCESSING'">{{ getStatusIcon(log.status) }}</mat-icon>
+                    <mat-icon [class.spinner-icon]="log.status === 'RUNNING' || log.status === 'PENDING'">{{ getStatusIcon(log.status) }}</mat-icon>
                     <span>{{ log.status | titlecase }}</span>
                   </div>
                 </td>

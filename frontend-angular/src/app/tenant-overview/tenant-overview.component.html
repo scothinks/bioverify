@@ -30,24 +30,24 @@
         <mat-card class="stat-card">
           <mat-card-header>
             <mat-icon mat-card-avatar>task_alt</mat-icon>
-            <mat-card-title class="stat-number">{{ stats.totalValidated }}</mat-card-title>
-            <mat-card-subtitle>Total Validated (Final)</mat-card-subtitle>
+            <mat-card-title class="stat-number">{{ stats.totalActive }}</mat-card-title>
+            <mat-card-subtitle>Total Active (Payroll Ready)</mat-card-subtitle>
           </mat-card-header>
         </mat-card>
       </mat-grid-tile>
       
       <mat-grid-tile>
-        <mat-card class="stat-card clickable" (click)="navigate('validation')">
+        <mat-card class="stat-card clickable" (click)="navigate('review-queue')">
           <mat-card-header>
             <mat-icon mat-card-avatar>pending_actions</mat-icon>
-            <mat-card-title class="stat-number">{{ stats.totalPendingApproval }}</mat-card-title>
-            <mat-card-subtitle>Pending Validation</mat-card-subtitle>
+            <mat-card-title class="stat-number">{{ stats.totalAwaitingReview }}</mat-card-title>
+            <mat-card-subtitle>Awaiting Review</mat-card-subtitle>
           </mat-card-header>
         </mat-card>
       </mat-grid-tile>
 
       <mat-grid-tile>
-        <mat-card class="stat-card clickable" (click)="navigate('validation')">
+        <mat-card class="stat-card clickable" (click)="navigate('review-queue')">
           <mat-card-header>
             <mat-icon mat-card-avatar color="warn">error_outline</mat-icon>
             <mat-card-title class="stat-number warn">{{ stats.totalMismatched }}</mat-card-title>

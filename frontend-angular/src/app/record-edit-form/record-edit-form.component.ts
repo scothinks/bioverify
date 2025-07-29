@@ -6,10 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-// Uncomment if using the date picker
-// import { MatDatepickerModule } from '@angular/material/datepicker';
-// import { MatNativeDateModule } from '@angular/material/core';
-import { MasterListRecord } from '../models/master-list-record.model';
+import { MasterListRecordDto } from '../services/pol.service'; // Use the DTO
 import { TenantService } from '../services/tenant.service';
 
 @Component({
@@ -23,8 +20,6 @@ import { TenantService } from '../services/tenant.service';
     MatInputModule,
     MatButtonModule,
     MatIconModule,
-    // MatDatepickerModule,
-    // MatNativeDateModule
   ],
   templateUrl: './record-edit-form.component.html',
   styleUrls: ['./record-edit-form.component.scss']
@@ -35,15 +30,15 @@ export class RecordEditFormComponent implements OnInit {
 
   constructor(
     private dialogRef: MatDialogRef<RecordEditFormComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: MasterListRecord,
+    @Inject(MAT_DIALOG_DATA) public data: MasterListRecordDto, // Use the DTO
     private fb: FormBuilder,
     private tenantService: TenantService
   ) {
     // Initialize the form with data from the dialog
     this.editForm = this.fb.group({
       fullName: [this.data.fullName, Validators.required],
-      department: [this.data.department, Validators.required],
-      ministry: [this.data.ministry],
+      department: [this.data.department, Validators.required], // Use departmentName
+      ministry: [this.data.ministry], // Use ministryName
       gradeLevel: [this.data.gradeLevel],
       salaryStructure: [this.data.salaryStructure],
       dateOfBirth: [this.data.dateOfBirth]
@@ -53,7 +48,6 @@ export class RecordEditFormComponent implements OnInit {
   ngOnInit(): void {}
 
   onCancel(): void {
-    // Close the dialog without sending any data back
     this.dialogRef.close();
   }
 
@@ -61,12 +55,10 @@ export class RecordEditFormComponent implements OnInit {
     if (this.editForm.valid) {
       this.tenantService.updateRecord(this.data.id, this.editForm.value).subscribe({
         next: (updatedRecord) => {
-          // Close the dialog and send the updated record back to the queue component
           this.dialogRef.close(updatedRecord);
         },
         error: (err) => {
           console.error('Failed to update record:', err);
-          // A more user-friendly error display could be implemented here
           alert('Error: Could not save changes. ' + err.message);
         }
       });

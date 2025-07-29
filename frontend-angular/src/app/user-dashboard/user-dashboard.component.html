@@ -17,12 +17,8 @@
             <span class="detail-value status-badge {{ userRecord.status }}">{{ userRecord.status | titlecase }}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-label">SSID</span>
-            <span class="detail-value">{{ userRecord.ssid || 'N/A' }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">NIN</span>
-            <span class="detail-value">{{ userRecord.nin || 'N/A' }}</span>
+            <span class="detail-label">Email</span>
+            <span class="detail-value">{{ userRecord.email || 'N/A' }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Ministry</span>
@@ -36,34 +32,38 @@
             <span class="detail-label">Grade Level</span>
             <span class="detail-value">{{ userRecord.gradeLevel || 'N/A' }}</span>
           </div>
+          <div class="detail-row">
+            <span class="detail-label">Last Liveness Check</span>
+            <span class="detail-value">{{ userRecord.lastLivenessCheckDate ? (userRecord.lastLivenessCheckDate | date:'longDate') : 'N/A'  }}</span>
+          </div>
         </mat-card-content>
       </mat-card>
     </div>
 
     <div class="actions-column">
-      <mat-card *ngIf="userRecord.status === 'AWAITING_REVALIDATION'" class="action-card verification-required-card">
+      
+      <mat-card 
+        class="action-card liveness-countdown-card"
+        [ngClass]="{
+          'due-soon': daysRemaining !== null && daysRemaining <= 14,
+          'overdue': daysRemaining !== null && daysRemaining === 0
+        }"
+        *ngIf="userRecord.status === 'ACTIVE' && daysRemaining !== null">
+        
         <mat-card-header>
-          <mat-icon mat-card-avatar color="warn">warning</mat-icon>
-          <mat-card-title>Action Required</mat-card-title>
-          <mat-card-subtitle>Please re-verify your identity</mat-card-subtitle>
+          <mat-icon mat-card-avatar>timer</mat-icon>
+          <mat-card-title>Liveness Check Due</mat-card-title>
+          <mat-card-subtitle>Next check required in:</mat-card-subtitle>
         </mat-card-header>
-        <mat-card-content>
-          <p>Your record details have been updated. Please re-submit your SSID and NIN to continue.</p>
-          <form [formGroup]="reverifyForm" (ngSubmit)="onReverifySubmit()">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>SSID</mat-label>
-              <input matInput formControlName="ssid">
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>NIN</mat-label>
-              <input matInput formControlName="nin">
-            </mat-form-field>
-            <button mat-flat-button class="primary-button" type="submit" [disabled]="reverifyForm.invalid || isLoading">
-              <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
-              <span *ngIf="!isLoading">Submit Re-verification</span>
-            </button>
-          </form>
-          <div *ngIf="statusMessage" class="status-message">{{ statusMessage }}</div>
+        <mat-card-content class="countdown-content">
+          <div class="days-remaining">{{ daysRemaining }}</div>
+          <div class="days-label">Days</div>
+          
+          <div *ngIf="isLivenessCheckDue" class="liveness-action">
+            <mat-divider></mat-divider>
+            <p>Your action is required to keep your account active.</p>
+            <app-liveness-check (checkCompleted)="onLivenessCheckCompleted()"></app-liveness-check>
+          </div>
         </mat-card-content>
       </mat-card>
 
@@ -81,21 +81,7 @@
         </mat-card-actions>
       </mat-card>
 
-      <mat-card class="action-card">
-        <mat-card-header>
-          <mat-icon mat-card-avatar>face</mat-icon>
-          <mat-card-title>Liveness Check</mat-card-title>
-          <mat-card-subtitle>Future Feature</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <p>Complete your periodic "I Am Alive" verification digitally from anywhere.</p>
-        </mat-card-content>
-        <mat-card-actions align="end">
-          <button mat-flat-button disabled>Coming Soon</button>
-        </mat-card-actions>
-      </mat-card>
     </div>
-
   </div>
 </div>
 

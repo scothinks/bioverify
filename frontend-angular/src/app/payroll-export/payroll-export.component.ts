@@ -64,6 +64,8 @@ export class PayrollExportComponent implements OnInit, OnDestroy, AfterViewInit 
         this.isLoading = false;
         if (this.shouldPoll(data)) {
           this.startPolling();
+        } else {
+          this.stopPolling();
         }
       },
       error: (err) => {
@@ -80,7 +82,7 @@ export class PayrollExportComponent implements OnInit, OnDestroy, AfterViewInit 
       next: () => {
         this.isGenerating = false;
         this.showSnackBar('Payroll export job initiated! The list will update shortly.', 'success-snackbar');
-        setTimeout(() => this.loadHistory(), 3000); // Refresh after a few seconds
+        setTimeout(() => this.loadHistory(), 3000);
       },
       error: (err) => {
         this.isGenerating = false;
@@ -112,7 +114,7 @@ export class PayrollExportComponent implements OnInit, OnDestroy, AfterViewInit 
   startPolling(): void {
     if (this.pollingSubscription && !this.pollingSubscription.closed) return;
     
-    this.pollingSubscription = timer(5000, 15000) // Poll every 15 seconds
+    this.pollingSubscription = timer(5000, 15000)
       .pipe(switchMap(() => this.tenantService.getExportHistory()))
       .subscribe(data => {
         this.dataSource.data = data;
@@ -127,7 +129,7 @@ export class PayrollExportComponent implements OnInit, OnDestroy, AfterViewInit 
   }
 
   shouldPoll(jobs: PayrollExportLog[]): boolean {
-    return jobs.some(job => job.status === 'PENDING' || job.status === 'PROCESSING');
+    return jobs.some(job => job.status === 'PENDING' || job.status === 'RUNNING');
   }
 
   getStatusClass(status: string): string {
@@ -138,7 +140,7 @@ export class PayrollExportComponent implements OnInit, OnDestroy, AfterViewInit 
     switch (status) {
       case 'COMPLETED': return 'check_circle';
       case 'FAILED': return 'error';
-      case 'PROCESSING': return 'autorenew';
+      case 'RUNNING': return 'autorenew';
       case 'PENDING': return 'hourglass_empty';
       default: return 'help';
     }

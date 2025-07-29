@@ -7,7 +7,7 @@ import { roleGuard } from './guards/role.guard';
 // Import the layout dashboard components
 import { GlobalAdminDashboardComponent } from './dashboards/global-admin-dashboard/global-admin-dashboard.component';
 import { TenantAdminDashboardComponent } from './dashboards/tenant-admin-dashboard/tenant-admin-dashboard.component';
-import { AgentDashboardComponent } from './dashboards/agent-dashboard/agent-dashboard.component';
+import { AgentDashboardComponent } from './dashboards/agent-dashboard/agent-dashboard.component'; // This is the shell
 import { SelfServiceUserDashboardComponent } from './dashboards/self-service-user-dashboard/self-service-user-dashboard.component';
 import { ReviewerDashboardComponent } from './dashboards/reviewer-dashboard/reviewer-dashboard.component';
 
@@ -18,12 +18,13 @@ import { FileUploadComponent } from './file-upload/file-upload.component';
 import { MasterListComponent } from './master-list/master-list.component';
 import { BulkVerificationComponent } from './bulk-verification/bulk-verification.component';
 import { UserDashboardComponent } from './user-dashboard/user-dashboard.component';
-import { ValidationQueueComponent } from './validation-queue/validation-queue.component';
+import { ReviewQueueComponent } from './review-queue/review-queue.component';
 import { PayrollExportComponent } from './payroll-export/payroll-export.component';
 import { NotFoundRecordsComponent } from './not-found-records/not-found-records.component';
 import { TenantOverviewComponent } from './tenant-overview/tenant-overview.component';
-// NEW: Import the new component
 import { GlobalPerformanceOverviewComponent } from './dashboards/global-admin-dashboard/global-performance-overview/global-performance-overview.component';
+import { InvalidDocumentQueueComponent } from './invalid-document-queue/invalid-document-queue.component';
+import { AgentLayoutComponent } from './agent-layout/agent-layout.component'; // This is the content
 
 export const routes: Routes = [
   // Public routes
@@ -41,10 +42,8 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { expectedRole: 'GLOBAL_SUPER_ADMIN' },
         children: [
-          // NEW: Add the route for the performance overview
           { path: 'overview', component: GlobalPerformanceOverviewComponent },
           { path: 'tenants', component: TenantListComponent },
-          // NEW: Set overview as the default route
           { path: '', redirectTo: 'overview', pathMatch: 'full' }
         ]
       },
@@ -59,7 +58,8 @@ export const routes: Routes = [
           { path: 'uploads', component: FileUploadComponent },
           { path: 'records', component: MasterListComponent },
           { path: 'bulk-verify', component: BulkVerificationComponent },
-          { path: 'validation', component: ValidationQueueComponent },
+          { path: 'review-queue', component: ReviewQueueComponent },
+          { path: 'invalid-documents', component: InvalidDocumentQueueComponent },
           { path: 'export', component: PayrollExportComponent },
           { path: 'not-found', component: NotFoundRecordsComponent },
           { path: '', redirectTo: 'overview', pathMatch: 'full' }
@@ -67,12 +67,12 @@ export const routes: Routes = [
       },
       {
         path: 'agent',
-        component: AgentDashboardComponent,
+        component: AgentDashboardComponent, // The shell
         canActivate: [roleGuard],
         data: { expectedRole: 'AGENT' },
         children: [
-          { path: 'verify', component: EmployeeRegistrationComponent },
-          { path: '', redirectTo: 'verify', pathMatch: 'full' }
+          // The content to load inside the shell's <router-outlet>
+          { path: '', component: AgentLayoutComponent, pathMatch: 'full' }
         ]
       },
       {
@@ -81,7 +81,7 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { expectedRole: 'REVIEWER' },
         children: [
-          { path: 'queue', component: ValidationQueueComponent },
+          { path: 'queue', component: ReviewQueueComponent },
           { path: '', redirectTo: 'queue', pathMatch: 'full' }
         ]
       },

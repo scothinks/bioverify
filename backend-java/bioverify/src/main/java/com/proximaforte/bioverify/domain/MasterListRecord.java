@@ -9,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -31,6 +32,9 @@ public class MasterListRecord {
     private User user;
 
     // --- Core Identifiers ---
+    @Column(unique = true)
+    private String wid; // NEW: Added Work ID
+
     @Column
     @Convert(converter = StringCryptoConverter.class)
     private String psn;
@@ -56,8 +60,6 @@ public class MasterListRecord {
     @Convert(converter = StringCryptoConverter.class)
     private String bvn;
 
-    // --- THIS LINE IS CORRECTED ---
-    // Removed 'updatable = false' to allow the ID to be set during the validation update.
     @Column(unique = true)
     private String employeeId;
 
@@ -108,6 +110,29 @@ public class MasterListRecord {
     @Column
     private Boolean onTransfer;
 
+    // --- Proof of Life & Liveness Details ---
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pol_agent_id")
+    private User polAgent;
+
+    @Column
+    private Instant polPerformedAt;
+
+    @Column
+    private String photoUrl;
+
+    @ElementCollection
+    @CollectionTable(name = "record_document_urls", joinColumns = @JoinColumn(name = "record_id"))
+    @Column(name = "document_url")
+    private List<String> documentUrls;
+
+    @Column
+    private LocalDate lastLivenessCheckDate;
+
+    @Column
+    private LocalDate nextLivenessCheckDate;
+
+
     // --- System & Status Fields ---
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -115,8 +140,6 @@ public class MasterListRecord {
 
     @Column
     private Boolean biometricStatus;
-
-    private LocalDate lastProofOfLifeDate;
 
     @Column(columnDefinition = "TEXT")
     private String originalUploadData;
