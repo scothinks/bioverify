@@ -3,15 +3,15 @@ package com.proximaforte.bioverify.service;
 import com.proximaforte.bioverify.domain.*;
 import com.proximaforte.bioverify.domain.enums.RecordStatus;
 import com.proximaforte.bioverify.domain.enums.Role;
-import com.proximaforte.bioverify.dto.AuthResponse;
-import com.proximaforte.bioverify.dto.AuthenticationRequest;
-import com.proximaforte.bioverify.dto.CreateAccountRequest;
-import com.proximaforte.bioverify.dto.RegisterRequest;
+import com.proximaforte.bioverify.dto.*;
 import com.proximaforte.bioverify.exception.RecordNotFoundException;
+import com.proximaforte.bioverify.exception.TokenRefreshException;
 import com.proximaforte.bioverify.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +32,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenService refreshTokenService; // NEW: Inject RefreshTokenService
 
     @Transactional
     public User register(RegisterRequest request) {
@@ -84,10 +85,6 @@ public class AuthenticationService {
         return savedUser;
     }
 
-    /**
-     * UPDATED: Creates a self-service user account using a verified email.
-     * This is called systemically after a successful Proof of Life check.
-     */
     @Transactional
     public User createSelfServiceAccountForRecord(MasterListRecord record, String verifiedEmail) {
         if (record.getUser() != null) {
@@ -97,13 +94,11 @@ public class AuthenticationService {
             throw new IllegalStateException("Cannot create account: A valid email address provided by the agent is required.");
         }
 
-        // Generate a random, secure temporary password.
-        // This will be discarded when the user sets their own password via the activation link.
         String temporaryPassword = UUID.randomUUID().toString();
 
         User user = new User();
         user.setFullName(record.getFullName());
-        user.setEmail(verifiedEmail); // Use the agent-provided email
+        user.setEmail(verifiedEmail);
         user.setPassword(passwordEncoder.encode(temporaryPassword));
         user.setRole(Role.SELF_SERVICE_USER);
         user.setTenant(record.getTenant());
@@ -114,12 +109,43 @@ public class AuthenticationService {
         return userRepository.save(user);
     }
 
-    public AuthResponse authenticate(AuthenticationRequest request) {
-        authenticationManager.authenticate(
+    /**
+     * UPDATED: Now returns a JwtResponse with access and refresh tokens.
+     */
+    public JwtResponse authenticate(AuthenticationRequest request) {
+        Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-        var user = userRepository.findByEmail(request.getEmail()).orElseThrow();
-        var jwtToken = jwtService.generateToken(user);
-        return new AuthResponse(jwtToken);
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        User user = (User) authentication.getPrincipal();
+
+        String jwtToken = jwtService.generateToken(user);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+
+        return new JwtResponse(
+                jwtToken,
+                refreshToken.getToken(),
+                user.getId(),
+                user.getEmail(),
+                user.getRole()
+        );
+    }
+
+    /**
+     * NEW: Method to handle token refreshing.
+     */
+    public TokenRefreshResponse refreshToken(TokenRefreshRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = jwtService.generateToken(user);
+                    return new TokenRefreshResponse(token, requestRefreshToken);
+                })
+                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token is not in database!"));
     }
 }

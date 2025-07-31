@@ -45,12 +45,18 @@ public class MasterListRecordService {
 
     @Transactional(readOnly = true)
     public MasterListRecord findRecordForPol(FindRecordRequestDto request, User agent) {
-        if (request.getSsid() == null || request.getNin() == null) {
-            throw new IllegalArgumentException("SSID and NIN must not be null.");
+        if (request.getSsid() == null || request.getSsid().isBlank() || 
+            request.getNin() == null || request.getNin().isBlank()) {
+            throw new IllegalArgumentException("SSID and NIN must be provided.");
         }
 
-        String ssidHash = toSha256(request.getSsid());
-        String ninHash = toSha256(request.getNin());
+        // --- FIX: Normalize the input by trimming whitespace before hashing ---
+        String normalizedSsid = request.getSsid().trim();
+        String normalizedNin = request.getNin().trim();
+
+        String ssidHash = toSha256(normalizedSsid);
+        String ninHash = toSha256(normalizedNin);
+        // --- END FIX ---
 
         MasterListRecord record = recordRepository
                 .findByTenantIdAndSsidHashAndNinHash(agent.getTenant().getId(), ssidHash, ninHash)
@@ -109,12 +115,10 @@ public class MasterListRecordService {
         UUID tenantId = currentUser.getTenant().getId();
         List<RecordStatus> statuses = List.of(RecordStatus.FLAGGED_INVALID_DOCUMENT);
 
-        // Tenant Admin sees all flagged documents for the tenant
         if (currentUser.getRole() == Role.TENANT_ADMIN) {
             return recordRepository.findByTenantIdAndStatusIn(tenantId, statuses);
         }
 
-        // Reviewer sees only flagged documents from their assigned areas
         if (currentUser.getRole() == Role.REVIEWER) {
             User reviewer = userRepository.findUserWithAssignments(currentUser.getId()).orElse(currentUser);
             
