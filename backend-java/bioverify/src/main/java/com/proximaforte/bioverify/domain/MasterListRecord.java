@@ -9,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -124,7 +125,7 @@ public class MasterListRecord {
     @ElementCollection
     @CollectionTable(name = "record_document_urls", joinColumns = @JoinColumn(name = "record_id"))
     @Column(name = "document_url")
-    private List<String> documentUrls;
+    private List<String> documentUrls = new ArrayList<>();
 
     @Column
     private LocalDate lastLivenessCheckDate;

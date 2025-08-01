@@ -1,5 +1,6 @@
 package com.proximaforte.bioverify.service;
 
+import org.springframework.core.io.Resource;
 import java.io.IOException;
 
 /**
@@ -24,4 +25,12 @@ public interface FileStorageService {
      * @return The byte array of the file content.
      */
     byte[] load(String fileIdentifier) throws IOException;
+
+    /**
+     * NEW: Loads a file as a Spring Resource, which is ideal for streaming.
+     *
+     * @param fileIdentifier The name of the file to load.
+     * @return A Resource object for the file.
+     */
+    Resource loadAsResource(String fileIdentifier);
 }

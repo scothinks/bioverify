@@ -15,6 +15,7 @@ public interface ProofOfLifeService {
      * @param photo The captured live photo of the user.
      * @param letterOfEmployment The uploaded Letter of Employment file.
      * @param workId The uploaded Work ID file.
+     * @return boolean true if the PoL was successful and the record activated, false if documents were invalid and the record was flagged.
      */
-    void completePoL(UUID recordId, String email, MultipartFile photo, MultipartFile letterOfEmployment, MultipartFile workId);
+    boolean completePoL(UUID recordId, String email, MultipartFile photo, MultipartFile letterOfEmployment, MultipartFile workId);
 }

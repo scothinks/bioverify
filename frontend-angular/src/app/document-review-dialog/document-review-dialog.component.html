@@ -1,4 +1,4 @@
-<div class.dialog-container>
+<div class="dialog-container">
   <div mat-dialog-title class="dialog-header">
     <mat-icon>visibility</mat-icon>
     <span>Review Flagged Documents</span>
@@ -17,14 +17,25 @@
 
     <mat-divider></mat-divider>
 
-    <div class="document-viewer-placeholder">
+    <div class="document-viewer">
       <h4>Uploaded Documents</h4>
-      <p><em>(Document viewer/links would appear here)</em></p>
-      <ul>
-        <li>Live Photo: <a>photo_capture.jpg</a></li>
-        <li>Letter of Employment: <a>letter.pdf</a></li>
-        <li>Work ID: <a>work_id.png</a></li>
-      </ul>
+      <mat-tab-group>
+        <mat-tab label="Live Photo" *ngIf="record.photoUrl">
+          <div class="preview-container">
+            <img class="image-preview" [src]="fileBaseUrl + record.photoUrl" alt="Live Photo">
+          </div>
+        </mat-tab>
+        <mat-tab *ngFor="let docUrl of record.documentUrls; let i = index" [label]="'Document ' + (i + 1)">
+           <div class="preview-container">
+            <ngx-extended-pdf-viewer 
+              [src]="fileBaseUrl + docUrl" 
+              height="500px"
+              [textLayer]="true"
+              [httpHeaders]="httpHeaders">
+            </ngx-extended-pdf-viewer>
+           </div>
+        </mat-tab>
+      </mat-tab-group>
     </div>
   </div>
 

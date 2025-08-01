@@ -1,0 +1,36 @@
+<div class="activation-container">
+  <mat-card class="activation-card">
+    <mat-card-header>
+      <mat-card-title>Activate Your Account</mat-card-title>
+      <mat-card-subtitle>Set your password to complete registration.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="activationForm" (ngSubmit)="onSubmit()" *ngIf="!successMessage && token">
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>New Password</mat-label>
+          <input matInput formControlName="password" [type]="hidePassword ? 'password' : 'text'" required>
+          <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+            <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+          </button>
+          <mat-error *ngIf="activationForm.get('password')?.hasError('required')">Password is required.</mat-error>
+          <mat-error *ngIf="activationForm.get('password')?.hasError('minlength')">Password must be at least 8 characters.</mat-error>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Confirm New Password</mat-label>
+          <input matInput formControlName="confirmPassword" [type]="hidePassword ? 'password' : 'text'" required>
+           <mat-error *ngIf="activationForm.hasError('passwordMismatch')">Passwords do not match.</mat-error>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" type="submit" [disabled]="activationForm.invalid || isLoading" class="full-width">
+          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          <span *ngIf="!isLoading">Activate and Log In</span>
+        </button>
+      </form>
+
+      <div *ngIf="errorMessage" class="message-container error">{{ errorMessage }}</div>
+      <div *ngIf="successMessage" class="message-container success">{{ successMessage }}</div>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -10,7 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
-import org.springframework.security.config.core.GrantedAuthorityDefaults; // NEW: Import
+import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -42,11 +42,9 @@ public class SecurityConfig {
     @Value("${app.cors.max-age:3600}")
     private long corsMaxAge;
     
-    // NEW: Bean to remove the default 'ROLE_' prefix from authority checks.
-    // This makes @PreAuthorize("hasRole('TENANT_ADMIN')") look for 'TENANT_ADMIN' instead of 'ROLE_TENANT_ADMIN'.
     @Bean
     public GrantedAuthorityDefaults grantedAuthorityDefaults() {
-        return new GrantedAuthorityDefaults(""); // Use an empty string to remove the prefix
+        return new GrantedAuthorityDefaults("");
     }
 
     @Bean
@@ -58,6 +56,7 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/verification/**").permitAll()
+                        .requestMatchers("/files/**").permitAll() // NEW: Allow public access to files
                         .requestMatchers("/api/v1/health", "/actuator/health").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/error", "/error/**").permitAll()

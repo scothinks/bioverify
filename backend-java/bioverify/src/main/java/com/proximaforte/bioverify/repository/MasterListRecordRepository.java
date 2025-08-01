@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate; // NEW: Import LocalDate
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -37,8 +37,20 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
     List<MasterListRecord> findAllByTenantIdAndStatus(UUID tenantId, RecordStatus status);
 
     List<MasterListRecord> findByTenantIdAndStatusIn(UUID tenantId, List<RecordStatus> statuses);
+    
+    @Query("SELECT r FROM MasterListRecord r " +
+           "LEFT JOIN FETCH r.ministry " +
+           "LEFT JOIN FETCH r.department " +
+           "WHERE r.tenant.id = :tenantId AND r.status = :status")
+    List<MasterListRecord> findAllByTenantIdAndStatusWithDetails(@Param("tenantId") UUID tenantId, @Param("status") RecordStatus status);
 
-    @Query("SELECT r FROM MasterListRecord r LEFT JOIN FETCH r.validatedBy WHERE r.tenant.id = :tenantId AND r.status = :status")
+
+    // UPDATED: Added LEFT JOIN FETCH for ministry and department to fix export error
+    @Query("SELECT r FROM MasterListRecord r " +
+           "LEFT JOIN FETCH r.validatedBy " +
+           "LEFT JOIN FETCH r.ministry " +
+           "LEFT JOIN FETCH r.department " +
+           "WHERE r.tenant.id = :tenantId AND r.status = :status")
     List<MasterListRecord> findAllToExport(@Param("tenantId") UUID tenantId, @Param("status") RecordStatus status);
 
 

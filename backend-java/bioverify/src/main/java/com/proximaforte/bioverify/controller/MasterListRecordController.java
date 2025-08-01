@@ -68,7 +68,6 @@ public class MasterListRecordController {
         return ResponseEntity.ok(recordDtos);
     }
     
-    // NEW: Endpoint for the admin review queue for invalid documents
     @GetMapping("/queue/invalid-documents")
     @PreAuthorize("hasAuthority('TENANT_ADMIN')")
     public ResponseEntity<List<MasterListRecordDto>> getInvalidDocumentQueue(@AuthenticationPrincipal User currentUser) {
@@ -109,6 +108,19 @@ public class MasterListRecordController {
         return ResponseEntity.ok(new MasterListRecordDto(validatedRecord));
     }
     
+    /**
+     * NEW: Dedicated endpoint for approving a document that failed automated checks.
+     * This triggers the final activation and user creation flow.
+     */
+    @PostMapping("/{recordId}/approve-flagged-document")
+    @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
+    public ResponseEntity<MasterListRecordDto> approveFlaggedDocument(
+            @PathVariable UUID recordId,
+            @AuthenticationPrincipal User currentUser) {
+        MasterListRecord approvedRecord = recordService.approveFlaggedDocument(recordId, currentUser);
+        return ResponseEntity.ok(new MasterListRecordDto(approvedRecord));
+    }
+
     @PostMapping("/{recordId}/resolve-mismatch")
     @PreAuthorize("hasAnyRole('TENANT_ADMIN', 'REVIEWER')")
     public ResponseEntity<MasterListRecordDto> resolveMismatch(

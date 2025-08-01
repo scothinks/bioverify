@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -42,6 +43,8 @@ public class MasterListRecordService {
     private final MinistryRepository ministryRepository;
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
+    private final EmployeeIdService employeeIdService; // NEW DEPENDENCY
+    private final AuthenticationService authenticationService; // NEW DEPENDENCY
 
     @Transactional(readOnly = true)
     public MasterListRecord findRecordForPol(FindRecordRequestDto request, User agent) {
@@ -50,13 +53,11 @@ public class MasterListRecordService {
             throw new IllegalArgumentException("SSID and NIN must be provided.");
         }
 
-        // --- FIX: Normalize the input by trimming whitespace before hashing ---
         String normalizedSsid = request.getSsid().trim();
         String normalizedNin = request.getNin().trim();
 
         String ssidHash = toSha256(normalizedSsid);
         String ninHash = toSha256(normalizedNin);
-        // --- END FIX ---
 
         MasterListRecord record = recordRepository
                 .findByTenantIdAndSsidHashAndNinHash(agent.getTenant().getId(), ssidHash, ninHash)
@@ -113,10 +114,12 @@ public class MasterListRecordService {
 
     public List<MasterListRecord> getInvalidDocumentQueue(User currentUser) {
         UUID tenantId = currentUser.getTenant().getId();
-        List<RecordStatus> statuses = List.of(RecordStatus.FLAGGED_INVALID_DOCUMENT);
-
+        
         if (currentUser.getRole() == Role.TENANT_ADMIN) {
-            return recordRepository.findByTenantIdAndStatusIn(tenantId, statuses);
+            return recordRepository.findAllByTenantIdAndStatusWithDetails(
+                tenantId, 
+                RecordStatus.FLAGGED_INVALID_DOCUMENT
+            );
         }
 
         if (currentUser.getRole() == Role.REVIEWER) {
@@ -127,6 +130,7 @@ public class MasterListRecordService {
             if ((depts == null || depts.isEmpty()) && (mins == null || mins.isEmpty())) {
                 return Collections.emptyList();
             }
+            List<RecordStatus> statuses = List.of(RecordStatus.FLAGGED_INVALID_DOCUMENT);
             return recordRepository.findRecordsByReviewerAssignments(tenantId, statuses, depts, mins);
         }
 
@@ -176,6 +180,36 @@ public class MasterListRecordService {
 
         record.setValidatedBy(reviewer);
         record.setValidatedAt(Instant.now());
+
+        return recordRepository.save(record);
+    }
+    
+    /**
+     * NEW: Contains the correct logic for approving a flagged document and activating the record.
+     */
+    @Transactional
+    public MasterListRecord approveFlaggedDocument(UUID recordId, User reviewer) {
+        MasterListRecord record = recordRepository.findById(recordId)
+                .orElseThrow(() -> new EntityNotFoundException("Record not found with ID: " + recordId));
+        
+        if (record.getStatus() != RecordStatus.FLAGGED_INVALID_DOCUMENT) {
+            throw new IllegalStateException("Record is not in the correct state for this action.");
+        }
+        
+        // Generate Work ID
+        String wid = employeeIdService.generateNewWorkId(record.getTenant());
+        
+        // Create the self-service user account and trigger activation email
+        User employeeUser = authenticationService.createSelfServiceAccountForRecord(record, record.getEmail());
+
+        // Update the record with the final details
+        record.setWid(wid);
+        record.setUser(employeeUser);
+        record.setStatus(RecordStatus.ACTIVE);
+        record.setValidatedBy(reviewer);
+        record.setValidatedAt(Instant.now());
+        record.setLastLivenessCheckDate(LocalDate.now());
+        record.setNextLivenessCheckDate(LocalDate.now().plusMonths(6));
 
         return recordRepository.save(record);
     }
@@ -246,6 +280,7 @@ public class MasterListRecordService {
                 .orElseGet(() -> {
                     Department newDept = new Department();
                     newDept.setName(name);
+
                     newDept.setTenant(tenant);
                     return departmentRepository.save(newDept);
                 });

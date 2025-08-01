@@ -18,10 +18,10 @@ import java.util.Map;
 public class AuthenticationController {
 
     private final AuthenticationService service;
-    private final RefreshTokenService refreshTokenService; // NEW
+    private final RefreshTokenService refreshTokenService;
 
     /**
-     * UPDATED: Endpoint now returns a JwtResponse containing access and refresh tokens.
+     * Handles user login and returns access and refresh tokens.
      */
     @PostMapping("/authenticate")
     public ResponseEntity<JwtResponse> authenticate(@RequestBody AuthenticationRequest request) {
@@ -29,16 +29,15 @@ public class AuthenticationController {
     }
 
     /**
-     * NEW: Endpoint to get a new access token using a refresh token.
+     * Provides a new access token in exchange for a valid refresh token.
      */
     @PostMapping("/refreshtoken")
     public ResponseEntity<TokenRefreshResponse> refreshtoken(@RequestBody TokenRefreshRequest request) {
         return ResponseEntity.ok(service.refreshToken(request));
     }
-    
+
     /**
-     * NEW: Endpoint to log out. This should delete the refresh token.
-     * Note: A corresponding method needs to be added to the service layer.
+     * Handles user logout.
      */
     @PostMapping("/logout")
     public ResponseEntity<MessageResponse> logoutUser(@RequestBody TokenRefreshRequest request) {
@@ -46,10 +45,30 @@ public class AuthenticationController {
         return ResponseEntity.ok(new MessageResponse("Logout successful."));
     }
 
-
+    /**
+     * Handles manual account creation by an administrator.
+     */
     @PostMapping("/create-account")
     public ResponseEntity<?> createAccount(@RequestBody CreateAccountRequest request) {
         service.createAccount(request);
         return ResponseEntity.ok(Map.of("message", "Account created successfully. You can now log in."));
+    }
+
+    /**
+     * NEW: Endpoint to handle account activation via the link sent to the user's email.
+     */
+    @PostMapping("/activate-account")
+    public ResponseEntity<MessageResponse> activateAccount(@RequestBody AccountActivationRequest request) {
+        service.activateAccount(request.getToken(), request.getPassword());
+        return ResponseEntity.ok(new MessageResponse("Account activated successfully. You can now log in."));
+    }
+
+    /**
+     * NEW: Endpoint to resend an account activation link.
+     */
+    @PostMapping("/resend-activation")
+    public ResponseEntity<MessageResponse> resendActivation(@RequestBody ResendActivationRequest request) {
+        service.resendActivationLink(request.getEmail());
+        return ResponseEntity.ok(new MessageResponse("A new activation link has been sent to your email address."));
     }
 }

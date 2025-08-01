@@ -3,11 +3,13 @@ import { LoginComponent } from './login/login.component';
 import { EmployeeRegistrationComponent } from './employee-registration/employee-registration.component';
 import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
+import { AccountActivationComponent } from './account-activation/account-activation.component'; 
+import { ResendActivationLinkComponent } from './resend-activation-link/resend-activation-link.component';
 
 // Import the layout dashboard components
 import { GlobalAdminDashboardComponent } from './dashboards/global-admin-dashboard/global-admin-dashboard.component';
 import { TenantAdminDashboardComponent } from './dashboards/tenant-admin-dashboard/tenant-admin-dashboard.component';
-import { AgentDashboardComponent } from './dashboards/agent-dashboard/agent-dashboard.component'; // This is the shell
+import { AgentDashboardComponent } from './dashboards/agent-dashboard/agent-dashboard.component';
 import { SelfServiceUserDashboardComponent } from './dashboards/self-service-user-dashboard/self-service-user-dashboard.component';
 import { ReviewerDashboardComponent } from './dashboards/reviewer-dashboard/reviewer-dashboard.component';
 
@@ -30,6 +32,8 @@ export const routes: Routes = [
   // Public routes
   { path: 'login', component: LoginComponent },
   { path: 'register-employee', component: EmployeeRegistrationComponent },
+  { path: 'activate-account', component: AccountActivationComponent },
+  { path: 'resend-activation-link', component: ResendActivationLinkComponent },
 
   // Main dashboard parent route, protected by the auth guard
   {

@@ -8,7 +8,9 @@ import com.proximaforte.bioverify.exception.RecordNotFoundException;
 import com.proximaforte.bioverify.exception.TokenRefreshException;
 import com.proximaforte.bioverify.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -24,6 +27,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthenticationService {
 
+    // --- Injected Dependencies ---
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
     private final MasterListRecordRepository recordRepository;
@@ -32,8 +36,14 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final RefreshTokenService refreshTokenService; // NEW: Inject RefreshTokenService
+    private final RefreshTokenService refreshTokenService;
+    private final AccountActivationTokenRepository activationTokenRepository; // NEW
+    private final EmailService emailService; // NEW
 
+    @Value("${app.frontend.base-url}") // NEW
+    private String frontendBaseUrl;
+
+    // --- Existing Methods (Unchanged) ---
     @Transactional
     public User register(RegisterRequest request) {
         Tenant tenant = tenantRepository.findById(request.getTenantId())
@@ -56,7 +66,6 @@ public class AuthenticationService {
                 user.setAssignedDepartments(departments);
             }
         }
-
         return userRepository.save(user);
     }
 
@@ -85,6 +94,9 @@ public class AuthenticationService {
         return savedUser;
     }
 
+    /**
+     * UPDATED: Now generates an activation token and sends the activation email.
+     */
     @Transactional
     public User createSelfServiceAccountForRecord(MasterListRecord record, String verifiedEmail) {
         if (record.getUser() != null) {
@@ -95,35 +107,61 @@ public class AuthenticationService {
         }
 
         String temporaryPassword = UUID.randomUUID().toString();
-
         User user = new User();
         user.setFullName(record.getFullName());
         user.setEmail(verifiedEmail);
         user.setPassword(passwordEncoder.encode(temporaryPassword));
         user.setRole(Role.SELF_SERVICE_USER);
         user.setTenant(record.getTenant());
-        
-        // NOTE: The logic to generate an activation token and call an EmailService
-        // to send the activation link would be added here.
+        user.setEnabled(false); // User is not enabled until they activate
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // --- NEW ACTIVATION LOGIC ---
+        // 1. Create and save the activation token
+        AccountActivationToken activationToken = new AccountActivationToken(savedUser);
+        activationTokenRepository.save(activationToken);
+
+        // 2. Build the activation link
+        String activationLink = frontendBaseUrl + "/activate-account?token=" + activationToken.getToken();
+
+        // 3. Send the email
+        emailService.sendAccountActivationEmail(savedUser.getFullName(), savedUser.getEmail(), activationLink);
+        
+        return savedUser;
     }
 
     /**
-     * UPDATED: Now returns a JwtResponse with access and refresh tokens.
+     * NEW: Method to activate a user account with a new password.
      */
+    @Transactional
+    public void activateAccount(String token, String password) {
+        AccountActivationToken activationToken = activationTokenRepository.findByToken(token)
+            .orElseThrow(() -> new BadCredentialsException("Invalid activation token."));
+
+        if (activationToken.getExpiryDate().isBefore(Instant.now())) {
+            activationTokenRepository.delete(activationToken);
+            throw new BadCredentialsException("Activation token has expired.");
+        }
+
+        User user = activationToken.getUser();
+        user.setPassword(passwordEncoder.encode(password));
+        user.setEnabled(true); // Enable the user's account
+        userRepository.save(user);
+
+        // Delete the token so it cannot be used again
+        activationTokenRepository.delete(activationToken);
+    }
+    
+    // --- Authentication and Refresh Token Methods (Unchanged) ---
     public JwtResponse authenticate(AuthenticationRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
         User user = (User) authentication.getPrincipal();
-
         String jwtToken = jwtService.generateToken(user);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
-
         return new JwtResponse(
                 jwtToken,
                 refreshToken.getToken(),
@@ -133,12 +171,8 @@ public class AuthenticationService {
         );
     }
 
-    /**
-     * NEW: Method to handle token refreshing.
-     */
     public TokenRefreshResponse refreshToken(TokenRefreshRequest request) {
         String requestRefreshToken = request.getRefreshToken();
-
         return refreshTokenService.findByToken(requestRefreshToken)
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
@@ -147,5 +181,27 @@ public class AuthenticationService {
                     return new TokenRefreshResponse(token, requestRefreshToken);
                 })
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token is not in database!"));
+    }
+
+    /**
+     * NEW: Resends an activation link to a user whose account is not yet enabled.
+     */
+    @Transactional
+    public void resendActivationLink(String email) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new BadCredentialsException("No account found with that email address."));
+
+        if (user.isEnabled()) {
+            throw new IllegalStateException("This account has already been activated.");
+        }
+
+        // Delete any old token and create a new one
+        activationTokenRepository.findByUser(user).ifPresent(activationTokenRepository::delete);
+        AccountActivationToken newActivationToken = new AccountActivationToken(user);
+        activationTokenRepository.save(newActivationToken);
+
+        // Build the new link and send the email
+        String activationLink = frontendBaseUrl + "/activate-account?token=" + newActivationToken.getToken();
+        emailService.sendAccountActivationEmail(user.getFullName(), user.getEmail(), activationLink);
     }
 }

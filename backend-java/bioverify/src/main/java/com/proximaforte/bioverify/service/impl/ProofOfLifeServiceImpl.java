@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ public class ProofOfLifeServiceImpl implements ProofOfLifeService {
 
     @Override
     @Transactional
-    public void completePoL(UUID recordId, String email, MultipartFile photo, MultipartFile letterOfEmployment, MultipartFile workId) {
+    public boolean completePoL(UUID recordId, String email, MultipartFile photo, MultipartFile letterOfEmployment, MultipartFile workId) {
         try {
             MasterListRecord record = recordRepository.findById(recordId)
                     .orElseThrow(() -> new RuntimeException("Record not found"));
@@ -53,7 +54,6 @@ public class ProofOfLifeServiceImpl implements ProofOfLifeService {
                 throw new IllegalStateException("Record is not awaiting Proof of Life.");
             }
 
-            // --- Automated Document Content Validation ---
             Map<DocumentType, MultipartFile> documentsToValidate = new EnumMap<>(DocumentType.class);
             documentsToValidate.put(DocumentType.LETTER_OF_EMPLOYMENT, letterOfEmployment);
             documentsToValidate.put(DocumentType.WORK_ID, workId);
@@ -62,19 +62,24 @@ public class ProofOfLifeServiceImpl implements ProofOfLifeService {
 
             if (!areDocumentsValid) {
                 record.setStatus(RecordStatus.FLAGGED_INVALID_DOCUMENT);
-                // Save the files even on failure for audit purposes
+                
+                // NEW: Save the agent-provided email even on failure
+                record.setEmail(email);
+
                 String photoUrl = saveFileWithUniqueName(photo);
                 String letterUrl = saveFileWithUniqueName(letterOfEmployment);
                 String workIdUrl = saveFileWithUniqueName(workId);
                 record.setPhotoUrl(photoUrl);
-                record.setDocumentUrls(List.of(letterUrl, workIdUrl));
+
+                List<String> docUrls = record.getDocumentUrls();
+                docUrls.clear();
+                docUrls.add(letterUrl);
+                docUrls.add(workIdUrl);
+
                 recordRepository.save(record);
-                
-                throw new IllegalStateException("One or more documents failed automated content validation and has been flagged for administrative review.");
+                return false; // Return false on validation failure
             }
             
-            // --- If validation passes, proceed to activation ---
-
             record.setEmail(email);
 
             String photoUrl = saveFileWithUniqueName(photo);
@@ -87,7 +92,12 @@ public class ProofOfLifeServiceImpl implements ProofOfLifeService {
             record.setPolAgent(agent);
             record.setPolPerformedAt(Instant.now());
             record.setPhotoUrl(photoUrl);
-            record.setDocumentUrls(List.of(letterUrl, workIdUrl));
+
+            List<String> docUrls = record.getDocumentUrls();
+            docUrls.clear();
+            docUrls.add(letterUrl);
+            docUrls.add(workIdUrl);
+
             record.setWid(wid);
             record.setUser(employeeUser);
             record.setStatus(RecordStatus.ACTIVE);
@@ -96,6 +106,7 @@ public class ProofOfLifeServiceImpl implements ProofOfLifeService {
             record.setNextLivenessCheckDate(LocalDate.now().plusMonths(6));
 
             recordRepository.save(record);
+            return true; // Return true on success
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to store one or more files.", e);

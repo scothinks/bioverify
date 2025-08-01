@@ -87,6 +87,16 @@ export class AuthService {
     );
   }
 
+  // NEW: Method to call the backend activation endpoint
+  activateAccount(token: string, password: string): Observable<any> {
+    return this.http.post(`${this.authApiUrl}/activate-account`, { token, password });
+  }
+
+  // NEW: Method to request a new activation link
+  resendActivationLink(email: string): Observable<any> {
+    return this.http.post(`${this.authApiUrl}/resend-activation`, { email });
+  }
+
   // NEW: Method to call the refresh token endpoint
   refreshToken(): Observable<any> {
     const refreshToken = this.getRefreshToken();

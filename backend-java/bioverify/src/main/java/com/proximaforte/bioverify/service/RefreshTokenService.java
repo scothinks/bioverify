@@ -35,11 +35,11 @@ public class RefreshTokenService {
     public RefreshToken createRefreshToken(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        
-        // Delete any existing refresh token for this user to ensure only one is valid
-        refreshTokenRepository.deleteByUser(user);
 
-        RefreshToken refreshToken = new RefreshToken();
+        // UPDATED LOGIC: Find and update existing token, or create a new one.
+        RefreshToken refreshToken = refreshTokenRepository.findByUser(user)
+                .orElse(new RefreshToken());
+
         refreshToken.setUser(user);
         refreshToken.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
         refreshToken.setToken(UUID.randomUUID().toString());

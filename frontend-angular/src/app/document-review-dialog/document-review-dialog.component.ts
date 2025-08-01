@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MasterListRecordDto } from '../services/pol.service';
 import { TenantService } from '../services/tenant.service';
+import { AuthService } from '../services/auth.service';
 
 // Import Angular Material Modules
 import { MatCardModule } from '@angular/material/card';
@@ -11,13 +12,25 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTabsModule } from '@angular/material/tabs';
+
+// Import the PDF Viewer Module
+import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
 
 @Component({
   selector: 'app-document-review-dialog',
   standalone: true,
   imports: [
-    CommonModule, MatDialogModule, MatCardModule, MatButtonModule,
-    MatIconModule, MatDividerModule, MatProgressSpinnerModule, MatSnackBarModule
+    CommonModule,
+    MatDialogModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDividerModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule,
+    MatTabsModule,
+    NgxExtendedPdfViewerModule
   ],
   templateUrl: './document-review-dialog.component.html',
   styleUrls: ['./document-review-dialog.component.scss']
@@ -25,19 +38,31 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 export class DocumentReviewDialogComponent {
   
   public isLoading = false;
+  public fileBaseUrl = 'http://localhost:8080/files/';
+  public httpHeaders: any;
 
   constructor(
     private dialogRef: MatDialogRef<DocumentReviewDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public record: MasterListRecordDto,
     private tenantService: TenantService,
-    private snackBar: MatSnackBar
-  ) {}
+    private snackBar: MatSnackBar,
+    private authService: AuthService
+  ) {
+    const token = this.authService.getAccessToken();
+    if (token) {
+      this.httpHeaders = {
+        Authorization: `Bearer ${token}`
+      };
+    }
+  }
 
-  // Admin manually approves the record, moving it to 'REVIEWED' status
+  /**
+   * UPDATED: This now calls the dedicated approval endpoint which activates the record
+   * and triggers the self-service user creation flow.
+   */
   approve(): void {
     this.isLoading = true;
-    // We re-use the 'validateRecord' endpoint for this admin action
-    this.tenantService.validateRecord(this.record.id, 'REVIEWED', 'Manually approved by admin after invalid document flag.').subscribe({
+    this.tenantService.approveFlaggedDocument(this.record.id).subscribe({
       next: () => {
         this.isLoading = false;
         this.dialogRef.close('updated');
@@ -54,6 +79,7 @@ export class DocumentReviewDialogComponent {
     const reason = prompt('Please provide a reason for this rejection:');
     if (reason && reason.trim()) {
       this.isLoading = true;
+      // The rejection logic can still use the generic validateRecord endpoint
       this.tenantService.validateRecord(this.record.id, 'REJECTED', reason).subscribe({
         next: () => {
           this.isLoading = false;

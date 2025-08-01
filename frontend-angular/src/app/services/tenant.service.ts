@@ -6,7 +6,7 @@ import { Tenant, UpdateTenantRequest } from '../models/tenant.model';
 import { User } from '../models/user.model';
 import { Ministry } from '../models/ministry.model';
 import { Department } from '../models/department.model';
-import { MasterListRecordDto } from './pol.service'; // IMPORT THE DTO
+import { MasterListRecordDto } from './pol.service';
 
 export interface BulkVerificationJob {
   id: string;
@@ -226,6 +226,16 @@ export class TenantService {
     );
   }
 
+  /**
+   * NEW: Calls the dedicated endpoint to approve a flagged document,
+   * which triggers the final activation and user creation flow.
+   */
+  approveFlaggedDocument(recordId: string): Observable<any> {
+    return this.http.post(`${this.v1ApiUrl}/records/${recordId}/approve-flagged-document`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   resolveMismatch(recordId: string): Observable<MasterListRecordDto> {
     return this.http.post<MasterListRecordDto>(`${this.v1ApiUrl}/records/${recordId}/resolve-mismatch`, {}).pipe(
       catchError(this.handleError)
@@ -273,4 +283,5 @@ export class TenantService {
     }
     return throwError(() => new Error(errorMessage));
   }
+  
 }

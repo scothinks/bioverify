@@ -27,6 +27,10 @@ export interface MasterListRecordDto {
   email: string;
   lastLivenessCheckDate: string | null;
   nextLivenessCheckDate: string | null;
+  
+  // NEW: Fields for document review
+  photoUrl: string;
+  documentUrls: string[];
 }
 
 export interface FindRecordRequest {
