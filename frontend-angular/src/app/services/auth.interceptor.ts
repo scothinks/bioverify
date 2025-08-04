@@ -16,7 +16,12 @@ export const authInterceptor: HttpInterceptorFn = (
     const authService = inject(AuthService);
     const accessToken = authService.getAccessToken();
 
-    // Clone the request and add the authorization header if token exists
+    // UPDATED: Do not intercept requests for login or token refresh
+    if (req.url.includes('/auth/authenticate') || req.url.includes('/auth/refreshtoken')) {
+        return next(req);
+    }
+
+    // Clone the request and add the authorization header if a token exists
     if (accessToken) {
         req = addTokenToRequest(req, accessToken);
     }
