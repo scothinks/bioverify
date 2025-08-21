@@ -1,0 +1,28 @@
+<div class="resend-container">
+  <mat-card class="resend-card">
+    <mat-card-header>
+      <mat-card-title>Resend Activation Link</mat-card-title>
+      <mat-card-subtitle>Enter your email to receive a new link.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="resendForm" (ngSubmit)="onSubmit()" *ngIf="!successMessage">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email Address</mat-label>
+          <input matInput formControlName="email" type="email" placeholder="Enter your email" required>
+          <mat-error *ngIf="resendForm.get('email')?.hasError('required')">Email is required.</mat-error>
+          <mat-error *ngIf="resendForm.get('email')?.hasError('email')">Please enter a valid email address.</mat-error>
+        </mat-form-field>
+        <button mat-raised-button color="primary" type="submit" [disabled]="resendForm.invalid || isLoading" class="full-width">
+          <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+          <span *ngIf="!isLoading">Send Link</span>
+        </button>
+      </form>
+
+      <div *ngIf="errorMessage" class="message-container error">{{ errorMessage }}</div>
+      <div *ngIf="successMessage" class="message-container success">
+        <p>{{ successMessage }}</p>
+        <a routerLink="/login" mat-stroked-button>Back to Login</a>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

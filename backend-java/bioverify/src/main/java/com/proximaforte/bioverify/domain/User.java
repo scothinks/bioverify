@@ -43,12 +43,13 @@ public class User implements UserDetails {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
     private Tenant tenant;
+    
+    // --- NEW FIELD for enabling/disabling users ---
+    private boolean enabled = true;
 
-    // --- CORRECTED TYPO: mappedby -> mappedBy ---
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private MasterListRecord masterListRecord;
 
-    // --- NEW RELATIONSHIPS FOR REVIEWER ACCESS CONTROL ---
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "user_ministries",
@@ -87,10 +88,16 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() { return true; }
+
     @Override
     public boolean isAccountNonLocked() { return true; }
+
     @Override
     public boolean isCredentialsNonExpired() { return true; }
+
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() { 
+        // UPDATED: Now returns the value of the 'enabled' field
+        return this.enabled; 
+    }
 }

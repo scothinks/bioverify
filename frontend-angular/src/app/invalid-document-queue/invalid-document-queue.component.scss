@@ -1,0 +1,366 @@
+// Invalid Document Queue Component Styles
+// Following the established design system
+
+mat-card {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--gray-200);
+    margin: 24px;
+
+    .mat-mdc-card-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 24px !important;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+
+        .mat-mdc-card-title {
+            color: white !important;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 !important;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            &::before {
+                content: '⚠️';
+                font-size: 18px;
+            }
+        }
+
+        .mat-mdc-card-subtitle {
+            color: rgba(255, 255, 255, 0.9) !important;
+            margin: 4px 0 0 0 !important;
+            font-size: 14px;
+            line-height: 1.5;
+            padding-left: 30px; // Align with title after emoji
+        }
+    }
+
+    .mat-mdc-card-content {
+        padding: 0 !important; // Remove default padding for full-width table
+    }
+}
+
+// Loading spinner styling
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 48px 24px;
+    background-color: var(--gray-50);
+
+    .mat-mdc-progress-spinner {
+        --mdc-circular-progress-active-indicator-color: var(--primary-600);
+    }
+}
+
+// Table styling
+.mat-mdc-table {
+    width: 100%;
+    background-color: white;
+    border-collapse: separate;
+    border-spacing: 0;
+
+    // Header styling
+    .mat-mdc-header-row {
+        background-color: var(--gray-50);
+        border-bottom: 2px solid var(--gray-200);
+        
+        .mat-mdc-header-cell {
+            color: var(--gray-700);
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            padding: 16px 24px;
+            border-right: 1px solid var(--gray-200);
+
+            &:last-child {
+                border-right: none;
+            }
+
+            &:first-child {
+                padding-left: 24px;
+            }
+        }
+    }
+
+    // Row styling
+    .mat-mdc-row {
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        border-bottom: 1px solid var(--gray-100);
+
+        &:hover {
+            background-color: var(--primary-50);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        .mat-mdc-cell {
+            padding: 16px 24px;
+            color: var(--gray-900);
+            font-size: 14px;
+            line-height: 1.5;
+            border-right: 1px solid var(--gray-100);
+            vertical-align: middle;
+
+            &:last-child {
+                border-right: none;
+            }
+
+            &:first-child {
+                font-weight: 500;
+                color: var(--gray-900);
+            }
+
+            // Handle N/A values
+            &:has-text('N/A') {
+                color: var(--gray-400);
+                font-style: italic;
+            }
+        }
+    }
+}
+
+// Action button styling
+.mat-mdc-flat-button {
+    &.mat-primary {
+        background-color: var(--primary-600) !important;
+        color: white !important;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        padding: 8px 16px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        &:hover {
+            background-color: var(--primary-700) !important;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .mat-icon {
+            color: white;
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+        }
+    }
+}
+
+// Paginator styling
+.mat-mdc-paginator {
+    background-color: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+    padding: 16px 24px;
+
+    .mat-mdc-paginator-range-label {
+        color: var(--gray-600);
+        font-size: 14px;
+    }
+
+    .mat-mdc-icon-button {
+        color: var(--gray-600);
+
+        &:hover:not([disabled]) {
+            background-color: var(--primary-50);
+            color: var(--primary-600);
+        }
+
+        &[disabled] {
+            color: var(--gray-300);
+        }
+    }
+
+    .mat-mdc-select {
+        color: var(--gray-600);
+        
+        .mat-mdc-select-trigger {
+            min-height: 32px;
+        }
+    }
+
+    .mat-mdc-form-field {
+        .mat-mdc-text-field-wrapper {
+            border-radius: var(--border-radius);
+        }
+    }
+}
+
+// Empty state styling (when no data)
+.mat-mdc-table:has(.mat-mdc-no-data-row) {
+    .mat-mdc-no-data-row {
+        .mat-mdc-cell {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--gray-500);
+            font-style: italic;
+            
+            &::before {
+                content: '📄';
+                display: block;
+                font-size: 48px;
+                margin-bottom: 16px;
+            }
+        }
+    }
+}
+
+// Snackbar styling
+::ng-deep {
+    .success-snackbar {
+        background-color: var(--success-600) !important;
+        color: white !important;
+        
+        .mat-mdc-snack-bar-action {
+            color: white !important;
+        }
+    }
+
+    .error-snackbar {
+        background-color: var(--error-600) !important;
+        color: white !important;
+        
+        .mat-mdc-snack-bar-action {
+            color: white !important;
+        }
+    }
+}
+
+// Status indicators for different field values
+.mat-mdc-cell {
+    // Style N/A values consistently
+    &:contains('N/A') {
+        color: var(--gray-400) !important;
+        font-style: italic;
+    }
+}
+
+// Table container responsiveness
+@media (max-width: 1200px) {
+    .mat-mdc-table {
+        .mat-mdc-header-cell,
+        .mat-mdc-cell {
+            padding: 12px 16px;
+            font-size: 13px;
+
+            &:first-child {
+                padding-left: 16px;
+            }
+        }
+    }
+
+    mat-card {
+        margin: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    mat-card {
+        margin: 12px;
+        
+        .mat-mdc-card-header {
+            padding: 16px !important;
+            
+            .mat-mdc-card-title {
+                font-size: 18px;
+            }
+        }
+    }
+
+    .mat-mdc-table {
+        .mat-mdc-header-cell,
+        .mat-mdc-cell {
+            padding: 8px 12px;
+            font-size: 12px;
+
+            &:first-child {
+                padding-left: 12px;
+            }
+        }
+    }
+
+    .mat-mdc-flat-button.mat-primary {
+        padding: 6px 12px;
+        font-size: 12px;
+        
+        .mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+        }
+    }
+}
+
+// Very small screens - stack table or show minimal info
+@media (max-width: 480px) {
+    .mat-mdc-table {
+        font-size: 11px;
+        
+        .mat-mdc-header-cell,
+        .mat-mdc-cell {
+            padding: 6px 8px;
+            
+            &:first-child {
+                padding-left: 8px;
+            }
+        }
+        
+        // Hide less critical columns on very small screens
+        .mat-mdc-header-cell:nth-child(3),
+        .mat-mdc-cell:nth-child(3),
+        .mat-mdc-header-cell:nth-child(4),
+        .mat-mdc-cell:nth-child(4),
+        .mat-mdc-header-cell:nth-child(5),
+        .mat-mdc-cell:nth-child(5) {
+            display: none;
+        }
+    }
+}
+
+// Animation for row hover effects
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mat-mdc-row {
+    animation: slideInUp 0.3s ease-out;
+    animation-delay: calc(var(--row-index, 0) * 0.05s);
+}
+
+// Focus states for accessibility
+.mat-mdc-flat-button:focus {
+    outline: 2px solid var(--primary-600);
+    outline-offset: 2px;
+}
+
+// Loading state overlay
+.loading-overlay {
+    position: relative;
+    
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        z-index: 10;
+    }
+}

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -19,13 +20,12 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
 
     List<MasterListRecord> findAllByTenantId(UUID tenantId);
 
-    Optional<MasterListRecord> findBySsidHashAndNinHash(String ssidHash, String ninHash);
+    Optional<MasterListRecord> findByTenantIdAndSsidHashAndNinHash(UUID tenantId, String ssidHash, String ninHash);
 
     Optional<MasterListRecord> findByUserId(UUID userId);
 
     Optional<MasterListRecord> findByIdAndTenantId(UUID id, UUID tenantId);
-    
-    // NEW: Add query to fetch record with its department and ministry
+
     @Query("SELECT r FROM MasterListRecord r " +
            "LEFT JOIN FETCH r.department " +
            "LEFT JOIN FETCH r.ministry " +
@@ -37,8 +37,20 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
     List<MasterListRecord> findAllByTenantIdAndStatus(UUID tenantId, RecordStatus status);
 
     List<MasterListRecord> findByTenantIdAndStatusIn(UUID tenantId, List<RecordStatus> statuses);
+    
+    @Query("SELECT r FROM MasterListRecord r " +
+           "LEFT JOIN FETCH r.ministry " +
+           "LEFT JOIN FETCH r.department " +
+           "WHERE r.tenant.id = :tenantId AND r.status = :status")
+    List<MasterListRecord> findAllByTenantIdAndStatusWithDetails(@Param("tenantId") UUID tenantId, @Param("status") RecordStatus status);
 
-    @Query("SELECT r FROM MasterListRecord r LEFT JOIN FETCH r.validatedBy WHERE r.tenant.id = :tenantId AND r.status = :status")
+
+    // UPDATED: Added LEFT JOIN FETCH for ministry and department to fix export error
+    @Query("SELECT r FROM MasterListRecord r " +
+           "LEFT JOIN FETCH r.validatedBy " +
+           "LEFT JOIN FETCH r.ministry " +
+           "LEFT JOIN FETCH r.department " +
+           "WHERE r.tenant.id = :tenantId AND r.status = :status")
     List<MasterListRecord> findAllToExport(@Param("tenantId") UUID tenantId, @Param("status") RecordStatus status);
 
 
@@ -54,22 +66,23 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
     
     List<MasterListRecord> findAllByTenantIdAndStatusOrderByCreatedAtDesc(UUID tenantId, RecordStatus status);
     
+    // --- NEW METHODS FOR LIVENESS CHECK SCHEDULER ---
+
+    /**
+     * Finds records where the liveness check is due on a specific date (for notifications).
+     */
+    List<MasterListRecord> findAllByStatusAndNextLivenessCheckDate(RecordStatus status, LocalDate nextLivenessCheckDate);
+
+    /**
+     * Finds records where the liveness check due date is in the past (for suspension).
+     */
+    List<MasterListRecord> findAllByStatusAndNextLivenessCheckDateBefore(RecordStatus status, LocalDate nextLivenessCheckDate);
+    
     // --- METHODS FOR DASHBOARD STATS ---
 
-    /**
-     * Counts the total number of unique records for a tenant.
-     */
     long countByTenantId(UUID tenantId);
 
-    /**
-     * Counts the number of records for a tenant that have a specific status.
-     * This will be used for Validated, Mismatched, Not Found, etc.
-     */
     long countByTenantIdAndStatus(UUID tenantId, RecordStatus status);
 
-    /**
-     * Counts the number of records for a tenant that have a status within the given list.
-     * This is used for calculating the "Total Verified" metric.
-     */
     long countByTenantIdAndStatusIn(UUID tenantId, List<RecordStatus> statuses);
 }

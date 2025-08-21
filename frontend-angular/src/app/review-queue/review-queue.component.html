@@ -1,0 +1,196 @@
+<div class="review-queue-container">
+  <mat-card class="queue-card">
+    <mat-card-header class="enhanced-header">
+      <div class="header-content">
+        <div class="title-section">
+          <mat-icon class="header-icon">fact_check</mat-icon>
+          <div class="title-text">
+            <mat-card-title>Review Queues</mat-card-title>
+            <mat-card-subtitle>Review records pending approval or resolve data mismatches</mat-card-subtitle>
+          </div>
+        </div>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content class="enhanced-content">
+
+      <div class="filter-controls" [formGroup]="filterForm">
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Ministry</mat-label>
+          <mat-select formControlName="ministry" multiple>
+            <mat-option *ngFor="let ministry of ministryList" [value]="ministry">
+              {{ ministry }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+    
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Department</mat-label>
+          <mat-select formControlName="department" multiple>
+            <mat-option *ngFor="let department of departmentList" [value]="department">
+              {{ department }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+    
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Grade</mat-label>
+          <mat-select formControlName="gradeLevel" multiple>
+            <mat-option *ngFor="let grade of gradeList" [value]="grade">
+              {{ grade }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+    
+        <button mat-stroked-button (click)="clearFilters()" class="clear-button">
+          <mat-icon>clear</mat-icon>
+          Clear Filters
+        </button>
+      </div>
+
+      <mat-tab-group (selectedIndexChange)="onTabChange($event)" [selectedIndex]="selectedTabIndex" animationDuration="0ms">
+        
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>pending_actions</mat-icon>
+            <!-- UPDATED: Tab label -->
+            Awaiting Review
+            <!-- UPDATED: Data source for badge count -->
+            <span *ngIf="awaitingReviewRecords.data.length > 0" class="tab-badge">{{awaitingReviewRecords.data.length}}</span>
+          </ng-template>
+
+          <!-- UPDATED: Data source for table and empty state -->
+          <div *ngIf="awaitingReviewRecords.data.length > 0; else noAwaitingReviewRecords" class="table-container">
+            <!-- UPDATED: Data source for table -->
+            <table mat-table [dataSource]="awaitingReviewRecords" class="enhanced-table">
+              <ng-container matColumnDef="fullName">
+                <th mat-header-cell *matHeaderCellDef>Employee</th>
+                <td mat-cell *matCellDef="let record" class="name-cell"> 
+                  <div class="employee-info">
+                    <div class="employee-avatar">{{getInitials(record.fullName)}}</div>
+                    <span class="employee-name">{{record.fullName}}</span>
+                  </div>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="department">
+                <th mat-header-cell *matHeaderCellDef>Department</th>
+                <td mat-cell *matCellDef="let record">{{record.department}}</td>
+              </ng-container>
+              <ng-container matColumnDef="ministry">
+                <th mat-header-cell *matHeaderCellDef>Ministry</th>
+                <td mat-cell *matCellDef="let record">{{record.ministry}}</td>
+              </ng-container>
+              <ng-container matColumnDef="gradeLevel">
+                <th mat-header-cell *matHeaderCellDef>Grade</th>
+                <td mat-cell *matCellDef="let record"> 
+                  <div class="grade-badge">{{record.gradeLevel}}</div>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="salaryStructure">
+                <th mat-header-cell *matHeaderCellDef>Salary Structure</th>
+                <td mat-cell *matCellDef="let record">{{record.salaryStructure}}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+                <td mat-cell *matCellDef="let record" class="actions-cell">
+                  <div class="action-buttons">
+                    <button mat-flat-button color="primary" class="action-btn" (click)="onApprove(record.id)">
+                      <mat-icon>check</mat-icon>
+                      Approve
+                    </button>
+                    <button mat-icon-button matTooltip="Edit Record" (click)="onEdit(record)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button matTooltip="Reject Record" color="warn" (click)="onReject(record.id)">
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+            <!-- UPDATED: Paginator reference -->
+            <mat-paginator #awaitingReviewPaginator [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons></mat-paginator>
+          </div>
+          <!-- UPDATED: Empty state template reference and text -->
+          <ng-template #noAwaitingReviewRecords>
+            <div class="empty-state">
+              <mat-icon>playlist_add_check</mat-icon>
+              <h3>Queue is Clear</h3>
+              <p>No records are currently awaiting review.</p>
+            </div>
+          </ng-template>
+        </mat-tab>
+
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon color="warn">error_outline</mat-icon>
+            Mismatched Records
+            <span *ngIf="mismatchedRecords.data.length > 0" class="tab-badge warn">{{mismatchedRecords.data.length}}</span>
+          </ng-template>
+
+           <div *ngIf="mismatchedRecords.data.length > 0; else noMismatchedRecords" class="table-container">
+            <table mat-table [dataSource]="mismatchedRecords" class="enhanced-table">
+              <ng-container matColumnDef="fullName">
+                <th mat-header-cell *matHeaderCellDef>Employee</th>
+                <td mat-cell *matCellDef="let record" class="name-cell"> 
+                  <div class="employee-info">
+                    <div class="employee-avatar">{{getInitials(record.fullName)}}</div>
+                    <span class="employee-name">{{record.fullName}}</span>
+                  </div>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="department">
+                <th mat-header-cell *matHeaderCellDef>Department</th>
+                <td mat-cell *matCellDef="let record">{{record.department}}</td>
+              </ng-container>
+              <ng-container matColumnDef="ministry">
+                <th mat-header-cell *matHeaderCellDef>Ministry</th>
+                <td mat-cell *matCellDef="let record">{{record.ministry}}</td>
+              </ng-container>
+              <ng-container matColumnDef="gradeLevel">
+                <th mat-header-cell *matHeaderCellDef>Grade</th>
+                <td mat-cell *matCellDef="let record"> 
+                  <div class="grade-badge">{{record.gradeLevel}}</div>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="salaryStructure">
+                <th mat-header-cell *matHeaderCellDef>Salary Structure</th>
+                <td mat-cell *matCellDef="let record">{{record.salaryStructure}}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="actions-column">Actions</th>
+                <td mat-cell *matCellDef="let record" class="actions-cell">
+                  <div class="action-buttons">
+                    <button mat-flat-button color="warn" class="action-btn" (click)="onResolve(record)">
+                      <mat-icon>error</mat-icon>
+                      Resolve
+                    </button>
+                    <button mat-icon-button matTooltip="Edit Record" (click)="onEdit(record)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button matTooltip="Reject Record" color="warn" (click)="onReject(record.id)">
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+            <mat-paginator #mismatchedPaginator [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons></mat-paginator>
+          </div>
+          <ng-template #noMismatchedRecords>
+            <div class="empty-state">
+              <mat-icon>gpp_good</mat-icon>
+              <h3>No Mismatches</h3>
+              <p>No records are currently flagged for data mismatch.</p>
+            </div>
+          </ng-template>
+        </mat-tab>
+
+      </mat-tab-group>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -50,4 +50,13 @@ export class TenantOverviewComponent implements OnInit {
   navigate(path: string): void {
     this.router.navigate(['/dashboard/tenant-admin', path]);
   }
+
+  // Helper to calculate the verification funnel percentage
+  getFunnelPercentage(numerator?: number, denominator?: number): string {
+    if (numerator === undefined || denominator === undefined || denominator === 0) {
+      return '0%';
+    }
+    const percentage = (numerator / denominator) * 100;
+    return `${Math.round(percentage)}%`;
+  }
 }

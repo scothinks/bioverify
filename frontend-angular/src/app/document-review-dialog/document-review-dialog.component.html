@@ -1,0 +1,52 @@
+<div class="dialog-container">
+  <div mat-dialog-title class="dialog-header">
+    <mat-icon>visibility</mat-icon>
+    <span>Review Flagged Documents</span>
+    <button mat-icon-button (click)="close()" class="close-button" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div mat-dialog-content>
+    <div *ngIf="isLoading" class="spinner-overlay">
+      <mat-spinner></mat-spinner>
+    </div>
+
+    <h3>Employee: {{ record.fullName }}</h3>
+    <p>This record was flagged because the documents submitted during the Proof of Life check failed automated validation. Please review the documents and manually approve or reject the record.</p>
+
+    <mat-divider></mat-divider>
+
+    <div class="document-viewer">
+      <h4>Uploaded Documents</h4>
+      <mat-tab-group>
+        <mat-tab label="Live Photo" *ngIf="record.photoUrl">
+          <div class="preview-container">
+            <img class="image-preview" [src]="fileBaseUrl + record.photoUrl" alt="Live Photo">
+          </div>
+        </mat-tab>
+        <mat-tab *ngFor="let docUrl of record.documentUrls; let i = index" [label]="'Document ' + (i + 1)">
+           <div class="preview-container">
+            <ngx-extended-pdf-viewer 
+              [src]="fileBaseUrl + docUrl" 
+              height="500px"
+              [textLayer]="true"
+              [httpHeaders]="httpHeaders">
+            </ngx-extended-pdf-viewer>
+           </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+  </div>
+
+  <div mat-dialog-actions align="end">
+    <button mat-stroked-button color="warn" (click)="reject()" [disabled]="isLoading">
+      <mat-icon>cancel</mat-icon>
+      Reject
+    </button>
+    <button mat-flat-button color="primary" (click)="approve()" [disabled]="isLoading">
+      <mat-icon>check_circle</mat-icon>
+      Approve Submission
+    </button>
+  </div>
+</div>

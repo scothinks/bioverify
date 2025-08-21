@@ -1,58 +1,49 @@
 // src/app/user-dashboard/user-dashboard.component.ts
-
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { VerificationService, VerifyIdentityRequest, VerificationResult } from '../services/verification.service';
 import { AuthService } from '../services/auth.service';
-import { MasterListRecord } from '../models/master-list-record.model';
+import { MasterListRecordDto } from '../services/pol.service'; // Use the DTO
+import { LivenessCheckComponent } from '../liveness-check/liveness-check.component';
 
 // Import Angular Material Modules
 import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
-import { MatGridListModule } from '@angular/material/grid-list'; // NEW: For layout
-import { MatDividerModule } from '@angular/material/divider'; // NEW: For visual separation
-import { RecordStatus } from '../models/record-status.enum';
+import { MatGridListModule } from '@angular/material/grid-list';
+import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
   selector: 'app-user-dashboard',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule,
-    MatInputModule, MatButtonModule, MatProgressSpinnerModule, MatIconModule, MatListModule,
-    MatGridListModule, MatDividerModule // NEW: Add new modules
+    CommonModule, MatCardModule, MatButtonModule, MatProgressSpinnerModule, MatIconModule,
+    MatListModule, MatGridListModule, MatDividerModule, LivenessCheckComponent
   ],
   templateUrl: './user-dashboard.component.html',
   styleUrls: ['./user-dashboard.component.scss']
 })
 export class UserDashboardComponent implements OnInit {
 
-  reverifyForm: FormGroup;
-  userRecord: MasterListRecord | null = null;
-  isLoading = false;
+  userRecord: MasterListRecordDto | null = null; // Use the DTO
+  isLoading = true;
   statusMessage = '';
+  isLivenessCheckDue = false;
+  daysRemaining: number | null = null;
 
-  constructor(
-    private fb: FormBuilder,
-    private verificationService: VerificationService,
-    private authService: AuthService
-  ) {
-    this.reverifyForm = this.fb.group({
-      ssid: ['', Validators.required],
-      nin: ['', Validators.required]
-    });
-  }
+  constructor(private authService: AuthService) { }
 
   ngOnInit(): void {
+    this.loadUserRecord();
+  }
+
+  loadUserRecord(): void {
     this.isLoading = true;
     this.authService.getCurrentUserRecord().subscribe({
-      next: (record) => {
+      next: (record: MasterListRecordDto) => { // Expect the DTO
         this.userRecord = record;
+        this.calculateLivenessCountdown();
         this.isLoading = false;
       },
       error: (err: any) => {
@@ -62,31 +53,24 @@ export class UserDashboardComponent implements OnInit {
     });
   }
 
-  onReverifySubmit(): void {
-    if (this.reverifyForm.invalid || !this.userRecord) return;
+  calculateLivenessCountdown(): void {
+    if (this.userRecord?.nextLivenessCheckDate) {
+      const dueDate = new Date(this.userRecord.nextLivenessCheckDate);
+      const today = new Date();
+      const differenceInTime = dueDate.getTime() - today.getTime();
+      const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
 
-    this.isLoading = true;
-    this.statusMessage = '';
-
-    const request: VerifyIdentityRequest = this.reverifyForm.value;
-
-    this.verificationService.reverifyByIdentity(this.userRecord.id, request).subscribe({
-      next: (response: VerificationResult) => {
-        this.isLoading = false;
-        if (this.userRecord) {
-          this.userRecord.status = response.newStatus as RecordStatus;
-        }
-        this.statusMessage = 'Re-verification successful! Your record is now pending final review.';
-        this.reverifyForm.disable();
-      },
-      error: (err: any) => {
-        this.isLoading = false;
-        this.statusMessage = 'Re-verification failed. Please check your details and try again.';
-      }
-    });
+      this.daysRemaining = differenceInDays > 0 ? differenceInDays : 0;
+      this.isLivenessCheckDue = this.daysRemaining <= 14;
+    }
   }
 
-  // NEW: Helper function for user avatar
+  onLivenessCheckCompleted(): void {
+    this.isLivenessCheckDue = false;
+    this.statusMessage = "Thank you! Your liveness check has been successfully submitted.";
+    this.loadUserRecord();
+  }
+
   getInitials(fullName: string): string {
     if (!fullName) return '?';
     const names = fullName.trim().split(' ');

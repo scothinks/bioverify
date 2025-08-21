@@ -27,12 +27,14 @@ export class TenantAdminDashboardComponent {
   
   // Navigation links for the tab group
   navLinks = [
-    { path: 'overview', label: 'Overview', icon: 'dashboard' }, // <-- NEW PATH ADDED
+    { path: 'overview', label: 'Overview', icon: 'dashboard' },
     { path: 'users', label: 'User Management', icon: 'group' },
     { path: 'uploads', label: 'File Upload', icon: 'upload_file' },
     { path: 'records', label: 'Master Records', icon: 'list_alt' },
     { path: 'bulk-verify', label: 'Bulk Verification', icon: 'checklist' },
-    { path: 'validation', label: 'Validation Queue', icon: 'fact_check' },
+    { path: 'review-queue', label: 'Review Queue', icon: 'fact_check' },
+    // NEW: Link to the invalid document review queue
+    { path: 'invalid-documents', label: 'Invalid Documents', icon: 'report_problem' },
     { path: 'export', label: 'Payroll Export', icon: 'download_for_offline' }
   ];
 
@@ -53,7 +55,6 @@ export class TenantAdminDashboardComponent {
           next: (newUser) => {
             console.log('User created successfully:', newUser);
             alert('User created successfully!');
-            // To auto-refresh the list, a shared service with a Subject would be needed
           },
           error: (err) => {
             console.error('Failed to create user:', err);

@@ -29,33 +29,42 @@ public class DashboardService {
     public DashboardStatsDto getDashboardStats(User currentUser) {
         UUID tenantId = currentUser.getTenant().getId();
 
-        // --- CORRECTED CALCULATION FOR 'totalVerified' ---
-        // "Verified" means a record has passed the SoT check. This includes records
-        // that are pending final approval AND those that are fully validated.
-        List<RecordStatus> verifiedStatuses = List.of(RecordStatus.PENDING_GRADE_VALIDATION, RecordStatus.VALIDATED);
+        // --- UPDATED METRICS BASED ON NEW STATUSES ---
+
+        // "Verified" means a record has passed the SoT check and is in some stage of review or is active.
+        List<RecordStatus> verifiedStatuses = List.of(
+            RecordStatus.AWAITING_REVIEW, 
+            RecordStatus.REVIEWED, 
+            RecordStatus.ACTIVE,
+            RecordStatus.INACTIVE, // Still considered verified
+            RecordStatus.FLAGGED_INVALID_DOCUMENT // Still considered verified
+        );
         long totalVerified = recordRepository.countByTenantIdAndStatusIn(tenantId, verifiedStatuses);
         
-        // --- Fetch other counts from the repositories ---
-        long totalUniqueRecords = recordRepository.countByTenantId(tenantId);
-        long totalValidated = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.VALIDATED);
-        long totalPendingApproval = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.PENDING_GRADE_VALIDATION);
+        // "Active" is the new "Validated", meaning ready for payroll.
+        long totalActive = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.ACTIVE);
+        
+        // "Pending Review" is the new "Pending Approval".
+        long totalAwaitingReview = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.AWAITING_REVIEW);
+        
         long totalMismatched = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.FLAGGED_DATA_MISMATCH);
         long totalNotFound = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.FLAGGED_NOT_IN_SOT);
-        long totalAwaitingReVerification = recordRepository.countByTenantIdAndStatus(tenantId, RecordStatus.AWAITING_REVALIDATION);
         
         long totalReviewers = userRepository.countByTenantIdAndRole(tenantId, Role.REVIEWER);
         long totalSelfServiceUsers = userRepository.countByTenantIdAndRole(tenantId, Role.SELF_SERVICE_USER);
         long totalAgentAccounts = userRepository.countByTenantIdAndRole(tenantId, Role.AGENT);
 
         // --- Build and return the DTO ---
+        // 'totalValidated' is now 'totalActive', and 'totalPendingApproval' is 'totalAwaitingReview'.
+        // 'totalAwaitingReVerification' is removed.
         return DashboardStatsDto.builder()
-                .totalUniqueRecords(totalUniqueRecords)
-                .totalVerified(totalVerified) // This is now correct
-                .totalValidated(totalValidated)
-                .totalPendingApproval(totalPendingApproval)
+                .totalUniqueRecords(recordRepository.countByTenantId(tenantId))
+                .totalVerified(totalVerified)
+                .totalValidated(totalActive)
+                .totalPendingApproval(totalAwaitingReview)
                 .totalMismatched(totalMismatched)
                 .totalNotFound(totalNotFound)
-                .totalAwaitingReVerification(totalAwaitingReVerification)
+                .totalAwaitingReVerification(0L) // This status is removed
                 .totalReviewers(totalReviewers)
                 .totalSelfServiceUsers(totalSelfServiceUsers)
                 .totalAgentAccounts(totalAgentAccounts)

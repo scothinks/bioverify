@@ -11,7 +11,7 @@ export interface MasterListRecord {
   ministry?: string;
   gradeLevel?: string;
   salaryStructure?: string;
-  status: RecordStatus;
+  status: string;
   biometricStatus?: boolean;
   validatedAt?: string;
   validatedByEmail?: string;

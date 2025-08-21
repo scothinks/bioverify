@@ -94,7 +94,6 @@ public class BulkVerificationService {
             Tenant tenant = tenantRepository.findById(tenantId)
                     .orElseThrow(() -> new IllegalStateException("Tenant not found for ID: " + tenantId));
 
-            // CORRECTED: Use the standard Java naming convention for the getter
             IdentitySourceConfigDto config = objectMapper.readValue(tenant.getIdentitySourceConfig(), IdentitySourceConfigDto.class);
 
             if ("OPTIMA".equalsIgnoreCase(config.getProviderName())) {
@@ -302,8 +301,9 @@ public class BulkVerificationService {
         } catch (NumberFormatException e) {
             logger.error("Could not parse date timestamp for PSN {}. Error: {}", profile.getPsn(), e.getMessage());
         }
-
-        record.setStatus(RecordStatus.PENDING_GRADE_VALIDATION);
+        
+        // UPDATED: Use the new 'AWAITING_REVIEW' status
+        record.setStatus(RecordStatus.AWAITING_REVIEW);
     }
 
     private Department findOrCreateDepartment(String name, Tenant tenant) {

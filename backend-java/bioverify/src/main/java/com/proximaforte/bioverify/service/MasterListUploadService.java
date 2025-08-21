@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.Map.entry; // Import for Map.entry()
+import static java.util.Map.entry;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +45,6 @@ public class MasterListUploadService {
     private final DepartmentRepository departmentRepository;
     private final ObjectMapper objectMapper;
 
-    // CORRECTED: Use Map.ofEntries() for more than 10 entries
     private static final Map<String, List<String>> HEADER_ALIASES = Map.ofEntries(
         entry("psn", List.of("psn", "publicservicenumber")),
         entry("ssid", List.of("ssid", "statestaffid")),
@@ -132,7 +131,7 @@ public class MasterListUploadService {
         Map<String, String> discoveredHeaders = findHeaderMappings(headers);
 
         List<MasterListRecord> recordsToSave = new ArrayList<>();
-        List<UUID> recordsRequiringRevalidationIds = new ArrayList<>();
+        List<UUID> recordsRequiringReviewIds = new ArrayList<>();
         int newRecordsCount = 0;
         int updatedRecordsCount = 0;
         
@@ -169,10 +168,12 @@ public class MasterListUploadService {
                     existingRecord.setNinHash(toSha256(nin));
                 }
 
+                // --- UPDATED LOGIC ---
+                // If a critical change is detected, set the status directly to AWAITING_REVIEW
                 boolean isCriticalChange = !Objects.equals(existingRecord.getGradeLevel(), gradeLevel);
-                if (isCriticalChange && existingRecord.getStatus() == RecordStatus.VALIDATED) {
-                    existingRecord.setStatus(RecordStatus.AWAITING_REVALIDATION);
-                    recordsRequiringRevalidationIds.add(existingRecord.getId());
+                if (isCriticalChange && (existingRecord.getStatus() == RecordStatus.ACTIVE || existingRecord.getStatus() == RecordStatus.REVIEWED)) {
+                    existingRecord.setStatus(RecordStatus.AWAITING_REVIEW);
+                    recordsRequiringReviewIds.add(existingRecord.getId());
                 }
                 recordsToSave.add(existingRecord);
             } else {
@@ -210,7 +211,7 @@ public class MasterListUploadService {
         }
         
         recordRepository.saveAll(recordsToSave);
-        return new UploadSummaryDto(newRecordsCount, updatedRecordsCount, recordsRequiringRevalidationIds);
+        return new UploadSummaryDto(newRecordsCount, updatedRecordsCount, recordsRequiringReviewIds);
     }
     
     private Map<String, String> findHeaderMappings(List<String> fileHeaders) {

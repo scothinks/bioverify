@@ -27,12 +27,14 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -72,8 +74,8 @@ public class ExportService {
             List<MasterListRecord> recordsToExport = self.getRecordsToExport(fullInitiator.getTenant().getId());
 
             if (recordsToExport.isEmpty()) {
-                self.updateLogStatus(logId, JobStatus.COMPLETED, "No validated records to export.", null);
-                log.info("No validated records to export for tenant: {}", fullInitiator.getTenant().getId());
+                self.updateLogStatus(logId, JobStatus.COMPLETED, "No active records to export.", null);
+                log.info("No active records to export for tenant: {}", fullInitiator.getTenant().getId());
                 return;
             }
 
@@ -81,7 +83,6 @@ public class ExportService {
 
             byte[] csvData = createCsvData(recordsToExport);
 
-            // --- THIS IS THE CORRECTED FILENAME LOGIC ---
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").withZone(ZoneId.systemDefault());
             String timestamp = formatter.format(exportLog.getExportTimestamp());
             String fileName = String.format("payroll-export-%s-%s.csv", fullInitiator.getTenant().getStateCode(), timestamp);
@@ -110,7 +111,7 @@ public class ExportService {
     
     @Transactional(readOnly = true)
     public List<MasterListRecord> getRecordsToExport(UUID tenantId) {
-        return recordRepository.findAllToExport(tenantId, RecordStatus.VALIDATED);
+        return recordRepository.findAllToExport(tenantId, RecordStatus.ACTIVE);
     }
     
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -138,49 +139,62 @@ public class ExportService {
     }
 
     private byte[] createCsvData(List<MasterListRecord> records) throws IOException {
+        // --- SIMPLIFIED LOGIC: This list is now the single source of truth for headers and their order. ---
+        List<String> finalHeaders = Arrays.asList(
+            "workId", "firstName", "middleName", "surname", "gradeLevel", "salaryStructure",
+            "ministry", "department", "email", "phoneNumber", "status", "bvn", "nin", "ssid",
+            "psn", "dateOfBirth", "gender", "cadre", "dateOfFirstAppointment",
+            "validatedByEmail", "validatedAt"
+        );
+
         List<Map<String, String>> processedRecords = new ArrayList<>();
-        Set<String> headerSet = new LinkedHashSet<>();
-
-        headerSet.add("employeeId");
-        headerSet.add("ssid");
-        headerSet.add("nin");
-        headerSet.add("status");
-        headerSet.add("validatedByEmail");
-        headerSet.add("validatedAt");
         
         for (MasterListRecord record : records) {
-             try {
-                Map<String, String> originalData = objectMapper.readValue(record.getOriginalUploadData(), new TypeReference<>() {});
-                headerSet.addAll(originalData.keySet());
-            } catch (Exception e) {
-                // Ignore
+            Map<String, String> recordMap = new LinkedHashMap<>();
+
+            // Populate the map directly from the verified entity data
+            recordMap.put("workId", record.getWid() != null ? record.getWid() : "");
+            recordMap.put("gradeLevel", record.getGradeLevel() != null ? record.getGradeLevel() : "");
+            recordMap.put("salaryStructure", record.getSalaryStructure() != null ? record.getSalaryStructure() : "");
+            recordMap.put("ministry", record.getMinistry() != null ? record.getMinistry().getName() : "");
+            recordMap.put("department", record.getDepartment() != null ? record.getDepartment().getName() : "");
+            recordMap.put("email", record.getEmail() != null ? record.getEmail() : "");
+            recordMap.put("phoneNumber", record.getPhoneNumber() != null ? record.getPhoneNumber() : "");
+            recordMap.put("status", record.getStatus() != null ? record.getStatus().toString() : "");
+            recordMap.put("bvn", record.getBvn() != null ? record.getBvn() : "");
+            recordMap.put("nin", record.getNin() != null ? record.getNin() : "");
+            recordMap.put("ssid", record.getSsid() != null ? record.getSsid() : "");
+            recordMap.put("psn", record.getPsn() != null ? record.getPsn() : "");
+            recordMap.put("dateOfBirth", record.getDateOfBirth() != null ? record.getDateOfBirth().toString() : "");
+            recordMap.put("gender", record.getGender() != null ? record.getGender() : "");
+            recordMap.put("cadre", record.getCadre() != null ? record.getCadre() : "");
+            recordMap.put("dateOfFirstAppointment", record.getDateOfFirstAppointment() != null ? record.getDateOfFirstAppointment().toString() : "");
+            recordMap.put("validatedByEmail", record.getValidatedBy() != null ? record.getValidatedBy().getEmail() : "");
+            recordMap.put("validatedAt", record.getValidatedAt() != null ? record.getValidatedAt().toString() : "");
+
+            // Split the definitive full name from the entity into parts for the export
+            String fullName = record.getFullName();
+            if (fullName != null && !fullName.isBlank()) {
+                String[] names = fullName.split("\\s+");
+                recordMap.put("firstName", names.length > 0 ? names[0] : "");
+                if (names.length > 2) {
+                    String middleName = String.join(" ", Arrays.copyOfRange(names, 1, names.length - 1));
+                    recordMap.put("middleName", middleName);
+                } else {
+                    recordMap.put("middleName", "");
+                }
+                recordMap.put("surname", names.length > 1 ? names[names.length - 1] : "");
             }
+            
+            processedRecords.add(recordMap);
         }
 
-        for (MasterListRecord record : records) {
-            Map<String, String> fusedRecord;
-            try {
-                fusedRecord = objectMapper.readValue(record.getOriginalUploadData(), new TypeReference<>() {});
-            } catch (Exception e) {
-                fusedRecord = new LinkedHashMap<>();
-            }
-            
-            fusedRecord.put("employeeId", record.getEmployeeId() != null ? record.getEmployeeId() : "");
-            fusedRecord.put("ssid", record.getSsid() != null ? record.getSsid() : "");
-            fusedRecord.put("nin", record.getNin() != null ? record.getNin() : "");
-            fusedRecord.put("status", record.getStatus().toString());
-            fusedRecord.put("validatedAt", record.getValidatedAt() != null ? record.getValidatedAt().toString() : "");
-            fusedRecord.put("validatedByEmail", record.getValidatedBy() != null ? record.getValidatedBy().getEmail() : "");
-            
-            processedRecords.add(fusedRecord);
-        }
-        
-        List<String> finalHeaders = new ArrayList<>(headerSet);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (PrintWriter writer = new PrintWriter(out);
              CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(finalHeaders.toArray(new String[0])))) {
 
             for (Map<String, String> recordMap : processedRecords) {
+                // Print values in the order defined by finalHeaders
                 csvPrinter.printRecord(finalHeaders.stream().map(h -> recordMap.getOrDefault(h, "")));
             }
         }

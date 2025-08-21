@@ -1,0 +1,24 @@
+<div class="liveness-container">
+  <div *ngIf="!webcamImage; else submissionView">
+    <webcam
+      [trigger]="trigger$"
+      (imageCapture)="handleImage($event)"
+      [width]="300"
+      [height]="225"
+    ></webcam>
+    <button mat-raised-button color="primary" (click)="triggerSnapshot()" class="full-width">
+      <mat-icon>camera</mat-icon>
+      Start Liveness Check
+    </button>
+  </div>
+  
+  <ng-template #submissionView>
+    <div class="submission-status">
+      <mat-spinner *ngIf="isLoading" diameter="50"></mat-spinner>
+      <div *ngIf="errorMessage" class="message-container error">
+        {{ errorMessage }}
+        <button mat-button color="warn" (click)="webcamImage = null">Retry</button>
+      </div>
+    </div>
+  </ng-template>
+</div>

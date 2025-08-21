@@ -76,21 +76,35 @@
   }
 }
 
+// src/app/user-dashboard/user-dashboard.component.scss
+
 .status-badge {
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 12px;
-  font-size: 12px;
   font-weight: 500;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  color: white;
+  color: #fff;
 
-  &.VALIDATED { background-color: #4caf50; }
-  &.PENDING_GRADE_VALIDATION { background-color: #ff9800; }
-  &.AWAITING_REVALIDATION { background-color: #f44336; }
-  &.REJECTED { background-color: #e53935; }
-  // Add other statuses as needed
+  &.ACTIVE {
+    background-color: #28a745; // Green
+  }
+
+  &.PENDING_VERIFICATION,
+  &.AWAITING_REVIEW {
+    background-color: #ffc107; // Yellow
+    color: #000;
+  }
+
+  &.FLAGGED_INVALID_DOCUMENT,
+  &.REJECTED {
+    background-color: #dc3545; // Red
+  }
+
+  &.default {
+    background-color: #6c757d; // Gray
+  }
 }
-
 .verification-required-card {
   border-left: 4px solid #f44336; // Warning color
   mat-card-header {

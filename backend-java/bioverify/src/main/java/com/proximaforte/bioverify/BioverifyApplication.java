@@ -2,14 +2,16 @@ package com.proximaforte.bioverify;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableAsync; 
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableAsync 
+@EnableAsync
+@EnableScheduling
 public class BioverifyApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(BioverifyApplication.class, args);
     }
 
-}   
+}

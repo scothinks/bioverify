@@ -78,8 +78,8 @@
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef>Next Step</th>
                 <td mat-cell *matCellDef="let job">
-                  <button mat-stroked-button color="primary" *ngIf="job.status === 'COMPLETED' && job.successfullyVerifiedRecords > 0" (click)="goToValidationQueue()">
-                    Go to Validation Queue
+                  <button mat-stroked-button color="primary" *ngIf="job.status === 'COMPLETED' && job.successfullyVerifiedRecords > 0" (click)="goToReviewQueue()">
+                    Go to Review Queue
                   </button>
                 </td>
               </ng-container>

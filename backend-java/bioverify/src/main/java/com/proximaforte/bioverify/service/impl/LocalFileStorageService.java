@@ -4,9 +4,12 @@ import com.proximaforte.bioverify.service.FileStorageService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,8 +25,6 @@ public class LocalFileStorageService implements FileStorageService {
 
     @PostConstruct
     public void init() throws IOException {
-        // --- CORRECTED THIS LINE ---
-        // Added .normalize() to clean up the path (e.g., remove './')
         this.rootLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         
         log.info("Initializing local file storage at: {}", this.rootLocation);
@@ -64,5 +65,23 @@ public class LocalFileStorageService implements FileStorageService {
         }
         log.info("Loading file from: {}", filePath);
         return Files.readAllBytes(filePath);
+    }
+
+    /**
+     * NEW: Implementation for loading a file as a Resource.
+     */
+    @Override
+    public Resource loadAsResource(String filename) {
+        try {
+            Path file = rootLocation.resolve(filename);
+            Resource resource = new UrlResource(file.toUri());
+            if (resource.exists() || resource.isReadable()) {
+                return resource;
+            } else {
+                throw new RuntimeException("Could not read file: " + filename);
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Could not read file: " + filename, e);
+        }
     }
 }
