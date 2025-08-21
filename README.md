@@ -1,139 +1,411 @@
 # BioVerify
 
-A secure, multi-tenant payroll and pension verification system designed to eliminate ghost workers and ensure data integrity for government payrolls.
+A comprehensive, multi-tenant employee verification and lifecycle management system designed to eliminate ghost workers, ensure data integrity, and provide secure employee authentication services for government payrolls.
 
 ## About The Project
 
-BioVerify is a full-stack application built with a Spring Boot backend and an Angular frontend. It serves as a "System of Record and Verification," allowing government tenants to upload employee master lists, verify identities against a trusted Source of Truth (SoT), manage data mismatches, and export clean, validated payroll files.
+BioVerify is an enterprise-grade full-stack application built with **Spring Boot 3.5.3** backend and **Angular 19** frontend. It serves as a complete "System of Record and Verification" with integrated biometric capabilities, document management, and automated workflow processing.
 
-The system is built around a two-stage confirmation process, robust role-based access controls, and a complete audit trail for all actions.
+The platform provides end-to-end employee lifecycle management from initial verification through ongoing proof-of-life monitoring, with robust security features including field-level encryption, JWT-based authentication, and comprehensive audit trails.
 
-## Key Features
+## Core Features
 
-- **Multi-Tenant Architecture**: Securely isolates data for different government clients.
-- **Verification & Validation Workflow**: A two-step process where employees first verify their identity, and administrators later provide a final validation.
-- **Asynchronous Bulk Operations**: Perform bulk verification and payroll exports as non-blocking background jobs.
-- **Unique Work ID (WID) Generation**: Assigns a permanent, unique WID to every validated employee record.
-- **Role-Based Access Control (RBAC)**: Granular permissions, including the ability to scope a reviewer's access to specific ministries or departments.
-- **Administrative Dashboards**: Rich dashboards for performance overview, job tracking, and managing validation queues.
-- **Mismatch Resolution**: A side-by-side UI to efficiently resolve data discrepancies between the uploaded list and the Source of Truth.
-- **Complete Audit Trail**: Logs all critical actions, from uploads to exports.
+### 🔐 **Security & Authentication**
+- **JWT-based Authentication** with refresh token mechanism
+- **AES-256 Field-Level Encryption** for sensitive data (PII)
+- **Role-Based Access Control (RBAC)** with 5 distinct user roles
+- **Multi-Tenant Architecture** with complete data isolation
+- **Account Activation Workflow** with email verification
 
-## Getting Started
+### 👥 **User Roles & Capabilities**
+- **Global Super Admin**: System-wide management and tenant oversight
+- **Tenant Admin**: Complete tenant management, user creation, bulk operations
+- **Reviewer**: Document review, record validation, queue management
+- **Agent**: Proof of Life workflow execution with biometric capture
+- **Self-Service User**: Personal dashboard with liveness check submissions
 
-To get a local copy up and running, follow these steps.
+### 📄 **Document Management & Verification**
+- **Proof of Life (PoL) Workflow**: Agent-assisted biometric verification
+- **Document Upload & Validation**: Letter of Employment, Work ID, photos
+- **PDF Document Viewer** with authentication-protected access
+- **Invalid Document Queue** for flagged content review
+- **OCR Integration** for automated document processing
+
+### 🔄 **Advanced Workflows**
+- **Bulk Verification Processing**: Asynchronous verification against external systems
+- **Real-Time Job Monitoring**: Live status updates with polling mechanisms
+- **Mismatch Resolution**: Side-by-side comparison for data discrepancy resolution
+- **Payroll Export Generation**: Comprehensive CSV exports with audit trails
+- **Liveness Check Scheduling**: Automated periodic verification requirements
+
+### 📊 **Analytics & Reporting**
+- **Role-Specific Dashboards** with real-time statistics
+- **Queue Management** with advanced filtering and pagination
+- **Export History Tracking** with download capabilities
+- **Performance Metrics** and system monitoring
+- **Audit Trail** for all critical operations
+
+## 🛠️ Technology Stack
+
+### Backend (Spring Boot 3.5.3)
+- **Java 20** with Maven build system
+- **Spring Security** with JWT authentication
+- **Spring Data JPA** with PostgreSQL database
+- **Spring Boot Actuator** for monitoring
+- **Jasypt** for encryption services
+- **Apache Commons CSV** for data processing
+- **Apache POI** for Excel file handling
+- **WebFlux** for reactive programming
+
+### Frontend (Angular 19)
+- **Angular Material** for UI components
+- **RxJS** for reactive programming
+- **ngx-webcam** for camera integration
+- **ngx-extended-pdf-viewer** for document viewing
+- **TypeScript 5.7** with modern ES features
+- **Karma & Jasmine** for testing
+
+### External Integrations
+- **PostgreSQL** database with AES-256 encryption
+- **Optima Identity Provider** for bulk verification
+- **Email Notification Service** for account management
+- **File Storage System** with configurable directories
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Java 17+ and Maven
-- Node.js and Angular CLI
-- PostgreSQL database
+- **Java 20+** with Maven 3.8+
+- **Node.js 18+** with npm
+- **PostgreSQL 14+** database
+- **Angular CLI** (`npm install -g @angular/cli`)
 
-### Run Locally
+### Environment Setup
 
-**Clone the repository:**
-
+1. **Clone the repository:**
 ```bash
 git clone <your-repository-url>
+cd bioverify
 ```
 
-**Configure the Backend:**
-
-- Navigate to `backend-java/`
-- Update the database connection and JWT secret in `src/main/resources/application.properties`.
-
-**Run the Backend:**
-
+2. **Database Configuration:**
 ```bash
-cd backend-java
+# Create PostgreSQL database
+createdb bioverify
+
+# Update connection in backend-java/bioverify/src/main/resources/application-local.properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/bioverify
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+```
+
+3. **Backend Setup:**
+```bash
+cd backend-java/bioverify
+mvn clean install
 mvn spring-boot:run
 ```
+Backend will be available at `http://localhost:8080`
 
-The backend will be available at `http://localhost:8080`.
-
-**Run the Frontend:**
-
+4. **Frontend Setup:**
 ```bash
-cd ../frontend-angular
+cd frontend-angular
 npm install
 ng serve
 ```
+Frontend will be available at `http://localhost:4200`
 
-The frontend will be available at `http://localhost:4200`.
+### Configuration Files
 
-## System Architecture & In-Depth Documentation
+#### Backend Configuration (`application.properties`)
+- JWT token expiration and refresh settings
+- Database connection parameters
+- File storage directory paths
+- Email service integration URLs
+- Encryption keys and security settings
 
-This section provides a detailed technical overview of the BioVerify platform.
+#### Frontend Configuration
+- Backend API endpoints in proxy configuration
+- Angular Material theme customization
+- Build and development server settings
+
+## 🏗️ System Architecture
 
 ### Project Structure
+```
+bioverify/
+├── backend-java/bioverify/          # Spring Boot REST API
+│   ├── src/main/java/com/proximaforte/bioverify/
+│   │   ├── controller/              # REST endpoints
+│   │   ├── service/                 # Business logic
+│   │   ├── domain/                  # JPA entities
+│   │   ├── repository/              # Data access layer
+│   │   ├── dto/                     # Data transfer objects
+│   │   ├── config/                  # Spring configuration
+│   │   └── exception/               # Custom exceptions
+│   └── src/main/resources/          # Configuration files
+└── frontend-angular/                # Angular 19 SPA
+    ├── src/app/
+    │   ├── components/              # UI components
+    │   ├── services/                # HTTP services
+    │   ├── models/                  # TypeScript interfaces
+    │   ├── dashboards/              # Role-based dashboards
+    │   └── guards/                  # Route protection
+    └── src/assets/                  # Static resources
+```
 
-The project is a monorepo containing two main packages:
+## 🔄 Core Workflows
 
-- `backend-java/`: The Spring Boot REST API that handles all business logic, database interaction, and security.
-- `frontend-angular/`: The Angular SPA that provides the complete user interface.
+### 1. **Employee Registration & Verification**
+```mermaid
+graph LR
+    A[Identity Input] --> B[External Verification]
+    B --> C{PSN Required?}
+    C -->|Yes| D[PSN Challenge]
+    C -->|No| E[Account Creation]
+    D --> E
+    E --> F[Email Activation]
+    F --> G[Active Account]
+```
 
-### Backend (Spring Boot)
+### 2. **Proof of Life (PoL) Workflow**
+```mermaid
+graph TD
+    A[Agent Search] --> B[Record Lookup]
+    B --> C[Live Photo Capture]
+    C --> D[Document Upload]
+    D --> E[Automated Validation]
+    E --> F{Valid Documents?}
+    F -->|Yes| G[Account Creation]
+    F -->|No| H[Flag for Review]
+    G --> I[Email Notification]
+```
 
-#### Core Concepts
+### 3. **Review & Approval Process**
+```mermaid
+graph LR
+    A[Queue Assignment] --> B[Document Review]
+    B --> C{Approve?}
+    C -->|Yes| D[Record Validation]
+    C -->|No| E[Rejection/Feedback]
+    D --> F[Payroll Eligible]
+    E --> G[Resubmission Required]
+```
 
-**Two-Stage Confirmation: Verification vs. Validation**
+## 🗄️ Data Architecture
 
-- **Verification**: An automated, user-driven process where an employee proves their identity by matching their SSID + NIN against the external Source of Truth (SoT).
-- **Validation**: A manual, administrative process where a REVIEWER or TENANT_ADMIN gives the final approval to a verified record, making it eligible for payroll.
+### Core Domain Entities
 
-**Asynchronous Jobs**: Computationally heavy tasks like bulk verification and payroll exports are executed as asynchronous background jobs to prevent blocking API requests and improve system responsiveness.
+#### **MasterListRecord** (Central Entity)
+```java
+@Entity
+public class MasterListRecord {
+    // Identity Information (Encrypted)
+    @Convert(converter = StringCryptoConverter.class)
+    private String ssid, nin, bvn, psn;
+    
+    // Personal Details (Encrypted)
+    @Convert(converter = StringCryptoConverter.class)
+    private String firstName, lastName, email, phoneNumber;
+    
+    // Civil Service Information
+    private String ministry, department, gradeLevel, cadre;
+    
+    // Workflow Status
+    @Enumerated(EnumType.STRING)
+    private RecordStatus status;
+    
+    // Proof of Life Data
+    private String proofOfLifeAgentId;
+    private String documentUrls;
+    private LocalDateTime lastLivenessCheck;
+    
+    // Audit Fields
+    private LocalDateTime createdAt, updatedAt;
+    private String validatedByUserId;
+}
+```
 
-**Work ID (WID) Generation**: Upon final validation, the system generates a unique, permanent Work ID (WID) for each employee record. This is the primary identifier for verified personnel.
+#### **User Management**
+```java
+@Entity
+public class User implements UserDetails {
+    private String email, password;
+    
+    @Enumerated(EnumType.STRING)
+    private Role role; // GLOBAL_SUPER_ADMIN, TENANT_ADMIN, REVIEWER, AGENT, SELF_SERVICE_USER
+    
+    @ManyToOne
+    private Tenant tenant;
+    
+    // Reviewer-specific assignments
+    @ManyToMany
+    private Set<Ministry> assignedMinistries;
+    
+    private boolean isActive, isAccountActivated;
+}
+```
 
-#### Domain Entities & Repositories
+### Record Status Workflow
+```
+PENDING_VERIFICATION → AWAITING_REVIEW → REVIEWED → ACTIVE
+                    ↓
+                FLAGGED_NOT_IN_SOT
+                FLAGGED_DATA_MISMATCH
+                FLAGGED_INVALID_DOCUMENTS
+                REJECTED
+```
 
-**Key Entities**: `MasterListRecord` (with a `wid` field), `Tenant`, `User`, `Ministry`, `Department`, `BulkVerificationJob`, `PayrollExportLog`.
+## 🔐 Security Implementation
 
-**Enums**: `Role`, `JobStatus`, and `RecordStatus` (which includes states like `PENDING_VERIFICATION`, `PENDING_APPROVAL`, `FLAGGED_DATA_MISMATCH`, and `FLAGGED_NOT_IN_SOT`).
+### Authentication & Authorization
+- **JWT Access Tokens** (24 hours) + **Refresh Tokens** (7 days)
+- **Method-level Security** with `@PreAuthorize` annotations
+- **Role-based Route Guards** in Angular frontend
+- **CORS Configuration** for cross-origin requests
 
-#### Services (Business Logic)
+### Data Protection
+- **AES-256 Field-Level Encryption** for PII using `@Convert(converter = StringCryptoConverter.class)`
+- **SHA-256 Hashing** for searchable identifiers
+- **BCrypt Password Encryption** for user credentials
+- **Secure Headers** (HSTS, CSP, X-Frame-Options)
 
-- `VerificationService`: Orchestrates the automated verification step.
-- `MasterListRecordService`: Manages the administrative validation queue and mismatch resolution.
-- `BulkVerificationService` & `ExportService`: Run asynchronous background jobs.
-- `WIDGenerationService`: A dedicated service to generate a unique WID upon validation.
+### Session Management
+- **Stateless JWT Architecture**
+- **Automatic Token Refresh** via HTTP interceptors
+- **Secure Logout** with token invalidation
+- **Account Activation** with time-limited tokens (30 minutes)
 
-#### Security & RBAC
+## 🎛️ API Endpoints
 
-The system uses JWT for stateless authentication.
+### Authentication (`/api/v1/auth`)
+```http
+POST /authenticate         # User login with JWT tokens
+POST /refreshtoken        # Refresh access tokens
+POST /logout              # User logout
+POST /create-account      # Manual account creation
+POST /activate-account    # Account activation via email
+POST /resend-activation   # Resend activation email
+```
 
-A key RBAC feature is that Tenant Admins can assign Reviewers to specific Ministries and Departments. The backend enforces this by filtering the validation queues based on the authenticated reviewer's assignments.
+### Records Management (`/api/v1/records`)
+```http
+POST /find-for-pol        # Find record for Proof of Life
+GET  /queue/awaiting-review      # Get records awaiting review
+GET  /queue/mismatched           # Get mismatched records
+GET  /queue/invalid-documents    # Get invalid document records
+PUT  /{recordId}                 # Update record data
+POST /{recordId}/validate        # Validate record
+POST /upload                     # Upload master list CSV
+POST /bulk-verify               # Start bulk verification
+POST /export                    # Generate payroll export
+```
 
-### Frontend (Angular)
+### Proof of Life (`/api/v1/pol`)
+```http
+POST /{recordId}/complete  # Complete PoL with documents (Agent only)
+```
 
-#### Key Components & Dashboards
+### User Management (`/api/v1/users`, `/api/v1/tenant-admin`)
+```http
+GET  /me/record           # Get current user's record
+POST /                    # Create new users
+GET  /reviewers          # Get reviewers with workload
+PUT  /reviewers/{id}/assignments  # Update reviewer assignments
+```
 
-- **Performance Overview Dashboard**: For Tenant Admins. Displays high-level KPIs: total records, a funnel showing the count of records at each stage (uploaded -> verified -> validated), and user counts by role.
-- **Bulk Verification Dashboard**: Displays the history and status of all bulk verification jobs, showing verified vs. not-found counts.
-- **ValidationQueueComponent**: Presents a tabbed interface for a cleaner workflow:
-  - **"Pending Approval" Tab**: Shows records that have been successfully verified by users and are awaiting final validation.
-  - **"Mismatched Data" Tab**: A dedicated view for reviewers to handle records flagged with `FLAGGED_DATA_MISMATCH`.
-- **Mismatch Resolution Component**: A UI for reviewers that shows a side-by-side comparison of the originally uploaded data versus the data received from the SoT, allowing for one-click resolution.
+## 🖥️ User Interface Features
 
-### Key Workflows
+### **Dashboard Components by Role**
 
-#### End-to-End Record Lifecycle (User-Driven)
+#### **Global Super Admin**
+- System-wide performance overview
+- Tenant management and creation
+- Global statistics and monitoring
 
-1. **Ingestion**: A `TENANT_ADMIN` uploads a master list. Records are created with a `PENDING_VERIFICATION` status.
-2. **Verification (User-Driven)**: An employee uses the self-service portal to provide their SSID + NIN. The system checks this against the SoT.
-   - On Success: Status becomes `PENDING_APPROVAL`.
-   - If Not Found: Status becomes `FLAGGED_NOT_IN_SOT`.
-3. **Validation (Admin-Driven)**: A `REVIEWER` logs into their dashboard and validates scoped records.
-4. **Finalization**: Upon validation, a WID is assigned, and the record becomes `VALIDATED`.
-5. **Export**: A `TENANT_ADMIN` exports all `VALIDATED` records as a CSV.
+#### **Tenant Admin** 
+- Comprehensive tenant dashboard with KPIs
+- User creation and management interface
+- Master list upload with progress tracking
+- Bulk verification job monitoring
+- Payroll export generation and history
+- Review queue oversight
 
-#### Bulk Verification Workflow (Admin-Driven)
+#### **Agent Interface**
+- **Proof of Life Workflow Dashboard**
+- Record search by SSID/NIN
+- **Live webcam integration** for photo capture
+- Document upload interface (Letter of Employment, Work ID)
+- Real-time validation feedback
 
-1. **Prerequisite**: Uploaded master list must have PSN.
-2. **Initiation**: Admin selects upload and starts bulk verification.
-3. **Execution**: Background job triggers, processing each record via SoT.
-4. **Status Updates**:
-   - On Success: `PENDING_APPROVAL`
-   - Not Found: `FLAGGED_NOT_IN_SOT`
-5. **Completion & Reporting**: Dashboard updates with results (e.g., 10,000 processed: 9,500 succeeded, 500 not found).
-6. **Next Step**: Successful records are queued for human validation.
+#### **Reviewer Interface**
+- **Multi-tab Review Queues**:
+  - Awaiting Review tab
+  - Mismatched Data tab  
+  - Invalid Documents tab
+- **Document Review Dialog** with PDF viewer
+- Advanced filtering (ministry, department, grade level)
+- Side-by-side mismatch resolution interface
+
+#### **Self-Service User**
+- Personal profile dashboard
+- **Liveness check interface** with webcam
+- Countdown timer for next required check
+- Account status monitoring
+
+### **Advanced UI Features**
+- **Real-time polling** for long-running operations
+- **Progressive file upload** with status indicators
+- **Responsive Angular Material** design
+- **Authentication-protected PDF viewing**
+- **Advanced filtering and pagination** for large datasets
+- **Role-based navigation** and route protection
+
+## 🔄 Business Workflows
+
+### **1. Employee Onboarding Process**
+```
+Master List Upload → Identity Verification → Proof of Life → Document Review → Account Activation → Active Employee
+```
+
+### **2. Bulk Processing Workflow**
+```
+CSV Upload → Background Processing → External API Verification → Status Updates → Review Queue Distribution → Final Validation
+```
+
+### **3. Document Review Cycle**
+```
+Document Submission → Automated Validation → Queue Assignment → Human Review → Approval/Rejection → Account Creation/Feedback
+```
+
+### **4. Liveness Verification**
+```
+Scheduled Check → User Notification → Webcam Submission → Validation → Account Status Update → Next Schedule
+```
+
+## 🔧 Background Services
+
+### **Asynchronous Job Processing**
+- **BulkVerificationService**: Processes large datasets against external APIs
+- **ExportService**: Generates comprehensive payroll reports
+- **EmailService**: Handles account activation and notification workflows
+- **LivenessCheckScheduler**: Automated periodic verification scheduling
+
+### **External Integrations**
+- **Optima Identity Provider**: Bulk verification with encrypted data exchange
+- **Email Notification Service**: Template-based communication system
+- **File Storage Service**: Secure document and media management
+
+## 📊 Monitoring & Analytics
+
+### **Real-time Dashboards**
+- Record processing statistics by status
+- User activity and workload distribution
+- Job processing performance metrics
+- Export history and download tracking
+
+### **Audit & Compliance**
+- Complete action audit trails
+- Data access logging
+- User session monitoring
+- Security event tracking
