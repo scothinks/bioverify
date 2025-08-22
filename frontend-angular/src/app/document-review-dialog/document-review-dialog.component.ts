@@ -57,7 +57,7 @@ export class DocumentReviewDialogComponent {
   }
 
   /**
-   * UPDATED: This now calls the dedicated approval endpoint which activates the record
+   * Calls the dedicated approval endpoint which activates the record
    * and triggers the self-service user creation flow.
    */
   approve(): void {

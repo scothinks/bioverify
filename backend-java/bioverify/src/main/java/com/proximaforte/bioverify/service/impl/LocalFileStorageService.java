@@ -68,7 +68,7 @@ public class LocalFileStorageService implements FileStorageService {
     }
 
     /**
-     * NEW: Implementation for loading a file as a Resource.
+     * Implementation for loading a file as a Resource.
      */
     @Override
     public Resource loadAsResource(String filename) {

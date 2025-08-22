@@ -155,7 +155,7 @@ public class MasterListRecordController {
     }
     
     /**
-     * NEW: Dedicated endpoint for approving a document that failed automated checks.
+     * Dedicated endpoint for approving a document that failed automated checks.
      * This triggers the final activation and user creation flow.
      */
     @PostMapping("/{recordId}/approve-flagged-document")

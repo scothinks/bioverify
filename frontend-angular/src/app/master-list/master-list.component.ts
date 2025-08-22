@@ -121,7 +121,6 @@ export class MasterListComponent implements OnInit {
       this.ministryList = [...new Set(records.map(r => r.ministry).filter((v): v is string => !!v))].sort();
       this.departmentList = [...new Set(records.map(r => r.department).filter((v): v is string => !!v))].sort();
       this.gradeList = [...new Set(records.map(r => r.gradeLevel).filter((v): v is string => !!v))].sort();
-      // FIXED: Removed the invalid type guard for the 'status' property.
       this.statusList = [...new Set(records.map(r => r.status).filter(v => !!v))].sort();
     }
   }

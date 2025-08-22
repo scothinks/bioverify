@@ -95,7 +95,7 @@ public class AuthenticationService {
     }
 
     /**
-     * UPDATED: Now generates an activation token and sends the activation email.
+     * Generates an activation token and sends the activation email.
      */
     @Transactional
     public User createSelfServiceAccountForRecord(MasterListRecord record, String verifiedEmail) {
@@ -132,7 +132,7 @@ public class AuthenticationService {
     }
 
     /**
-     * NEW: Method to activate a user account with a new password.
+     * Method to activate a user account with a new password.
      */
     @Transactional
     public void activateAccount(String token, String password) {
@@ -184,7 +184,7 @@ public class AuthenticationService {
     }
 
     /**
-     * NEW: Resends an activation link to a user whose account is not yet enabled.
+     * Resends an activation link to a user whose account is not yet enabled.
      */
     @Transactional
     public void resendActivationLink(String email) {

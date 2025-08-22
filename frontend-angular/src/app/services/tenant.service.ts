@@ -227,7 +227,7 @@ export class TenantService {
   }
 
   /**
-   * NEW: Calls the dedicated endpoint to approve a flagged document,
+   * Calls the dedicated endpoint to approve a flagged document,
    * which triggers the final activation and user creation flow.
    */
   approveFlaggedDocument(recordId: string): Observable<any> {

@@ -18,13 +18,13 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     List<User> findAllByTenantId(UUID tenantId);
     
-    // NEW: Method to find users by tenant and role
+    // Method to find users by tenant and role
     List<User> findByTenantIdAndRole(UUID tenantId, Role role);
 
     @Query("SELECT u FROM User u JOIN FETCH u.tenant WHERE u.id = :userId")
     Optional<User> findByIdWithTenant(@Param("userId") UUID userId);
     
-    // NEW: Method to eagerly fetch a user's assignments to prevent LazyInitializationException
+    // Method to eagerly fetch a user's assignments to prevent LazyInitializationException
     @Query("SELECT u FROM User u " +
            "LEFT JOIN FETCH u.assignedMinistries " +
            "LEFT JOIN FETCH u.assignedDepartments " +

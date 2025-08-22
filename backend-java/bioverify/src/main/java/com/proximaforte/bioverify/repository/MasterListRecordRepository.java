@@ -45,7 +45,7 @@ public interface MasterListRecordRepository extends JpaRepository<MasterListReco
     List<MasterListRecord> findAllByTenantIdAndStatusWithDetails(@Param("tenantId") UUID tenantId, @Param("status") RecordStatus status);
 
 
-    // UPDATED: Added LEFT JOIN FETCH for ministry and department to fix export error
+    // Added LEFT JOIN FETCH for ministry and department to fix export error
     @Query("SELECT r FROM MasterListRecord r " +
            "LEFT JOIN FETCH r.validatedBy " +
            "LEFT JOIN FETCH r.ministry " +

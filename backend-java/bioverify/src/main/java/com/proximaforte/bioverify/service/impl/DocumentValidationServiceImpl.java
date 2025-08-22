@@ -37,7 +37,7 @@ public class DocumentValidationServiceImpl implements DocumentValidationService 
                 
                 String ocrTextLower = extractedText.toLowerCase();
 
-                // --- NEW: Rule 1 - Check for the employee's full name ---
+                // Rule 1 - Check for the employee's full name
                 boolean nameFound = ocrTextLower.contains(record.getFullName().toLowerCase());
                 if (!nameFound) {
                     logger.warn("Validation FAILED for document type {} for record {}: Employee name '{}' not found in document.",
@@ -45,7 +45,7 @@ public class DocumentValidationServiceImpl implements DocumentValidationService 
                     return false; // Fail fast
                 }
 
-                // --- NEW: Rule 2 - Check for the presence of at least one required keyword ---
+                // Rule 2 - Check for the presence of at least one required keyword
                 Set<String> requiredKeywords = getRequiredKeywords(docType);
                 boolean keywordFound = requiredKeywords.stream()
                         .anyMatch(keyword -> ocrTextLower.contains(keyword));
@@ -67,7 +67,7 @@ public class DocumentValidationServiceImpl implements DocumentValidationService 
     }
     
     /**
-     * NEW: Helper method to define required keywords for each document type.
+     * Helper method to define required keywords for each document type.
      * The validation will pass if AT LEAST ONE of these keywords is found.
      */
     private Set<String> getRequiredKeywords(DocumentType documentType) {

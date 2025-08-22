@@ -60,7 +60,7 @@ public class SotLookupService {
         Map<String, String> initialPayload = Map.of("nin", nin, "ssid", ssid);
         return webClient.post()
             .uri(baseUrl + "/encrypt")
-            .header("client-id", config.getClientId()) // **FIXED: Changed header to match Postman**
+            .header("client-id", config.getClientId())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(initialPayload)
             .retrieve()
@@ -70,7 +70,7 @@ public class SotLookupService {
                 String encryptedRequestPayload = encryptResponse.getData();
                 return webClient.post()
                     .uri(baseUrl + "/data-inquiry")
-                    .header("client-id", config.getClientId()) // **FIXED: Changed header to match Postman**
+                    .header("client-id", config.getClientId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(encryptedRequestPayload)
                     .retrieve()
@@ -81,7 +81,7 @@ public class SotLookupService {
                 String encryptedResponsePayload = inquiryResponse.getData();
                 return webClient.post()
                     .uri(baseUrl + "/decrypt")
-                    .header("client-id", config.getClientId()) // **FIXED: Changed header to match Postman**
+                    .header("client-id", config.getClientId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(encryptedResponsePayload)
                     .retrieve()

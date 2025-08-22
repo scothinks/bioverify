@@ -27,7 +27,7 @@ public interface FileStorageService {
     byte[] load(String fileIdentifier) throws IOException;
 
     /**
-     * NEW: Loads a file as a Spring Resource, which is ideal for streaming.
+     * Loads a file as a Spring Resource, which is ideal for streaming.
      *
      * @param fileIdentifier The name of the file to load.
      * @return A Resource object for the file.

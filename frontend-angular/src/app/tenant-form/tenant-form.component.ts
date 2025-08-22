@@ -72,7 +72,6 @@ export class TenantFormComponent implements OnInit {
       providerName: ['OPTIMA', [Validators.required]],
       apiBaseUrl: ['', [Validators.required, Validators.pattern(/^https?:\/\/.+/)]],
       clientId: ['', [Validators.required]],
-      // CORRECTED: Removed the required validator from this field
       clientSecretEncrypted: [''], 
       aesKey: ['', [Validators.required]],
       iv: ['', [Validators.required]]

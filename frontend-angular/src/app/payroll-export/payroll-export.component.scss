@@ -46,11 +46,11 @@
   .mat-mdc-cell { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
 }
 
-// CORRECTED: Added a gap to the action-buttons container
+// Action buttons with proper spacing
 .action-buttons {
   display: flex;
   align-items: center;
-  gap: 8px; /* This will space out the buttons */
+  gap: 8px;
 }
 
 // Status Badge

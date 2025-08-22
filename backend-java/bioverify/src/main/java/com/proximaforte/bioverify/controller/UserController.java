@@ -66,7 +66,7 @@ public class UserController {
     }
 
     /**
-     * NEW: Fetches all reviewers and their pending counts for the tenant.
+     * Fetches all reviewers and their pending counts for the tenant.
      * Only accessible by Tenant Admins.
      */
     @GetMapping("/reviewers")

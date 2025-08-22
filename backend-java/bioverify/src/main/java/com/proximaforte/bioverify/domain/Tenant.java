@@ -45,7 +45,7 @@ public class Tenant {
     private String stateCode;
     
     /**
-     * NEW: A brief description of the tenant.
+     * A brief description of the tenant.
      */
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -125,7 +125,6 @@ public class Tenant {
     }
 
     public void setIdentitySourceConfig(String identitySourceConfig) {
-        // CORRECTED: Fixed 'thisis' typo
         this.identitySourceConfig = identitySourceConfig;
     }
 

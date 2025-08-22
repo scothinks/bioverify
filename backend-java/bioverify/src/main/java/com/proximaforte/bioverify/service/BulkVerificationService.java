@@ -302,7 +302,7 @@ public class BulkVerificationService {
             logger.error("Could not parse date timestamp for PSN {}. Error: {}", profile.getPsn(), e.getMessage());
         }
         
-        // UPDATED: Use the new 'AWAITING_REVIEW' status
+        // Set status to AWAITING_REVIEW
         record.setStatus(RecordStatus.AWAITING_REVIEW);
     }
 

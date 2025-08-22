@@ -40,7 +40,7 @@ public class MasterListRecordDto {
 
     public MasterListRecordDto(MasterListRecord record) {
         this.id = record.getId();
-        this.employeeId = record.getWid(); // CORRECTED: Mapped from wid instead of employeeId
+        this.employeeId = record.getWid(); // Mapped from wid instead of employeeId
         this.fullName = record.getFullName();
         this.psn = record.getPsn();
         this.ssid = record.getSsid();

@@ -97,7 +97,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() { 
-        // UPDATED: Now returns the value of the 'enabled' field
+        // Returns the value of the 'enabled' field
         return this.enabled; 
     }
 }

@@ -53,15 +53,11 @@
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon>pending_actions</mat-icon>
-            <!-- UPDATED: Tab label -->
             Awaiting Review
-            <!-- UPDATED: Data source for badge count -->
             <span *ngIf="awaitingReviewRecords.data.length > 0" class="tab-badge">{{awaitingReviewRecords.data.length}}</span>
           </ng-template>
 
-          <!-- UPDATED: Data source for table and empty state -->
           <div *ngIf="awaitingReviewRecords.data.length > 0; else noAwaitingReviewRecords" class="table-container">
-            <!-- UPDATED: Data source for table -->
             <table mat-table [dataSource]="awaitingReviewRecords" class="enhanced-table">
               <ng-container matColumnDef="fullName">
                 <th mat-header-cell *matHeaderCellDef>Employee</th>
@@ -110,10 +106,8 @@
               <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
               <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
             </table>
-            <!-- UPDATED: Paginator reference -->
             <mat-paginator #awaitingReviewPaginator [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons></mat-paginator>
           </div>
-          <!-- UPDATED: Empty state template reference and text -->
           <ng-template #noAwaitingReviewRecords>
             <div class="empty-state">
               <mat-icon>playlist_add_check</mat-icon>

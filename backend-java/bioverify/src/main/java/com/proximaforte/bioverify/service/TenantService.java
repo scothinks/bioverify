@@ -19,7 +19,7 @@ import java.util.UUID;
 public class TenantService {
 
     private final TenantRepository tenantRepository;
-    private final ObjectMapper objectMapper; // NEW: Inject ObjectMapper
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public Tenant createTenant(CreateTenantRequest request) {

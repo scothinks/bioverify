@@ -54,7 +54,7 @@ export class VerificationService {
     return this.http.post<PsnChallengeResponse>(`${this.publicVerificationApiUrl}/challenge`, data);
   }
 
-  // --- NEW: Methods for Authenticated Agent Flow ---
+  // Methods for Authenticated Agent Flow
 
   initiateAgentVerification(data: VerifyIdentityRequest): Observable<InitiateVerificationResponse> {
     // Calls the secure agent endpoint

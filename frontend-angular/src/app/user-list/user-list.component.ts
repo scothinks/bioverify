@@ -4,7 +4,6 @@ import { TenantService } from '../services/tenant.service';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatCardModule } from '@angular/material/card';
-// REMOVED: Unused imports for async validation
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -69,7 +68,6 @@ export class UserListComponent implements OnInit, OnDestroy {
   ) {
     this.userForm = this.fb.group({
       fullName: ['', Validators.required],
-      // REMOVED: The async validator (third argument) has been removed.
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]],
       role: ['', Validators.required],
@@ -111,7 +109,6 @@ export class UserListComponent implements OnInit, OnDestroy {
     });
   }
 
-  // REMOVED: The validateEmailNotTaken method is no longer needed.
 
   generatePassword(): void {
     const length = 12;

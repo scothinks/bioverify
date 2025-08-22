@@ -41,7 +41,7 @@ export class EmployeeRegistrationComponent implements OnInit {
   successMessage = '';
   currentStep: 'initial' | 'challenge' | 'create' = 'initial';
   isAgent = false;
-  isLoggedIn = false; // CORRECTED: Added missing property
+  isLoggedIn = false;
   
   private recordId: string | null = null;
 
@@ -64,7 +64,7 @@ export class EmployeeRegistrationComponent implements OnInit {
   ngOnInit(): void {
     const userRole = this.authService.getUserRole();
     this.isAgent = userRole === 'AGENT';
-    this.isLoggedIn = this.authService.isLoggedIn(); // CORRECTED: Set property value
+    this.isLoggedIn = this.authService.isLoggedIn();
   }
 
   onInitiateVerification(): void {

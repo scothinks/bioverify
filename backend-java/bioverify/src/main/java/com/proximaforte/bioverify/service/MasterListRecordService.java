@@ -185,7 +185,7 @@ public class MasterListRecordService {
     }
     
     /**
-     * NEW: Contains the correct logic for approving a flagged document and activating the record.
+     * Contains the correct logic for approving a flagged document and activating the record.
      */
     @Transactional
     public MasterListRecord approveFlaggedDocument(UUID recordId, User reviewer) {

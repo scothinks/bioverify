@@ -64,7 +64,7 @@ public class TenantAdminController {
         return ResponseEntity.ok(departments);
     }
 
-    // NEW: Endpoint to handle updating reviewer assignments
+    // Endpoint to handle updating reviewer assignments
     @PutMapping("/reviewers/{reviewerId}/assignments")
     public ResponseEntity<UserDto> updateReviewerAssignments(
             @PathVariable UUID reviewerId,

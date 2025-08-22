@@ -196,7 +196,6 @@ export class ReviewQueueComponent implements OnInit {
     });
   }
 
-  // ADDED: The missing helper function
   getInitials(fullName: string): string {
     if (!fullName) return '?';
     const names = fullName.trim().split(' ');

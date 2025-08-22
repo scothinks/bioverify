@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import java.util.UUID; // NEW: Import UUID
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/global-admin")
@@ -29,7 +29,7 @@ public class GlobalAdminController {
         return ResponseEntity.ok(tenantService.getAllTenants());
     }
     
-    // NEW: Add the endpoint for updating a tenant
+    // Endpoint for updating a tenant
     @PutMapping("/tenants/{tenantId}")
     public ResponseEntity<Tenant> updateTenant(
             @PathVariable UUID tenantId,
