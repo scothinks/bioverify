@@ -33,7 +33,6 @@ export class TenantAdminDashboardComponent {
     { path: 'records', label: 'Master Records', icon: 'list_alt' },
     { path: 'bulk-verify', label: 'Bulk Verification', icon: 'checklist' },
     { path: 'review-queue', label: 'Review Queue', icon: 'fact_check' },
-    // NEW: Link to the invalid document review queue
     { path: 'invalid-documents', label: 'Invalid Documents', icon: 'report_problem' },
     { path: 'export', label: 'Payroll Export', icon: 'download_for_offline' }
   ];

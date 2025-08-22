@@ -34,7 +34,6 @@ import { DocumentReviewDialogComponent } from '../document-review-dialog/documen
 export class InvalidDocumentQueueComponent implements OnInit {
   
   public flaggedRecords = new MatTableDataSource<MasterListRecordDto>();
-  // UPDATED: Added 'gradeLevel' and 'salaryStructure'
   public displayedColumns: string[] = ['fullName', 'ministry', 'department', 'gradeLevel', 'salaryStructure', 'actions'];
   public isLoading = true;
 

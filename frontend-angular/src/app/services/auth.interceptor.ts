@@ -16,7 +16,7 @@ export const authInterceptor: HttpInterceptorFn = (
     const authService = inject(AuthService);
     const accessToken = authService.getAccessToken();
 
-    // UPDATED: Do not intercept requests for login or token refresh
+    // Skip authentication for login and token refresh endpoints
     if (req.url.includes('/auth/authenticate') || req.url.includes('/auth/refreshtoken')) {
         return next(req);
     }
