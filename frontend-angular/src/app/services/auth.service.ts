@@ -101,18 +101,24 @@ export class AuthService {
     );
   }
 
-  // RESTORED: This method is vital for creating admin/reviewer users
+  /**
+   * Creates user accounts for admin/reviewer roles.
+   * Used by administrators to create new system users.
+   */
   register(userData: AuthRequest): Observable<any> {
     return this.http.post<any>(`${this.authApiUrl}/register`, userData).pipe(
       catchError(this.handleError)
     );
   }
 
-  // RESTORED: This method is vital for the manual account creation flow
+  /**
+   * Creates user accounts manually through administrative process.
+   * Supports the complete account creation workflow.
+   */
   createAccount(accountData: AuthRequest): Observable<JwtResponse> {
     return this.http.post<JwtResponse>(`${this.authApiUrl}/create-account`, accountData).pipe(
       tap(response => {
-        // NOTE: This flow may need review; it currently sets tokens upon account creation
+        // Store tokens immediately upon successful account creation
         this.setAccessToken(response.accessToken);
         this.setRefreshToken(response.refreshToken);
       }),
@@ -120,17 +126,26 @@ export class AuthService {
     );
   }
 
-  // NEW: Method to call the backend activation endpoint
+  /**
+   * Activates user account using email activation token.
+   * Final step in the account creation workflow.
+   */
   activateAccount(token: string, password: string): Observable<any> {
     return this.http.post(`${this.authApiUrl}/activate-account`, { token, password });
   }
 
-  // NEW: Method to request a new activation link
+  /**
+   * Requests a new account activation link via email.
+   * Used when original activation link expires.
+   */
   resendActivationLink(email: string): Observable<any> {
     return this.http.post(`${this.authApiUrl}/resend-activation`, { email });
   }
 
-  // NEW: Method to call the refresh token endpoint
+  /**
+   * Refreshes expired access token using stored refresh token.
+   * Maintains user session without requiring re-authentication.
+   */
   refreshToken(): Observable<any> {
     const refreshToken = this.getRefreshToken();
     if (refreshToken) {
@@ -143,13 +158,17 @@ export class AuthService {
     return throwError(() => new Error('No refresh token available'));
   }
 
-  // UPDATED: Calls the backend logout and clears all tokens from storage
+  /**
+   * Logs out user by clearing tokens and notifying backend.
+   * Provides immediate UI response while backend processes logout.
+   */
   logout(): void {
     const refreshToken = this.getRefreshToken();
-    // No need to wait for the HTTP call to complete for faster UI response
+    // Call backend logout asynchronously for cleanup
     if (refreshToken) {
         this.http.post(`${this.authApiUrl}/logout`, { refreshToken }).subscribe();
     }
+    // Clear local storage immediately for responsive UI
     localStorage.removeItem(this.ACCESS_TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     this.isLoggedInSubject.next(false);

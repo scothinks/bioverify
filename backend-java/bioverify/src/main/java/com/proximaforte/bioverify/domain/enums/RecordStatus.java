@@ -1,26 +1,38 @@
 package com.proximaforte.bioverify.domain.enums;
 
+/**
+ * Enum representing the various states of an employee record throughout the verification workflow.
+ * 
+ * The typical flow is:
+ * PENDING_VERIFICATION → AWAITING_REVIEW → REVIEWED → ACTIVE
+ * 
+ * Records can also be flagged for issues or become inactive due to missed checks.
+ */
 public enum RecordStatus {
-    // Initial state after upload
+    /** Initial state after CSV upload, awaiting external verification */
     PENDING_VERIFICATION,
 
-    // NEW: Verified and awaiting human review
+    /** Successfully verified against external systems, awaiting human review */
     AWAITING_REVIEW,
 
-    // NEW: Reviewed by a human and ready for PoL
+    /** Human-reviewed and approved, ready for Proof of Life processing */
     REVIEWED,
 
-    // Final "good" state after successful PoL
+    /** Fully verified and active, eligible for payroll */
     ACTIVE,
 
-    // NEW: Replaces SUSPENDED for missed liveness checks
+    /** Account suspended due to missed liveness checks */
     INACTIVE,
 
-    // Flagged states for various issues
+    /** Data discrepancy found between upload and Source of Truth */
     FLAGGED_DATA_MISMATCH,
+    
+    /** Employee not found in external Source of Truth system */
     FLAGGED_NOT_IN_SOT,
+    
+    /** Documents failed automated validation, require manual review */
     FLAGGED_INVALID_DOCUMENT,
 
-    // Final state if a reviewer rejects the record
+    /** Record manually rejected by reviewer */
     REJECTED
 }

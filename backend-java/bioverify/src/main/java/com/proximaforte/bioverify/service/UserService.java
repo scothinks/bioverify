@@ -45,7 +45,7 @@ public class UserService {
     public List<ReviewerDataDto> getReviewersForTenant(UUID tenantId) {
         List<User> reviewers = userRepository.findByTenantIdAndRole(tenantId, Role.REVIEWER);
         
-        // UPDATED: Use the new 'AWAITING_REVIEW' status for counting
+        // Count records awaiting review for workload distribution
         List<RecordStatus> statusesToCount = List.of(RecordStatus.AWAITING_REVIEW, RecordStatus.FLAGGED_DATA_MISMATCH);
 
         return reviewers.stream().map(reviewer -> {

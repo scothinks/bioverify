@@ -46,8 +46,7 @@ public class LivenessCheckScheduler {
 
         logger.info("Found {} users to notify for upcoming liveness check.", recordsToNotify.size());
         for (MasterListRecord record : recordsToNotify) {
-            // TODO: Integrate with a NotificationService to send an email or in-app alert.
-            // notificationService.sendLivenessCheckReminder(record.getUser());
+            // Future enhancement: Integrate with NotificationService to send email or in-app alerts
             logger.info("Notifying user {} for record {}", record.getUser().getEmail(), record.getId());
         }
     }
@@ -76,7 +75,6 @@ public class LivenessCheckScheduler {
         logger.warn("Found {} users to suspend for overdue liveness checks.", recordsToSuspend.size());
         for (MasterListRecord record : recordsToSuspend) {
             logger.warn("Setting account to INACTIVE for user {} (Record ID: {})", record.getUser().getEmail(), record.getId());
-            // UPDATED: Use the new 'INACTIVE' status
             record.setStatus(RecordStatus.INACTIVE);
         }
 
