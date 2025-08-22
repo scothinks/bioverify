@@ -1,4 +1,16 @@
-// src/app/services/auth.service.ts
+/**
+ * Authentication service handling JWT-based authentication and authorization.
+ * 
+ * This service manages the complete user authentication lifecycle including:
+ * - Login/logout with JWT access and refresh tokens
+ * - Token storage and automatic refresh mechanism
+ * - Role-based routing and authorization
+ * - Account creation and activation workflows
+ * - Session management with reactive state updates
+ * 
+ * The service integrates with the backend authentication endpoints and provides
+ * a centralized authentication state management for the entire application.
+ */
 
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -7,7 +19,10 @@ import { catchError, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { MasterListRecordDto } from './pol.service';
 
-// NEW: Matches the new JwtResponse DTO from the backend
+/**
+ * JWT response structure matching backend JwtResponse DTO.
+ * Contains both access and refresh tokens plus user metadata.
+ */
 export interface JwtResponse {
   accessToken: string;
   refreshToken: string;
@@ -17,6 +32,10 @@ export interface JwtResponse {
   role: string;
 }
 
+/**
+ * Flexible request interface for various authentication operations.
+ * Used for login, registration, account creation, and identity verification.
+ */
 export interface AuthRequest {
   email?: string;
   password?: string;
@@ -27,26 +46,32 @@ export interface AuthRequest {
   recordId?: string;
 }
 
+/**
+ * Decoded JWT token payload structure.
+ * Contains user identity, role, and tenant information for authorization.
+ */
 export interface DecodedToken {
-  sub: string;
-  role: string;
-  tenantId?: string;
-  status?: string;
-  iat: number;
-  exp: number;
+  sub: string;        // User ID (subject)
+  role: string;       // User role for authorization
+  tenantId?: string;  // Multi-tenant isolation
+  status?: string;    // Account status
+  iat: number;        // Issued at timestamp
+  exp: number;        // Expiration timestamp
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  // API endpoint configurations
   private authApiUrl = 'http://localhost:8080/api/v1/auth';
   private v1ApiUrl = 'http://localhost:8080/api/v1';
 
-  // UPDATED: Separate keys for each token
+  // Local storage keys for token persistence
   private readonly ACCESS_TOKEN_KEY = 'bioverify_access_token';
   private readonly REFRESH_TOKEN_KEY = 'bioverify_refresh_token';
 
+  // Reactive authentication state management
   private isLoggedInSubject = new BehaviorSubject<boolean>(this.isLoggedIn());
   public isLoggedIn$ = this.isLoggedInSubject.asObservable();
 
@@ -55,13 +80,21 @@ export class AuthService {
     private router: Router
   ) { }
 
-  // UPDATED: Handles the new JwtResponse and stores both tokens
+  /**
+   * Authenticates user with email/password and manages token storage.
+   * 
+   * @param credentials User email and password for authentication
+   * @returns Observable with JWT response containing access and refresh tokens
+   */
   login(credentials: AuthRequest): Observable<JwtResponse> {
     return this.http.post<JwtResponse>(`${this.authApiUrl}/authenticate`, credentials).pipe(
       tap(response => {
+        // Store both tokens in localStorage for persistent sessions
         this.setAccessToken(response.accessToken);
         this.setRefreshToken(response.refreshToken);
+        // Update reactive authentication state
         this.isLoggedInSubject.next(true);
+        // Navigate user to appropriate dashboard based on their role
         this.redirectUserBasedOnRole();
       }),
       catchError(this.handleError)

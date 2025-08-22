@@ -12,6 +12,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * REST Controller handling authentication and account management operations.
+ * 
+ * This controller provides endpoints for:
+ * - User login/logout with JWT token management
+ * - Token refresh mechanism for extended sessions
+ * - Account creation and activation workflow
+ * - Email-based account activation system
+ * 
+ * All endpoints return appropriate HTTP status codes and JSON responses.
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -21,7 +32,10 @@ public class AuthenticationController {
     private final RefreshTokenService refreshTokenService;
 
     /**
-     * Handles user login and returns access and refresh tokens.
+     * Authenticates a user and returns JWT access and refresh tokens.
+     * 
+     * @param request Contains email and password for authentication
+     * @return JwtResponse with access token, refresh token, and user details
      */
     @PostMapping("/authenticate")
     public ResponseEntity<JwtResponse> authenticate(@RequestBody AuthenticationRequest request) {
@@ -29,7 +43,10 @@ public class AuthenticationController {
     }
 
     /**
-     * Provides a new access token in exchange for a valid refresh token.
+     * Refreshes an expired access token using a valid refresh token.
+     * 
+     * @param request Contains the refresh token
+     * @return TokenRefreshResponse with new access token
      */
     @PostMapping("/refreshtoken")
     public ResponseEntity<TokenRefreshResponse> refreshtoken(@RequestBody TokenRefreshRequest request) {
@@ -37,7 +54,10 @@ public class AuthenticationController {
     }
 
     /**
-     * Handles user logout.
+     * Logs out a user by invalidating their refresh token.
+     * 
+     * @param request Contains the refresh token to invalidate
+     * @return Success message confirming logout
      */
     @PostMapping("/logout")
     public ResponseEntity<MessageResponse> logoutUser(@RequestBody TokenRefreshRequest request) {
@@ -46,7 +66,10 @@ public class AuthenticationController {
     }
 
     /**
-     * Handles manual account creation by an administrator.
+     * Creates a new user account manually (typically by administrators).
+     * 
+     * @param request Contains user details for account creation
+     * @return Success message confirming account creation
      */
     @PostMapping("/create-account")
     public ResponseEntity<?> createAccount(@RequestBody CreateAccountRequest request) {
@@ -55,7 +78,10 @@ public class AuthenticationController {
     }
 
     /**
-     * NEW: Endpoint to handle account activation via the link sent to the user's email.
+     * Activates a user account using the activation token sent via email.
+     * 
+     * @param request Contains activation token and password to set
+     * @return Success message confirming account activation
      */
     @PostMapping("/activate-account")
     public ResponseEntity<MessageResponse> activateAccount(@RequestBody AccountActivationRequest request) {
@@ -64,7 +90,10 @@ public class AuthenticationController {
     }
 
     /**
-     * NEW: Endpoint to resend an account activation link.
+     * Resends an activation link to the user's email address.
+     * 
+     * @param request Contains the email address to send activation link to
+     * @return Success message confirming email sent
      */
     @PostMapping("/resend-activation")
     public ResponseEntity<MessageResponse> resendActivation(@RequestBody ResendActivationRequest request) {
